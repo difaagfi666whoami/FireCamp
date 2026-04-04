@@ -1,0 +1,414 @@
+{
+  "_meta": {
+    "description": "Mock data untuk Campfire — semua milestone (Recon, Match, Craft, Polish, Launch, Pulse)",
+    "appName": "Campfire",
+    "version": "2.0.0",
+    "targetCompany": "PT Kreasi Digital Indonesia",
+    "lastUpdated": "2026-03-25"
+  },
+
+  "researchLibrary": [
+    {
+      "id": "profile-001",
+      "name": "PT Kreasi Digital Indonesia",
+      "industry": "E-commerce & Digital Retail",
+      "hq": "Jakarta Selatan",
+      "savedAt": "2026-03-25T08:00:00.000Z",
+      "painPointsCount": 4,
+      "progress": {
+        "recon": true,
+        "match": true,
+        "craft": false,
+        "polish": false,
+        "launch": false,
+        "pulse": false
+      }
+    },
+    {
+      "id": "profile-002",
+      "name": "CV Maju Bersama Logistik",
+      "industry": "Logistics & Supply Chain",
+      "hq": "Surabaya",
+      "savedAt": "2026-03-20T10:30:00.000Z",
+      "painPointsCount": 3,
+      "progress": {
+        "recon": true,
+        "match": false,
+        "craft": false,
+        "polish": false,
+        "launch": false,
+        "pulse": false
+      }
+    },
+    {
+      "id": "profile-003",
+      "name": "PT Solusi Logistik Nusantara",
+      "industry": "Logistics & Supply Chain",
+      "hq": "Surabaya",
+      "savedAt": "2026-03-10T14:00:00.000Z",
+      "painPointsCount": 5,
+      "progress": {
+        "recon": true,
+        "match": true,
+        "craft": true,
+        "polish": true,
+        "launch": true,
+        "pulse": true
+      }
+    }
+  ],
+
+  "company": {
+    "id": "profile-001",
+    "url": "kreasidigital.co.id",
+    "name": "PT Kreasi Digital Indonesia",
+    "industry": "E-commerce & Digital Retail",
+    "size": "250–500 karyawan",
+    "founded": "2015",
+    "hq": "Jakarta Selatan, Indonesia",
+    "description": "Perusahaan e-commerce dan retail digital terkemuka yang mengelola marketplace B2C dan B2B untuk kategori fashion, elektronik, dan lifestyle dengan lebih dari 2 juta pelanggan aktif di 15 kota besar Indonesia.",
+    "linkedin": {
+      "followers": "12.4K",
+      "employees": 287,
+      "growth": "+23% YoY"
+    },
+
+    "contacts": [
+      {
+        "id": "contact-001",
+        "name": "Budi Santoso",
+        "title": "VP of Marketing",
+        "email": "budi.santoso@kreasidigital.co.id",
+        "phone": "+62 812-3456-7890",
+        "linkedinUrl": "https://linkedin.com/in/budisantoso",
+        "prospectScore": 92,
+        "reasoning": "Decision maker langsung untuk marketing tech budget dan pemilihan vendor tools."
+      },
+      {
+        "id": "contact-002",
+        "name": "Sari Dewi Purnama",
+        "title": "Head of Digital Marketing",
+        "email": "sari.dewi@kreasidigital.co.id",
+        "phone": "+62 878-9012-3456",
+        "linkedinUrl": "https://linkedin.com/in/saridewidm",
+        "prospectScore": 85,
+        "reasoning": "Operator harian yang langsung merasakan pain point email conversion dan manual reporting."
+      },
+      {
+        "id": "contact-003",
+        "name": "Andi Wijaya",
+        "title": "Chief Technology Officer",
+        "email": "andi.wijaya@kreasidigital.co.id",
+        "phone": "+62 856-7890-1234",
+        "linkedinUrl": "https://linkedin.com/in/andiwijaya-cto",
+        "prospectScore": 76,
+        "reasoning": "Gatekeeper teknis untuk integrasi CRM dan evaluasi platform baru."
+      }
+    ],
+
+    "painPoints": [
+      {
+        "category": "Marketing",
+        "issue": "Email conversion rate 1.2% — jauh di bawah rata-rata industri 3.5%",
+        "severity": "high"
+      },
+      {
+        "category": "Operations",
+        "issue": "Manual reporting menyita 15+ jam per minggu dari tim marketing",
+        "severity": "high"
+      },
+      {
+        "category": "Technology",
+        "issue": "Tidak ada integrasi CRM dengan email platform yang ada saat ini",
+        "severity": "medium"
+      },
+      {
+        "category": "Growth",
+        "issue": "Churn B2B meningkat 18% QoQ tanpa early warning system",
+        "severity": "high"
+      }
+    ],
+
+    "news": [
+      {
+        "title": "Kreasi Digital Raih Pendanaan Seri B Rp 120 Miliar",
+        "date": "15 Feb 2026",
+        "source": "Bisnis.com",
+        "summary": "Dana digunakan untuk ekspansi ke Sumatera dan Kalimantan serta peningkatan infrastruktur teknologi perusahaan.",
+        "url": "https://bisnis.com/read/20260215/kreasi-digital-seri-b"
+      },
+      {
+        "title": "Kolaborasi Strategis dengan Platform Logistik Terkemuka",
+        "date": "3 Jan 2026",
+        "source": "Katadata.co.id",
+        "summary": "Kemitraan ini memangkas biaya pengiriman hingga 30% dan mempercepat last-mile delivery ke seluruh Indonesia.",
+        "url": "https://katadata.co.id/startup/2026/01/03/kreasi-digital-logistik"
+      },
+      {
+        "title": "Target 3 Juta Pengguna Aktif di Q2 2026",
+        "date": "20 Des 2025",
+        "source": "TechCrunch ID",
+        "summary": "CEO menyatakan fokus pada retensi pelanggan existing sebelum akuisisi pelanggan baru secara agresif di semester kedua.",
+        "url": "https://id.techcrunch.com/2025/12/20/kreasi-digital-target-q2"
+      }
+    ],
+
+    "campaignProgress": {
+      "recon": true,
+      "match": true,
+      "craft": false,
+      "polish": false,
+      "launch": false,
+      "pulse": false
+    },
+    "createdAt": "2026-04-04T06:00:00.000Z",
+    "cachedAt": "2026-04-04T06:00:00.000Z"
+  },
+
+  "productCatalog": [
+    {
+      "id": "prod-001",
+      "name": "CampaignAI Pro",
+      "tagline": "AI-powered email campaign automation",
+      "description": "Platform otomasi campaign email berbasis AI yang mempersonalisasi setiap pesan berdasarkan profil dan perilaku penerima. Dilengkapi dengan A/B testing otomatis, segmentasi dinamis, dan laporan performa real-time.",
+      "price": "Rp 8.500.000 / bulan",
+      "painCategories": ["Marketing", "Technology"],
+      "usp": [
+        "Personalisasi berbasis AI untuk setiap email secara otomatis",
+        "Integrasi native dengan 50+ CRM platform termasuk HubSpot dan Salesforce",
+        "A/B testing otomatis tanpa konfigurasi manual",
+        "Setup dan onboarding dalam 2 hari kerja"
+      ],
+      "source": "manual",
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "prod-002",
+      "name": "InsightDash",
+      "tagline": "Real-time marketing analytics & auto-reporting",
+      "description": "Dashboard analitik marketing yang mengkonsolidasikan data dari semua channel dalam satu tampilan. Laporan rutin digenerate otomatis setiap hari/minggu/bulan dan dikirim langsung ke email tim.",
+      "price": "Rp 4.200.000 / bulan",
+      "painCategories": ["Operations", "Technology"],
+      "usp": [
+        "Konsolidasi data dari 30+ marketing channel dalam satu dashboard",
+        "Auto-report harian, mingguan, bulanan — tanpa setup manual",
+        "Alert otomatis jika ada anomali performa",
+        "Export ke PDF, Excel, atau Google Sheets dengan satu klik"
+      ],
+      "source": "manual",
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "prod-003",
+      "name": "RetainIQ",
+      "tagline": "Churn prediction & retention automation",
+      "description": "Sistem prediksi churn berbasis machine learning yang mengidentifikasi pelanggan berisiko 45-60 hari sebelum kontrak berakhir. Dilengkapi dengan workflow retensi otomatis dan playbook intervensi.",
+      "price": "Rp 6.800.000 / bulan",
+      "painCategories": ["Growth"],
+      "usp": [
+        "Prediksi churn 45-60 hari lebih awal dari metode konvensional",
+        "Playbook retensi otomatis berdasarkan profil risiko pelanggan",
+        "Integrasi dengan CRM dan customer success tools",
+        "ROI calculator built-in untuk justifikasi budget"
+      ],
+      "source": "manual",
+      "createdAt": "2026-01-10T00:00:00.000Z",
+      "updatedAt": "2026-01-10T00:00:00.000Z"
+    },
+    {
+      "id": "prod-004",
+      "name": "LeadScan",
+      "tagline": "Automated B2B lead enrichment & scoring",
+      "description": "Tool enrichment data prospek B2B yang secara otomatis melengkapi informasi kontak, perusahaan, dan technographic dari berbagai sumber data. Dilengkapi dengan lead scoring berbasis AI.",
+      "price": "Rp 3.500.000 / bulan",
+      "painCategories": ["Marketing", "Growth"],
+      "usp": [
+        "Enrichment otomatis dari 15+ sumber data B2B",
+        "Lead scoring berbasis fit + intent signal",
+        "Sync dua arah dengan CRM secara real-time",
+        "Deteksi duplikat dan data stale otomatis"
+      ],
+      "source": "pdf",
+      "createdAt": "2026-02-05T00:00:00.000Z",
+      "updatedAt": "2026-02-05T00:00:00.000Z"
+    },
+    {
+      "id": "prod-005",
+      "name": "FlowDesk",
+      "tagline": "Sales workflow automation & task management",
+      "description": "Platform manajemen workflow sales yang mengotomasi tugas repetitif seperti follow-up reminder, task assignment, dan update status deal. Terintegrasi dengan calendar dan email.",
+      "price": "Rp 2.900.000 / bulan",
+      "painCategories": ["Operations"],
+      "usp": [
+        "Otomasi tugas repetitif sales hingga 70% dari waktu admin",
+        "Smart reminder berdasarkan konteks deal dan prioritas",
+        "Template workflow yang bisa dikustomisasi per tim",
+        "Laporan produktivitas per sales rep real-time"
+      ],
+      "source": "manual",
+      "createdAt": "2026-02-20T00:00:00.000Z",
+      "updatedAt": "2026-02-20T00:00:00.000Z"
+    }
+  ],
+
+  "matchingResults": [
+    {
+      "productId": "prod-001",
+      "matchScore": 94,
+      "addressedPainIndices": [0, 2],
+      "reasoning": "Menjawab langsung pain point utama: conversion rate 1.2% vs industri 3.5%. AI personalization engine bekerja otomatis tanpa tambah headcount, dan integrasi native menyelesaikan masalah disconnected CRM-email tools. Berdasarkan data dari 3 perusahaan e-commerce skala serupa, CampaignAI Pro rata-rata meningkatkan conversion rate 2.8x dalam 60 hari pertama implementasi.",
+      "isRecommended": true
+    },
+    {
+      "productId": "prod-003",
+      "matchScore": 91,
+      "addressedPainIndices": [3],
+      "reasoning": "Churn B2B +18% QoQ adalah risiko revenue serius yang jika dibiarkan akan menggerus pertumbuhan yang baru saja di-fuel oleh Seri B. RetainIQ memberikan early warning 45-60 hari sebelum pelanggan berisiko churn — cukup waktu untuk intervensi efektif. Menyelamatkan 1-2 akun B2B per bulan sudah lebih dari cover biaya platform.",
+      "isRecommended": false
+    },
+    {
+      "productId": "prod-002",
+      "matchScore": 88,
+      "addressedPainIndices": [1, 2],
+      "reasoning": "15+ jam per minggu manual reporting = 780 jam produktif per tahun yang terbuang. InsightDash mengotomasi seluruh proses dan menyatukan data dari semua channel. Setup 2 jam, tim tidak perlu menyentuh spreadsheet untuk laporan rutin lagi.",
+      "isRecommended": false
+    }
+  ],
+
+  "pdfExtractionMock": {
+    "extractedName": "SyncFlow CRM",
+    "extractedTagline": "Unified customer data platform for growing teams",
+    "extractedDescription": "SyncFlow adalah platform CRM yang dirancang untuk tim sales dan marketing yang berkembang cepat. Menggabungkan contact management, deal tracking, dan email automation dalam satu platform yang mudah digunakan.",
+    "extractedPrice": "Rp 5.200.000 / bulan",
+    "extractedUsp": [
+      "Setup dalam 30 menit, tidak butuh tim IT",
+      "Migrasi data dari CRM lama otomatis",
+      "Mobile app iOS dan Android",
+      "Unlimited users tanpa biaya tambahan"
+    ],
+    "confidence": 87
+  },
+
+  "campaign": {
+    "reasoning": "3-email drip sequence dipilih karena profil Kreasi Digital menunjukkan tim yang sibuk dengan ekspansi regional aktif. Email 1 memanfaatkan momentum Seri B sebagai ice-breaker yang relevan dan tidak generik. Follow-up Hari ke-4 menyerang pain point operasional yang langsung terukur dengan angka konkret. Email 3 menutup dengan risiko bisnis konkret untuk menciptakan urgency tanpa pressure berlebihan — strategi tepat untuk decision maker level VP ke atas yang tidak suka di-push.",
+    "targetCompany": "PT Kreasi Digital Indonesia",
+    "createdAt": "2026-03-25T09:00:00.000Z",
+    "emails": [
+      {
+        "id": 1,
+        "sequenceNumber": 1,
+        "dayLabel": "Hari ke-1",
+        "scheduledDay": 1,
+        "subject": "Bagaimana Kreasi Digital bisa tingkatkan email conversion 3x dalam 60 hari",
+        "body": "Halo [Nama],\n\nSelamat atas closing Seri B yang luar biasa — Rp 120 miliar adalah pencapaian besar untuk Kreasi Digital.\n\nEkspansi ke Sumatera dan Kalimantan tentunya membutuhkan marketing engine yang scalable. Satu bottleneck yang sering muncul di fase ekspansi adalah efisiensi email campaign — conversion rate yang optimal menjadi krusial ketika volume prospek meningkat.\n\nCampaignAI Pro dari tim kami telah membantu 3 perusahaan e-commerce skala serupa meningkatkan conversion rate rata-rata 2.8x dalam 60 hari pertama, tanpa menambah headcount marketing.\n\nApakah 15 menit minggu ini bisa kita jadwalkan?\n\nSalam,\n[Nama Sales] | Campfire",
+        "tone": "profesional",
+        "isApproved": false
+      },
+      {
+        "id": 2,
+        "sequenceNumber": 2,
+        "dayLabel": "Hari ke-4",
+        "scheduledDay": 4,
+        "subject": "15 jam per minggu untuk laporan manual — ada cara yang jauh lebih baik",
+        "body": "Halo [Nama],\n\nIngin memastikan email sebelumnya sampai dengan baik.\n\nSatu hal yang ingin saya highlight: 15+ jam per minggu untuk manual reporting setara dengan 780 jam produktif per tahun — waktu yang bisa sepenuhnya dialihkan ke aktivitas yang menghasilkan revenue langsung.\n\nInsightDash mengotomasi seluruh proses reporting dari semua channel marketing. Setup 2 jam, dan tim tidak perlu menyentuh spreadsheet untuk laporan rutin lagi.\n\nSaya lampirkan case study singkat dari perusahaan e-commerce serupa yang menghemat 12 jam per minggu sejak hari pertama implementasi.\n\nTertarik untuk demo 20 menit?\n\nSalam,\n[Nama Sales] | Campfire",
+        "tone": "profesional",
+        "isApproved": false
+      },
+      {
+        "id": 3,
+        "sequenceNumber": 3,
+        "dayLabel": "Hari ke-10",
+        "scheduledDay": 10,
+        "subject": "Satu pertanyaan terakhir tentang churn B2B Kreasi Digital",
+        "body": "Halo [Nama],\n\nSaya tidak ingin mengganggu lebih lama jika timing-nya belum tepat saat ini.\n\nNamun sebelum saya tutup follow-up ini — apakah churn B2B yang naik 18% QoQ sudah ada action plan konkretnya?\n\nRetainIQ memberikan early warning 45-60 hari sebelum pelanggan berisiko churn, cukup waktu untuk intervensi efektif sebelum kontrak berakhir. Untuk bisnis dengan B2B client yang significant, menyelamatkan 2-3 akun per bulan sudah lebih dari cukup untuk cover biaya platform.\n\nJika timing belum tepat, tidak masalah. Boleh saya follow up di Q3 ketika ekspansi regional sudah berjalan?\n\nSalam,\n[Nama Sales] | Campfire",
+        "tone": "profesional",
+        "isApproved": false
+      }
+    ]
+  },
+
+  "schedule": [
+    {
+      "emailId": 1,
+      "emailNumber": 1,
+      "dayLabel": "Hari ke-1",
+      "date": "2026-04-04",
+      "time": "09:00",
+      "status": "sent",
+      "sentAt": "2026-04-04T02:00:00.000Z"
+    },
+    {
+      "emailId": 2,
+      "emailNumber": 2,
+      "dayLabel": "Hari ke-4",
+      "date": "2026-04-07",
+      "time": "10:00",
+      "status": "scheduled",
+      "sentAt": null
+    },
+    {
+      "emailId": 3,
+      "emailNumber": 3,
+      "dayLabel": "Hari ke-10",
+      "date": "2026-04-14",
+      "time": "09:30",
+      "status": "scheduled",
+      "sentAt": null
+    }
+  ],
+
+  "analytics": {
+    "summary": {
+      "emailsSent": 1,
+      "openRate": 100.0,
+      "clickRate": 100.0,
+      "replyRate": 100.0,
+      "industryBenchmarks": {
+        "openRate": 22.0,
+        "clickRate": 3.5,
+        "replyRate": 8.0
+      }
+    },
+    "perEmail": [
+      {
+        "emailNumber": 1,
+        "name": "Email 1",
+        "opens": 1,
+        "clicks": 1,
+        "replies": 1,
+        "status": "replied"
+      },
+      {
+        "emailNumber": 2,
+        "name": "Email 2",
+        "opens": 0,
+        "clicks": 0,
+        "replies": 0,
+        "status": "scheduled"
+      },
+      {
+        "emailNumber": 3,
+        "name": "Email 3",
+        "opens": 0,
+        "clicks": 0,
+        "replies": 0,
+        "status": "scheduled"
+      }
+    ],
+    "timeline": [
+      { "day": "H1", "opens": 1, "clicks": 1 },
+      { "day": "H2", "opens": 0, "clicks": 0 },
+      { "day": "H3", "opens": 0, "clicks": 0 },
+      { "day": "H4", "opens": 0, "clicks": 0 }
+    ],
+    "tokenUsage": {
+      "recon": 45000,
+      "match": 12000,
+      "craft": 28000,
+      "total": 85000,
+      "estimatedCostIDR": 12750
+    }
+  }
+}
