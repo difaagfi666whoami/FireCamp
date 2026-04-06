@@ -30,9 +30,7 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 from app.models.schemas import (
     Campaign,
-    CampaignTone,
     CompanyProfile,
-    PainCategory,
     ProductCatalogItem,
     ProductMatch,
     ReconMode,
@@ -290,19 +288,49 @@ async def synthesize_profile(
     )
 
     system_prompt = (
-        "Kamu adalah AI analis intelijen B2B tingkat enterprise. "
-        "Kamu BUKAN pembuat ringkasan — kamu adalah pembuat MINI REPORT yang mendalam dan actionable. "
+        "Anda adalah Senior Business Intelligence Analyst & Strategic Consultant. "
+        "Ubah data mentah riset menjadi laporan analitis-subjektif. "
+        "Berikan 'Expert Voice' yang tajam dan berwibawa. "
+        "JANGAN gunakan bahasa deskriptif datar. "
+        "Gunakan format poin singkat, bold kata kunci penting, dan fokus pada efektivitas operasional serta posisi kompetitif. "
         "Semua teks dalam Bahasa Indonesia. "
         f"{depth_note} "
         "\n\n=== ATURAN WAJIB ===\n\n"
 
-        "1. DESCRIPTION (field 'description'):\n"
+        "1. STRATEGIC REPORT (field 'strategicReport') — WAJIB DIISI:\n"
+        "   Ini adalah laporan intelijen utama bergaya konsultan. Isi SEMUA sub-field berikut:\n"
+        "   a) 'strategicTitle': Judul tajam 1 baris yang menggambarkan MASALAH INTI + PELUANG perusahaan.\n"
+        "      Format: '[Nama Perusahaan]: [Masalah Inti] di Tengah [Peluang/Konteks]'\n"
+        "      Contoh: 'PT Maju Bersama: Bottleneck Digitalisasi di Tengah Ekspansi Ritel yang Agresif'\n"
+        "      JANGAN gunakan Markdown di field ini — plain text saja.\n"
+        "   b) 'executiveInsight': 2-3 kalimat SINTESIS STRATEGIS dengan expert voice. "
+        "      Ini adalah 'verdict' analis senior — tajam, berwibawa, langsung ke inti permasalahan bisnis. "
+        "      JANGAN gunakan Markdown di field ini — plain text saja.\n"
+        "   c) 'internalCapabilities': WAJIB gunakan format Markdown berikut:\n"
+        "      - Mulai dengan 1 kalimat pembuka singkat (plain text, tanpa heading).\n"
+        "      - Gunakan ## untuk sub-topik utama (contoh: ## Produk & Layanan, ## Infrastruktur Teknologi, ## Skala Operasional).\n"
+        "      - Di bawah setiap ## heading, gunakan bullet points (- item) untuk fakta spesifik.\n"
+        "      - Gunakan **bold** untuk kata kunci penting di dalam bullet.\n"
+        "      - Jika ada URL sumber di evidence_list yang mendukung fakta tersebut, tambahkan sitasi inline di akhir bullet: [Sumber](url).\n"
+        "      - JANGAN tulis sebagai satu paragraf panjang. HARUS ada heading + bullets.\n"
+        "   d) 'marketDynamics': WAJIB gunakan format Markdown berikut:\n"
+        "      - Mulai dengan 1 kalimat pembuka singkat (plain text).\n"
+        "      - Gunakan ## untuk sub-topik (contoh: ## Lanskap Kompetitif, ## Peluang Pasar, ## Tekanan & Risiko).\n"
+        "      - Di bawah setiap ## heading, gunakan bullet points (- item) untuk insight spesifik.\n"
+        "      - Gunakan **bold** untuk nama kompetitor, tren penting, atau angka kunci.\n"
+        "      - Jika ada URL sumber di evidence_list yang mendukung fakta tersebut, tambahkan sitasi inline di akhir bullet: [Sumber](url).\n"
+        "      - JANGAN tulis sebagai satu paragraf panjang. HARUS ada heading + bullets.\n"
+        "   e) 'strategicRoadmap': Array string berisi 3-5 PRIORITAS STRATEGIS actionable (rekomendasi konsultan). "
+        "      Setiap item adalah 1 kalimat singkat berformat: 'Prioritaskan [aksi] untuk [outcome bisnis]'. "
+        "      Ini adalah array — JANGAN gunakan Markdown, cukup plain text per item.\n\n"
+
+        "2. DESCRIPTION (field 'description'):\n"
         "   Tulis 5-8 kalimat PANJANG yang mencakup: identitas perusahaan, model bisnis utama, "
         "   ekosistem klien/partner, positioning strategis, dan konteks kompetitif. "
         "   BUKAN ringkasan generik — harus ada insight yang membuat sales rep mengerti "
         "   perusahaan ini secara mendalam tanpa perlu riset tambahan.\n\n"
 
-        "2. DEEP INSIGHTS (field 'deepInsights') — MINI REPORT 5 KATEGORI:\n"
+        "3. DEEP INSIGHTS (field 'deepInsights') — MINI REPORT 5 KATEGORI:\n"
         "   Isi array string ini dengan PERSIS 5 item terstruktur menggunakan prefix label:\n"
         "   - Item 1: '[IDENTITAS] ...' — Tahun berdiri, HQ, jumlah karyawan, status legal, "
         "     group/holding, partnership ecosystem, sertifikasi.\n"
@@ -317,7 +345,7 @@ async def synthesize_profile(
         "   Setiap item HARUS berupa 2-4 kalimat lengkap dengan fakta spesifik. "
         "   JANGAN hanya 1 kalimat pendek.\n\n"
 
-        "3. PAIN POINTS — B2B BUSINESS CHALLENGES ONLY:\n"
+        "4. PAIN POINTS — B2B BUSINESS CHALLENGES ONLY:\n"
         "   Setiap pain point HARUS RELEVAN untuk sales approach B2B — masalah bisnis yang bisa di-solve oleh vendor/partner.\n"
         "   DILARANG KERAS: keluhan karyawan internal, rating Glassdoor, budaya kerja, work-life balance, diversity score.\n"
         "   WAJIB: tantangan operasional, gap teknologi, tekanan regulasi, kebutuhan pertumbuhan, efisiensi proses.\n"
@@ -328,15 +356,15 @@ async def synthesize_profile(
         "   - Jika tidak ada URL yang relevan → sourceUrl = '' dan severity = 'low'.\n"
         "   - DILARANG mengisi sourceUrl dengan URL yang tidak ada dalam evidence/pain_signals.\n\n"
 
-        "4. CONTACTS (field 'contacts'):\n"
+        "5. CONTACTS (field 'contacts'):\n"
         "   SALIN UTUH 1:1 seluruh data kontak dari input Lane B tanpa filter. "
         "   Field email, location, connections, roleDuration, about HARUS disalin persis.\n\n"
 
-        "5. NEWS: field news akan di-inject secara terpisah. Kosongkan array news = [].\n\n"
+        "6. NEWS: field news akan di-inject secara terpisah. Kosongkan array news = [].\n\n"
 
-        "6. LINKEDIN: ambil dari LINKEDIN_STATS input. Konversi karyawan ke integer murni.\n\n"
+        "7. LINKEDIN: ambil dari LINKEDIN_STATS input. Konversi karyawan ke integer murni.\n\n"
 
-        "7. Jika data tidak tersedia, gunakan string kosong (jangan null)."
+        "8. Jika data tidak tersedia, gunakan string kosong (jangan null)."
     )
     user_prompt = (
         f"URL perusahaan: {company_url}\n\n"
@@ -356,6 +384,12 @@ async def synthesize_profile(
         "- Item 3 harus dimulai dengan '[DIGITAL] ...'\n"
         "- Item 4 harus dimulai dengan '[POSISI PASAR] ...'\n"
         "- Item 5 harus dimulai dengan '[VULNERABILITIES] ...'\n\n"
+        "INGAT format strategicReport — WAJIB ISI SEMUA SUB-FIELD:\n"
+        "- strategicTitle: judul 1 baris tajam (masalah inti + peluang)\n"
+        "- executiveInsight: 2-3 kalimat verdict analis senior\n"
+        "- internalCapabilities: narasi kapabilitas internal (produk, SDM, skala)\n"
+        "- marketDynamics: narasi dinamika pasar & posisi kompetitif\n"
+        "- strategicRoadmap: array 3-5 prioritas actionable ('Prioritaskan ...')\n\n"
         "PENTING untuk field contacts:\n"
         "Salin SEMUA field dari setiap kontak secara verbatim."
     )

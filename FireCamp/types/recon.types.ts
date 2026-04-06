@@ -1,5 +1,13 @@
 export type ReconMode = 'free' | 'pro'
 
+export interface StrategicReport {
+  strategicTitle: string
+  executiveInsight: string
+  internalCapabilities: string
+  marketDynamics: string
+  strategicRoadmap: string[]
+}
+
 export interface CompanyProfile {
   id: string
   url: string
@@ -10,6 +18,7 @@ export interface CompanyProfile {
   hq: string
   description: string
   deepInsights?: string[]
+  strategicReport?: StrategicReport
   linkedin: {
     followers: string
     employees: number

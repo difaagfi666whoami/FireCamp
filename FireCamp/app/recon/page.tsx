@@ -10,6 +10,8 @@ import { session } from "@/lib/session"
 import { mockData } from "@/lib/mock/mockdata"
 import { ReconForm } from "./components/ReconForm"
 import { CompanyHeader } from "./components/CompanyHeader"
+import { StrategicMainContent } from "./components/StrategicMainContent"
+import { StrategicSidebar } from "./components/StrategicSidebar"
 import { PainPointList } from "./components/PainPointList"
 import { NewsSection } from "./components/NewsSection"
 import { KeyContacts } from "./components/KeyContacts"
@@ -245,18 +247,25 @@ export default function ReconPage() {
         </div>
       </div>
 
-      {/* Results */}
+      {/* Results — Strategic Intelligence Report */}
       {profile && !isLoading && (
         <div className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-700">
+          {/* HEADER: Full-width strategic title + executive insight */}
           <CompanyHeader company={profile} />
 
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-            <div className="space-y-6">
+          {/* SPLIT-VIEW: 8/12 main narrative + 4/12 sidebar */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            {/* Main column: strategic narrative + pain points */}
+            <div className="md:col-span-8 space-y-5">
+              <StrategicMainContent report={profile.strategicReport} />
               <PainPointList painPoints={profile.painPoints} />
-              <NewsSection news={profile.news} />
             </div>
-            <div className="space-y-5">
+
+            {/* Sidebar: metrics + contacts + news */}
+            <div className="md:col-span-4 space-y-4">
+              <StrategicSidebar company={profile} />
               <KeyContacts contacts={profile.contacts} />
+              <NewsSection news={profile.news} />
             </div>
           </div>
         </div>

@@ -1,5 +1,21 @@
 # Updates
 
+## Strategic Intelligence Overhaul — Recon (2026-04-06)
+
+### Fase 1: Data Contract
+- `types/recon.types.ts` — tambah interface `StrategicReport` (strategicTitle, executiveInsight, internalCapabilities, marketDynamics, strategicRoadmap) + field opsional `strategicReport?` di `CompanyProfile`.
+- `backend/app/models/schemas.py` — tambah Pydantic model `StrategicReport` (camelCase, mirror 1:1 dengan TS interface) + field `strategicReport: Optional[StrategicReport] = None` di `CompanyProfile`.
+
+### Fase 2: Backend AI Synthesis
+- `backend/app/services/openai_service.py` — persona system_prompt diubah menjadi "Senior Business Intelligence Analyst & Strategic Consultant". Instruksi baru ditambahkan untuk menghasilkan seluruh sub-field `strategicReport` via OpenAI Structured Output (response_format=CompanyProfile, yang kini embed StrategicReport sebagai nested model). Semua aturan lama (pain points, contacts, news inject, LinkedIn) dipertahankan.
+
+### Fase 3: Frontend UI Overhaul
+- `app/recon/components/CompanyHeader.tsx` — dirombak total menjadi strategic header: company identity bar minimalis, strategicTitle sebagai `text-2xl font-bold`, executiveInsight sebagai blockquote dengan `border-l-4 border-brand`. Fallback ke description lama jika strategicReport null.
+- `app/recon/components/StrategicMainContent.tsx` — komponen baru. Render tiga blok narasi: Kapabilitas Internal, Dinamika Pasar, dan Roadmap Strategis (numbered list).
+- `app/recon/components/StrategicSidebar.tsx` — komponen baru. Render Key Metrics (LinkedIn followers/employees/growth) dan Core Identity (Industry, HQ, size, founded) secara minimalis dan padat.
+- `app/recon/page.tsx` — hasil section diubah ke layout split-view `grid-cols-12`: kolom utama `md:col-span-8` (StrategicMainContent + PainPointList), kolom sidebar `md:col-span-4` (StrategicSidebar + KeyContacts + NewsSection).
+- `npx tsc --noEmit` — lulus tanpa error.
+
 ## Scaffolding Selesai
 - Konfigurasi `tailwind.config.ts` lengkap dengan color palette `brand` dan `severity`, typography, dan fonts berdasarkan `architecture.md`.
 - `.env.local` dengan variable `NEXT_PUBLIC_USE_MOCK=true` dan `NEXT_PUBLIC_APP_NAME` telah dibuat.

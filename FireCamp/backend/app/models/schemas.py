@@ -54,6 +54,15 @@ class ProductSource(str, Enum):
 
 # ── Sub-models ─────────────────────────────────────────────────────────────────
 
+class StrategicReport(BaseModel):
+    """Laporan intelijen strategis bergaya konsultan BCG/McKinsey."""
+    strategicTitle:        str       = ""
+    executiveInsight:      str       = ""
+    internalCapabilities:  str       = ""
+    marketDynamics:        str       = ""
+    strategicRoadmap:      list[str] = []
+
+
 class LinkedInInfo(BaseModel):
     """Representasi data LinkedIn singkat dari sebuah perusahaan."""
     followers: str
@@ -135,9 +144,10 @@ class CompanyProfile(BaseModel):
     size:         str  = ""
     founded:      str  = ""
     hq:           str  = ""
-    description:  str  = ""
-    deepInsights: list[str]          = []
-    reconMode:    Optional[ReconMode] = None
+    description:    str  = ""
+    deepInsights:   list[str]               = []
+    strategicReport: Optional[StrategicReport] = None
+    reconMode:      Optional[ReconMode]     = None
     linkedin:     LinkedInInfo
     contacts:    list[PicContact]  = []
     painPoints:  list[PainPoint]   = []

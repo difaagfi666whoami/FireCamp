@@ -113,29 +113,57 @@ def _build_industry_queries(industry: str, company_name: str) -> list[str]:
 
 
 def _extract_summary(content: str, fallback_snippet: str, max_sentences: int = 2) -> str:
-    """Ambil ringkasan dari konten Jina atau fallback dari snippet Serper."""
+    """
+    Ambil ringkasan bersih dari konten Jina atau fallback dari snippet Serper.
+    Prioritaskan snippet Serper jika sudah cukup bersih — snippet Serper adalah
+    1-2 kalimat yang sudah dipilih Google, jauh lebih bersih dari raw Jina markdown.
+    """
+    # Serper snippet sudah bersih dan compact — gunakan langsung jika cukup panjang
+    if fallback_snippet and len(fallback_snippet.strip()) >= 60:
+        return fallback_snippet.strip()[:500]
+
     if not content or len(content) < 50:
         return fallback_snippet or ""
 
-    # Strip metadata Jina Reader yang sering muncul di awal konten
+    # Strip Jina metadata header
     content = re.sub(r'^Title:.*?(?:Markdown Content:\s*)', '', content, flags=re.DOTALL | re.IGNORECASE)
-    # Strip juga pola "URL Source: ..." yang standalone
     content = re.sub(r'URL Source:\s*https?://\S+\s*', '', content, flags=re.IGNORECASE)
-    content = content.strip()
+
+    # Strip markdown images: ![alt](url)
+    content = re.sub(r'!\[.*?\]\(.*?\)', '', content)
+    # Strip markdown links: [text](url) → keep text only
+    content = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', content)
+    # Strip raw URLs
+    content = re.sub(r'https?://\S+', '', content)
+    # Strip markdown headings
+    content = re.sub(r'^#{1,6}\s+.*$', '', content, flags=re.MULTILINE)
+    # Strip bullet/nav lines (short lines starting with * or -)
+    content = re.sub(r'^\s*[-*]\s+\S.{0,60}$', '', content, flags=re.MULTILINE)
+    # Strip horizontal rules
+    content = re.sub(r'^[-=_*]{3,}\s*$', '', content, flags=re.MULTILINE)
+    # Strip HTML tags
+    content = re.sub(r'<[^>]+>', '', content)
+    # Collapse whitespace
+    content = re.sub(r'\n{2,}', ' ', content).strip()
+    content = re.sub(r'\s{2,}', ' ', content)
 
     if not content or len(content) < 50:
         return fallback_snippet or ""
 
-    sentences = content.split(". ")
-    good_sentences = [s.strip() for s in sentences if len(s.strip()) > 30]
+    # Split on sentence boundaries and pick first 2 good ones
+    sentences = re.split(r'(?<=[.!?])\s+', content)
+    good_sentences = [
+        s.strip() for s in sentences
+        if len(s.strip()) > 40 and not s.strip().startswith("http")
+    ]
 
     if good_sentences:
-        picked = ". ".join(good_sentences[:max_sentences])
+        picked = " ".join(good_sentences[:max_sentences])
         if not picked.endswith("."):
             picked += "."
         return picked[:500]
 
-    return content[:200].strip()
+    return (fallback_snippet or content[:200]).strip()
 
 
 def _deduplicate_articles(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
