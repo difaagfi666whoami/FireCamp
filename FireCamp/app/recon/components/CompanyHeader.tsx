@@ -1,7 +1,19 @@
 import { CompanyProfile } from "@/types/recon.types"
 import { Globe, Users, TrendingUp, MapPin, Building2 } from "lucide-react"
 
+function isZeroValue(v: string | number | null | undefined): boolean {
+  if (v === null || v === undefined || v === "") return true
+  const s = String(v).trim()
+  return s === "0" || s === "0%" || s === "0.0" || s === "0.0%"
+}
+
 export function CompanyHeader({ company }: { company: CompanyProfile }) {
+  const li = company.linkedin
+  const hasFollowers = !isZeroValue(li.followers)
+  const hasEmployees = !isZeroValue(li.employees)
+  const hasGrowth    = !isZeroValue(li.growth)
+  const hasLinkedIn  = hasFollowers || hasEmployees || hasGrowth
+
   return (
     <div className="bg-white border border-border/60 rounded-2xl p-6 shadow-sm">
       {/* Top: name + badges */}
@@ -21,10 +33,10 @@ export function CompanyHeader({ company }: { company: CompanyProfile }) {
             <div className="flex flex-wrap gap-2 mt-3">
               {[
                 { label: company.size },
-                { label: `Est. ${company.founded}` },
+                { label: company.founded ? `Est. ${company.founded}` : null },
                 { label: company.hq, icon: <MapPin className="w-3 h-3" /> },
-              ].map(b => (
-                <span key={b.label} className="inline-flex items-center gap-1 text-[12px] font-medium bg-muted border border-border/60 text-muted-foreground px-2.5 py-1 rounded-full">
+              ].filter(b => b.label).map(b => (
+                <span key={b.label!} className="inline-flex items-center gap-1 text-[12px] font-medium bg-muted border border-border/60 text-muted-foreground px-2.5 py-1 rounded-full">
                   {b.icon}{b.label}
                 </span>
               ))}
@@ -32,34 +44,44 @@ export function CompanyHeader({ company }: { company: CompanyProfile }) {
           </div>
         </div>
 
-        {/* LinkedIn stats */}
-        <div className="flex gap-0 rounded-xl border border-border/60 overflow-hidden shrink-0 bg-slate-50 divide-x divide-border/60">
-          <div className="px-5 py-3 text-center">
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Followers</p>
-            <p className="text-[16px] font-black text-foreground">{company.linkedin.followers}</p>
+        {/* LinkedIn stats — hanya tampil jika ada data non-zero */}
+        {hasLinkedIn && (
+          <div className="flex gap-0 rounded-xl border border-border/60 overflow-hidden shrink-0 bg-slate-50 divide-x divide-border/60">
+            {hasFollowers && (
+              <div className="px-5 py-3 text-center">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Followers</p>
+                <p className="text-[16px] font-black text-foreground">{li.followers}</p>
+              </div>
+            )}
+            {hasEmployees && (
+              <div className="px-5 py-3 text-center">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Karyawan</p>
+                <div className="flex items-center justify-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                  <p className="text-[16px] font-black text-foreground">{li.employees}</p>
+                </div>
+              </div>
+            )}
+            {hasGrowth && (
+              <div className="px-5 py-3 text-center">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">YoY Growth</p>
+                <div className="flex items-center justify-center gap-1 text-emerald-600">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <p className="text-[16px] font-black">{li.growth}</p>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="px-5 py-3 text-center">
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Karyawan</p>
-            <div className="flex items-center justify-center gap-1">
-              <Users className="w-3.5 h-3.5 text-muted-foreground" />
-              <p className="text-[16px] font-black text-foreground">{company.linkedin.employees}</p>
-            </div>
-          </div>
-          <div className="px-5 py-3 text-center">
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1">YoY Growth</p>
-            <div className="flex items-center justify-center gap-1 text-emerald-600">
-              <TrendingUp className="w-3.5 h-3.5" />
-              <p className="text-[16px] font-black">{company.linkedin.growth}</p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Description */}
+      {/* Description — scrollable untuk konten panjang */}
       {company.description && (
-        <p className="text-[13.5px] text-foreground/75 leading-relaxed mt-5 pt-5 border-t border-border/40">
-          {company.description}
-        </p>
+        <div className="mt-5 pt-5 border-t border-border/40 max-h-48 overflow-y-auto">
+          <p className="text-[13.5px] text-foreground/75 leading-relaxed whitespace-pre-line">
+            {company.description}
+          </p>
+        </div>
       )}
     </div>
   )

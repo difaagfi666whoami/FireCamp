@@ -99,3 +99,24 @@ Seluruh 6 halaman pipeline Campfire (Research Library, Recon, Match, Craft, Poli
 1. Jalankan `003_rls_recon.sql` di Supabase SQL Editor.
 2. Pastikan `NEXT_PUBLIC_USE_MOCK=false` di `.env.local`.
 3. Buka `/recon` → generate profil → klik "Simpan ke Database" → redirect ke `/research-library` → profil muncul dari database.
+
+---
+
+## Resilience Refactor — Pipeline & UI Hardening
+
+### Lane B — Fallback Kontak (`backend/app/services/lane_b_service.py`)
+- Tambah **Fallback Mechanism** setelah Tier 1–3 kosong: query luas `site:linkedin.com/in "{company_name}"` tanpa filter `_validate_contact_relevance`, ambil maksimal 2 kontak teratas.
+- Fallback contacts di-hardcode `prospectScore = 50` dan `reasoning = "Ditemukan dari pencarian luas (low confidence). Harap verifikasi manual."` — langsung dikembalikan tanpa AI scoring.
+- Tambah safety net post-scoring: jika semua kontak hasil AI memperoleh skor < 55 (terfilter), kembalikan raw_contacts dengan skor default 50 alih-alih array kosong.
+
+### Lane C — Fallback Berita Industri (`backend/app/services/lane_c_service.py`)
+- Tambah **Strategy 6** sebagai last-resort setelah Strategy 1–5 gagal.
+- Jika `industry_hint` tersedia dan terdeteksi industri → query `"{industry} Indonesia tren teknologi 2025"`.
+- Jika tidak ada industri terdeteksi → query generik `"bisnis Indonesia tren inovasi transformasi digital 2025"`.
+- Semua artikel dari Strategy 6 otomatis ditandai `is_industry_news = True` dan diberi prefix `[Industri]` di judul.
+
+### Frontend — CompanyHeader (`app/recon/components/CompanyHeader.tsx`)
+- Tambah fungsi `isZeroValue()` untuk mendeteksi nilai kosong/nol (`"0"`, `"0%"`, `0`, `null`, `""`).
+- **LinkedIn Stats block disembunyikan sepenuhnya** jika semua nilai (followers, employees, growth) adalah nol/kosong.
+- Setiap stat ditampilkan secara individual — hanya stat yang punya nilai non-zero yang di-render.
+- **Description** sekarang di-wrap dalam div `max-h-48 overflow-y-auto` agar dapat di-scroll jika konten panjang. Ditambah `whitespace-pre-line` untuk rendering baris baru dari AI output.

@@ -21,35 +21,26 @@
 ## Halaman Utama — Research Library
 
 ### Tujuan
-Halaman pertama yang dilihat user setelah login. Berisi semua profil perusahaan yang pernah di-riset dan disimpan. Menjadi "home base" sebelum memulai atau melanjutkan campaign apapun.
-
-### Trigger Masuk ke Halaman Ini
-- Setelah login
-- Setelah user klik "Simpan ke Database" di halaman Recon
-- Klik logo "Campfire" di sidebar
+Halaman pertama setelah login. Berisi semua profil perusahaan yang pernah di-riset dan disimpan.
 
 ### Tampilan
 
 **Header:**
 - Judul: "Research Library"
 - Subjudul: "Semua riset perusahaan tersimpan di satu tempat"
-- Tombol **[+ Recon Baru]** — navigasi ke `/recon`
+- Tombol **[+ Recon Baru]** → navigasi ke `/recon`
 
-**Grid Kartu Profil** (2 kolom):
+**Grid Kartu Profil (2 kolom):**
 Setiap kartu menampilkan:
-- Nama perusahaan (font weight 500)
+- Nama perusahaan
 - Industri · Lokasi
 - Tanggal disimpan
-- Jumlah pain points ditemukan (badge merah: "4 pain points")
-- Progress indicator campaign:
-  ```
-  Recon ✓ → Match ✓ → Craft ○ → Polish ○ → Launch ○ → Pulse ○
-  ```
-  (✓ = selesai, ○ = belum dimulai, ● = sedang berjalan)
-- Tombol **[Lanjutkan Campaign]** — navigasi ke tahap terakhir yang aktif
-- Tombol **[Lihat Profil]** — buka kembali halaman Recon profil tersebut
+- Badge: jumlah pain points ("4 pain points")
+- Badge mode riset: "Free" atau "Pro ✦"
+- Progress: `Recon ✓ → Match ✓ → Craft ○ → Polish ○ → Launch ○ → Pulse ○`
+- Tombol **[Lanjutkan Campaign]** dan **[Lihat Profil]**
 
-**Empty State** (belum ada profil):
+**Empty State:**
 ```
 Belum ada riset tersimpan.
 Mulai dengan melakukan Recon terhadap target perusahaan pertama kamu.
@@ -61,130 +52,197 @@ Mulai dengan melakukan Recon terhadap target perusahaan pertama kamu.
 ## Recon — Company Profiling
 
 ### Tujuan
-User memasukkan URL target company dan sistem menghasilkan profil riset lengkap dengan citation, kontak PIC, dan pain points.
+User memasukkan URL target company dan memilih mode riset. Sistem generate profil lengkap berbasis riset nyata.
 
 ### Input
 | Field | Type | Validasi |
 |---|---|---|
 | Company URL | text input | Format URL valid, tidak boleh kosong |
+| Recon Mode | toggle (Free / Pro) | Default: Free |
 
-### Proses Loading (2.5–3 detik, step by step)
+### Mode Selector UI
 ```
-Step 1: "Mengambil data LinkedIn via Proxycurl..."        (0.0–0.5s)
-Step 2: "Scanning website perusahaan via Firecrawl..."    (0.5–1.0s)
-Step 3: "Mencari kontak PIC yang relevan..."              (1.0–1.5s)
-Step 4: "Mengambil berita terkini via Tavily API..."      (1.5–2.0s)
-Step 5: "Menganalisis pain points dengan AI..."           (2.0–2.5s)
-Step 6: "Memfinalisasi profil & citation..."              (2.5–3.0s)
+┌──────────────────────────────────────────────┐
+│  Pilih mode riset:                           │
+│                                              │
+│  [  Free  ]  [  Pro ✦  ]                    │
+│                                              │
+│  Free: Hasil solid, cepat, hemat kredit      │
+│  Pro:  Deep research agentic, lebih dalam,   │
+│        konsumsi kredit lebih banyak          │
+└──────────────────────────────────────────────┘
 ```
 
-### Layout Halaman Output
+---
+
+### Free Mode
+
+**Kapan dipakai:** Eksplorasi awal, riset cepat, atau ketika target perusahaan tidak membutuhkan analisis sangat mendalam.
+
+**Proses Loading (5 steps, ~8–15 detik):**
+```
+Step 1: "Membaca website perusahaan..."
+Step 2: "Menjalankan riset multi-sudut..."
+Step 3: "Mencari berita & sinyal bisnis..."
+Step 4: "Menganalisis kontak dan pain points..."
+Step 5: "Menyusun profil final..."
+```
+
+**Sumber data yang digunakan:**
+- Tavily `/extract` (homepage + deteksi sub-pages)
+- Tavily `/search` (6 query per QueryAngle taxonomy)
+- Serper.dev (LinkedIn dorking — Tier 1 saja)
+- Serper.dev `/news` (multi-strategy fallback)
+- Jina Reader (1-2 artikel teratas)
+- GPT-4o-mini (gap analysis, query generation, distillation, contact scoring)
+- GPT-4o (final synthesis via Structured Output)
+
+**Output yang ditampilkan:**
+- Company Header Card (nama, industri, lokasi, badges)
+- Company Overview: paragraf 5-8 kalimat mendalam (bukan ringkasan generik)
+- Deep Insights: 5 item terstruktur dengan prefix label [IDENTITAS][PRODUK][DIGITAL][POSISI PASAR][VULNERABILITIES]
+- Pain Points: 3-4 item dengan severity, setiap item memiliki `sourceUrl` (citation klikabel) dan `sourceTitle`
+- Recent News: 3-4 artikel dengan summary, tanggal, sumber, dan link citation klikabel
+- Key Contacts PIC: 1-3 kontak dengan prospectScore dan reasoning outreach brief
+- Badge "Free" di header profil
+
+**Tidak ada di Free:**
+- Recursive gap-filling research (hanya 1 pass)
+- Sub-page scraping (/blog, /case-study, /team)
+- Cross-validation pain point citation
+- Confidence scoring per field
+
+---
+
+### Pro Mode ✦
+
+**Kapan dipakai:** Demo ke client, riset sebelum campaign penting, target perusahaan yang membutuhkan kedalaman enterprise-grade.
+
+**Proses Loading (8 steps, ~35–60 detik):**
+```
+Step 1: "Membaca website perusahaan secara mendalam..."
+Step 2: "Menjalankan riset multi-sudut (6 angle)..."
+Step 3: "Mengevaluasi celah informasi & menentukan riset lanjutan..."
+Step 4: "Menjalankan riset tambahan untuk area yang belum terjawab..."
+Step 5: "Mencari dan memverifikasi kontak PIC (3 tier)..."
+Step 6: "Menganalisis sinyal berita & implikasinya..."
+Step 7: "Cross-checking & validasi setiap citation pain point..."
+Step 8: "Menyusun profil final dengan analisis mendalam..."
+```
+
+**Sumber data yang digunakan:**
+- Semua yang ada di Free, ditambah:
+- Tavily `/extract` pada sub-pages (/about, /team, /blog, /case-study, /resources)
+- Serper.dev (LinkedIn dorking — 3 tier: C-suite + Director + Manager)
+- Serper.dev (3 contextual signal queries: regulatory, competitive, tech)
+- GPT-4o Confidence Evaluation (recursive gap-filling, max 2 iterasi)
+- GPT-4o Cross-Validation (eliminasi hallusinasi citation)
+
+**Output tambahan vs Free:**
+- Deep Insights: 7 item (5 standar + [KOMPETITOR] + [TECH ASSESSMENT])
+- Pain Points: 4-5 item, SEMUA harus ada `sourceUrl` yang valid (cross-validated)
+- News: 4-6 artikel, dengan badge `signal_type` (Regulasi / Kompetitor / Tech Shift)
+- Key Contacts PIC: 2-3 kontak, reasoning lebih detail (4 komponen outreach brief)
+- Badge "Pro ✦" di header profil
+
+---
+
+### Output Layout (sama untuk Free dan Pro)
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  COMPANY HEADER CARD (full width)                        │
-│  Nama · URL · Industri | LinkedIn stats | Badges         │
+│  Nama · URL · Industri | Badges | [Free] atau [Pro ✦]   │
 └─────────────────────────────────────────────────────────┘
 ┌──────────────────────────┐  ┌──────────────────────────┐
 │  KOLOM KIRI              │  │  KOLOM KANAN             │
 │                          │  │                          │
 │  [Company Overview]      │  │  [Key Contacts PIC]      │
-│  paragraf deskripsi      │  │  2–3 kontak tersimpan    │
+│  paragraf 5-8 kalimat    │  │  1–3 kontak PIC          │
 │                          │  │                          │
-│  [Pain Points]           │  │  [Recent News]           │
-│  list 4–5 pain point     │  │  2–3 artikel + links     │
-│  cards dengan severity   │  │                          │
+│  [Deep Insights]         │  │  [Recent News]           │
+│  5-7 item terstruktur    │  │  3-6 artikel + links     │
+│                          │  │                          │
+│  [Pain Points]           │  │                          │
+│  3-5 pain point cards    │  │                          │
+│  dengan severity +       │  │                          │
+│  citation link           │  │                          │
 └──────────────────────────┘  └──────────────────────────┘
 ```
 
-### Output — Company Header Card
-- Nama perusahaan (16px, weight 500)
-- URL · Industri (12px, muted)
-- Badges: ukuran karyawan, tahun berdiri, lokasi HQ
-- LinkedIn: followers, employees count, pertumbuhan YoY
-
-### Output — Company Overview
-Paragraf deskripsi 2–4 kalimat tentang perusahaan.
-
-### Output — Pain Points
-List kartu, maksimal 5 item, setiap kartu:
-- Kategori: Marketing / Operations / Technology / Growth
-- Deskripsi issue dengan angka spesifik (contoh: "1.2% vs rata-rata industri 3.5%")
-- Severity badge: `high` (merah) / `medium` (kuning) / `low` (abu)
-
-### Output — Key Contacts PIC *(FITUR BARU)*
-
-**Posisi:** Kolom kanan, paling atas, sebelum Recent News.
-
-**Tujuan:** Memberikan sales informasi langsung tentang siapa yang harus dihubungi — bukan hanya apa masalahnya, tapi siapa orangnya.
+### Output — Key Contacts PIC
 
 Setiap kontak menampilkan:
+| Field | Free | Pro |
+|---|---|---|
+| Nama lengkap | ✓ | ✓ |
+| Jabatan | ✓ | ✓ |
+| LinkedIn URL | ✓ (jika ada) | ✓ |
+| Email | Dari web search (mungkin kosong) | Dari web search (mungkin kosong) |
+| Prospect Score | ✓ (jika >= 55) | ✓ (jika >= 55) |
+| Reasoning — Mandate | ✓ (singkat) | ✓ (lengkap) |
+| Reasoning — Pain Ownership | ✓ | ✓ |
+| Reasoning — Hook | ✓ | ✓ |
+| Reasoning — Recency Signal | Tidak ada | ✓ |
+| Source badge | "via LinkedIn" | "via LinkedIn" |
+
+**Prospect Score:**
+- 80–100: badge hijau (decision maker utama — C-suite, VP, Director)
+- 55–79: badge kuning (influencer / champion)
+- < 55: kontak tidak ditampilkan di UI
+
+**Reasoning Format (wajib 4 komponen):**
+```
+[MANDATE] {apa yang sedang dikerjakan orang ini Q saat ini}
+[PAIN OWNERSHIP] {kategori pain yang dia miliki secara struktural}
+[HOOK] {opening conversation yang tepat — spesifik, tidak generik}
+[RECENCY] {sinyal bahwa orang ini masih bekerja di sana saat ini}
+```
+
+### Output — Pain Points
+
+Setiap pain point menampilkan:
 | Field | Keterangan |
 |---|---|
-| Nama lengkap | Bold, 13px |
-| Jabatan | Muted, 12px |
-| Email | Klikabel `mailto:`, warna biru |
-| Nomor telepon | Teks biasa, copy-able |
-| Prospect Score | Angka 0–100 dalam badge hijau/kuning |
-| Reasoning | 1 kalimat mengapa kontak ini relevan |
+| Kategori | Marketing / Operations / Technology / Growth — badge warna |
+| Issue | Kalimat lengkap dengan konteks spesifik (bukan bullet pendek) |
+| Severity | high / medium / low — menentukan warna card |
+| Source Citation | Link klikabel ke artikel/halaman sumber (`sourceUrl`) |
+| Source Title | Judul halaman sumber (`sourceTitle`) |
 
-**Prospect Score color:**
-- 80–100: badge hijau (decision maker utama)
-- 60–79: badge kuning (influencer, bukan decision maker)
-- Di bawah 60: tidak ditampilkan
+**Aturan citation:**
+- Jika `sourceUrl` tidak kosong: tampilkan sebagai `CitationLink` di bawah issue text
+- Jika `sourceUrl` kosong: tampilkan tanda "(tidak ada sumber)" dalam warna muted, dan severity paksa ke "low"
+- Tidak boleh tampilkan URL yang terlihat seperti hallusinasi (cek apakah domain valid)
 
-**Jumlah kontak:** minimal 2, maksimal 3 per profil.
-
-**Layout kartu kontak** (compact, horizontal):
-```
-┌─────────────────────────────────────────┐
-│  [Inisial]  Nama Lengkap      Score: 92 │
-│             VP of Marketing             │
-│  ✉ nama@company.com                     │
-│  📞 +62 812-xxxx-xxxx                   │
-│  "Decision maker untuk marketing budget"│
-└─────────────────────────────────────────┘
-```
-
-### Output — Recent News & Hot Issues *(PERUBAHAN)*
+### Output — Recent News
 
 Setiap news item:
-- Judul berita (bold, 12px)
-- Tanggal · Sumber
-- Summary 1–2 kalimat
-- **Link citation klikabel** — format: `[Baca artikel ↗](url)` yang buka tab baru
-  - Style: warna biru `var(--color-info)`, ada ikon ExternalLink (Lucide, 12px)
-  - Tooltip: "Buka artikel di tab baru"
-  - **Tidak ada badge "Sumber terverifikasi"** — digantikan sepenuhnya oleh link
+| Field | Keterangan |
+|---|---|
+| Judul | Bold, 1 baris |
+| signal_type badge | Hanya tampil jika bukan "direct" — badge abu-abu kecil: "Regulasi" / "Kompetitor" / "Tech Shift" |
+| Sumber · Tanggal | Muted text |
+| Summary | 2-4 kalimat — diambil dari Jina Reader (artikel teratas) atau Serper snippet |
+| Link citation | Wajib klikabel, buka tab baru |
 
 ### Aksi Tersedia
 - **[Export PDF]** — toast "PDF sedang disiapkan..."
-- **[Simpan ke Database]** — simpan profil, lalu **REDIRECT ke `/research-library`**
-  - Sebelum redirect: toast sukses "Profil disimpan ke Research Library"
-  - Di Research Library: kartu profil baru muncul paling atas dengan animasi subtle
-- **[Lanjut ke Match →]** — navigasi ke `/match` dengan data Recon ter-passing
+- **[Simpan ke Database]** → redirect ke `/research-library` dengan toast sukses
+- **[Lanjut ke Match →]** → navigasi ke `/match`
 
 ---
 
 ## Match — Product Matching
 
-### Tujuan
-Dua fungsi utama dalam satu halaman: (1) jalankan AI matching antara pain points company dengan product catalog, (2) kelola product catalog secara mandiri.
-
 ### Layout — Dua Tab
-
 ```
 [  Matching  ]  [  Katalog Produk  ]
 ```
 
----
-
 ### Tab 1: Matching
 
-#### Prerequisite
-Recon harus selesai. Jika belum: tampilkan state "Selesaikan Recon terlebih dahulu."
-
-#### Proses Loading (2–2.5 detik)
+**Proses Loading (5 steps):**
 ```
 Step 1: "Memuat pain points dari database..."
 Step 2: "Memuat product catalog & embeddings..."
@@ -193,134 +251,46 @@ Step 4: "Menghitung relevance score per produk..."
 Step 5: "Generating AI reasoning..."
 ```
 
-#### Output per Produk
+**Output per Produk:**
 1. Nama + tagline
-2. Match Score (0–100) dalam lingkaran: hijau ≥85, kuning 70–84
+2. Match Score (0–100): hijau ≥85, kuning 70–84
 3. Pain points yang diaddress (badge per kategori)
-4. AI Reasoning block — spesifik terhadap target company, ada referensi data dari profil
+4. AI Reasoning block (spesifik ke company target dan pain point konkret)
 5. Harga (format Rupiah)
 6. Badge "Direkomendasikan" untuk score tertinggi
 
-#### Aksi
-- **[Lanjut ke Craft →]**
+### Tab 2: Katalog Produk
 
----
-
-### Tab 2: Katalog Produk *(FITUR BARU)*
-
-#### Tujuan
-User bisa mengelola daftar produk yang tersedia untuk di-matching: tambah, edit, hapus, dan upload PDF brosur untuk ekstraksi otomatis.
-
-#### Layout Halaman Katalog
+**Header:**
 ```
-┌─────────────────────────────────────────────────────────┐
-│  [+ Tambah Produk Manual]    [Upload PDF / Dokumen]     │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│  DAFTAR PRODUK (list vertikal)                          │
-│  Setiap baris: nama · tagline · harga · [Edit] [Hapus]  │
-└─────────────────────────────────────────────────────────┘
+[+ Tambah Produk Manual]    [Upload PDF / Dokumen]
 ```
 
-#### Fitur: Tambah Produk Manual
-
-Klik tombol **[+ Tambah Produk Manual]** → buka modal/drawer dengan form:
-
+**Fitur: Tambah/Edit Produk (modal form):**
 | Field | Type | Keterangan |
 |---|---|---|
-| Nama produk | text | Wajib diisi |
-| Tagline | text | Maksimal 60 karakter |
-| Deskripsi lengkap | textarea | Minimal 50 karakter |
-| Harga | text | Format bebas, contoh: "Rp 8.500.000 / bulan" |
-| Pain categories addressed | multi-checkbox | Marketing / Operations / Technology / Growth |
-| USP (Unique Selling Points) | textarea | Poin-poin keunggulan, satu baris per poin |
+| Nama produk | text | Wajib |
+| Tagline | text | Maks 60 karakter |
+| Deskripsi | textarea | Min 50 karakter |
+| Harga | text | Format bebas |
+| Pain categories | multi-checkbox | Marketing/Operations/Technology/Growth |
+| USP | textarea | Satu baris per poin |
 
-Tombol di form:
-- **[Simpan Produk]** — primary button
-- **[Batal]** — close modal tanpa simpan
-
-Validasi: nama wajib, deskripsi minimal 50 karakter, minimal 1 pain category dipilih.
-
-#### Fitur: Edit Produk
-
-Klik **[Edit]** pada baris produk → buka modal yang sama dengan form pre-filled.
-Perubahan tersimpan setelah klik **[Simpan Perubahan]**.
-
-#### Fitur: Hapus Produk
-
-Klik **[Hapus]** → dialog konfirmasi:
+**Fitur: Upload PDF (drag & drop):**
 ```
-Hapus "CampaignAI Pro"?
-Produk yang dihapus tidak bisa dikembalikan.
-[Batal]  [Ya, Hapus]
-```
-
-#### Fitur: Upload PDF / Dokumen *(FITUR BARU)*
-
-**Tombol:** **[Upload PDF / Dokumen]** di header katalog.
-
-**Trigger:** Klik tombol → buka area upload.
-
-**Area Upload (Drag & Drop Zone):**
-```
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│     [ ikon upload ]                                     │
-│     Seret file ke sini, atau klik untuk pilih           │
-│     Mendukung: PDF, DOCX, PPT (maks. 10MB)              │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-**Setelah file di-drop / dipilih:**
-1. Tampilkan nama file + ukuran file
-2. Tombol **[Ekstrak Informasi Produk]** muncul
-
-**Proses Ekstraksi (Mock: 2 detik loading steps):**
-```
+Proses Ekstraksi (4 steps mock):
 Step 1: "Membaca dokumen..."
 Step 2: "Mengidentifikasi informasi produk..."
 Step 3: "Mengekstrak nama, harga, dan fitur..."
 Step 4: "Menyiapkan form review..."
 ```
-
-**Setelah ekstraksi selesai:**
-Buka modal "Review Hasil Ekstraksi" dengan form pre-filled dari hasil AI ekstraksi.
-User bisa koreksi sebelum simpan. Tombol **[Simpan ke Katalog]** di bawah form.
-
-**File yang bisa di-upload (mock accepts):** `.pdf`, `.docx`, `.pptx`
-**Ukuran maksimum:** 10MB
-**Validasi:** Jika file bukan format yang diterima → tampilkan error inline di drop zone.
-
-#### Tampilan List Produk
-
-Setiap baris produk di katalog:
-```
-┌────────────────────────────────────────────────────────────┐
-│  CampaignAI Pro                          [Edit]  [Hapus]   │
-│  AI-powered email campaign automation                      │
-│  Rp 8.500.000 / bulan  ·  Addresses: Marketing, Technology │
-└────────────────────────────────────────────────────────────┘
-```
-
-**Empty state katalog:**
-```
-Belum ada produk di katalog.
-Tambah produk secara manual atau upload dokumen produk untuk memulai.
-[+ Tambah Produk Manual]  [Upload Dokumen]
-```
+Setelah ekstraksi → buka modal review dengan form pre-filled.
 
 ---
 
 ## Craft — Campaign Generation
 
-### Tujuan
-AI generate rencana campaign email yang dipersonalisasi berdasarkan Recon dan Match.
-
-### Prerequisite
-Recon dan Match harus selesai.
-
-### Proses Loading (2.5–3 detik)
+**Proses Loading (6 steps):**
 ```
 Step 1: "Menganalisis profil perusahaan & pain points..."
 Step 2: "Memuat produk yang matched dan reasoning..."
@@ -330,110 +300,66 @@ Step 5: "Menyusun Email 3 — Urgency & close..."
 Step 6: "Finalisasi campaign plan & reasoning..."
 ```
 
-### Output
-
-**Campaign Reasoning Block:**
-- Mengapa jumlah email dan jarak waktu dipilih
-- Referensi ke data spesifik dari profil
-- Strategi per email
-
-**3 Email Cards:**
-| Field | Keterangan |
-|---|---|
-| Urutan | "Email 1", "Email 2", "Email 3" |
-| Hari kirim | "Hari ke-1", "Hari ke-4", "Hari ke-10" |
-| Subject | Spesifik, referensikan company atau news |
-| Body | Plain text, 150–250 kata, placeholder `[Nama]` |
-
-**Strategi:**
-- Email 1: Ice-breaker — referensi event terbaru, bukan pitch langsung
-- Email 2: Pain-focused — satu pain point operasional dengan angka
-- Email 3: Urgency & close — risiko bisnis, low-pressure closing
-
-### Aksi
-- **[Lanjut ke Polish →]**
+**Output:**
+- Campaign Reasoning Block
+- 3 Email Cards (subject, body, day label)
 
 ---
 
 ## Polish — Human in the Loop Editor
 
-### Tujuan
-Review, edit, dan approve semua email sebelum campaign dijalankan.
-
-### Fitur
-
-**Tone Selector:** Profesional / Friendly / Direct / Storytelling
-
-**Email Tabs:** Tab per email dengan dot hijau jika sudah di-approve.
-
-**Subject Line Editor:** Input text, full editable.
-
-**Body Editor:** Textarea multiline, min 300px, resizable.
-
-**Approve Button:**
-- Sebelum: `[Approve Email X]` (success)
-- Sesudah: badge "Email X diapprove" + border hijau
-
-**Lanjut Tombol:** Muncul HANYA setelah semua email di-approve.
-
-### Yang Tidak Ada di Polish
-- Tidak ada AI re-generate dari editor
-- Tidak ada collaborative editing
-- Tidak ada version history
+**Fitur:**
+- Tone Selector: Profesional / Friendly / Direct / Storytelling
+- Email Tabs (dengan dot hijau jika sudah approve)
+- Subject Line Editor (editable)
+- Body Editor (textarea, resizable)
+- Approve Button per email
+- Tombol lanjut muncul hanya setelah semua email di-approve
 
 ---
 
 ## Launch — Automation Process
 
-### Prerequisite
-Semua email di Polish harus di-approve.
+**Mode 1: One-click AI Automation**
+- Card AI Recommendation
+- Tombol [Aktifkan Automation]
+- Setelah aktif: dot hijau animasi, list jadwal non-editable
 
-### Mode 1: One-click AI Automation
-- Card AI Recommendation (reasoning jadwal)
-- Tombol **[Aktifkan Automation]**
-- Setelah aktif: indicator dot hijau animasi, list jadwal non-editable
-
-### Mode 2: Manual Scheduling
+**Mode 2: Manual Scheduling**
 - 3 baris jadwal dengan date picker + time picker
-- Validasi: email berikutnya tidak boleh sebelum email sebelumnya
-- Tombol **[Simpan Jadwal & Aktifkan]**
+- Validasi urutan tanggal
+- Tombol [Simpan Jadwal & Aktifkan]
 
 ---
 
 ## Pulse — Tracking & Analytics
 
-### Tampilan
-
-**4 Stat Cards:** Email dikirim · Open rate (+ benchmark) · Click rate (+ benchmark) · Reply rate (+ benchmark)
-
-**Bar Chart:** Performance per email (Opens/Clicks/Replies per Email 1-2-3)
-
-**Line Chart:** Engagement timeline per hari
-
-**Status List:** Per email dengan badge Replied > Opened > Sent
-
-**AI Token Usage Card:** Breakdown per tahap + estimasi biaya Rupiah
+**Tampilan:**
+- 4 Stat Cards: Email dikirim · Open rate (+ benchmark) · Click rate (+ benchmark) · Reply rate (+ benchmark)
+- Bar Chart: Performance per email
+- Line Chart: Engagement timeline
+- Status List per email
+- AI Token Usage Card (breakdown + estimasi Rupiah)
 
 ---
 
 ## Fitur Global
 
 ### Sidebar Navigation
-- Logo "Campfire" di atas (klik → ke /research-library)
-- Section "Target Aktif": nama company sedang aktif
-- Section navigasi: Research Library · Recon · Match · Craft · Polish · Launch · Pulse
+- Logo "Campfire" (klik → `/research-library`)
+- Section "Target Aktif"
+- Navigasi: Research Library · Recon · Match · Craft · Polish · Launch · Pulse
 - Footer: versi + "Demo · Mock Data"
 
 ### Progress Indicator
-Di atas content area:
 ```
 Recon ✓ → Match ✓ → Craft ● → Polish ○ → Launch ○ → Pulse ○
 ```
 
 ### Toast Notifications
-- Sukses: hijau tipis, 4 detik
-- Error: merah tipis, dismissable
-- Info: biru tipis, 4 detik
+- Sukses: hijau, 4 detik
+- Error: merah, dismissable
+- Info: biru, 4 detik
 
 ### Empty States
-Setiap section yang mungkin kosong wajib punya pesan informatif + call-to-action.
+Setiap section wajib punya empty state informatif + call-to-action.

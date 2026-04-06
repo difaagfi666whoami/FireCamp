@@ -1,5 +1,5 @@
 import { PainPoint } from "@/types/recon.types"
-import { Flame, AlertCircle, Minus } from "lucide-react"
+import { Flame, AlertCircle, Minus, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const SEVERITY_CONFIG = {
@@ -63,6 +63,21 @@ export function PainPointList({ painPoints }: { painPoints: PainPoint[] }) {
                   </span>
                 </div>
                 <p className="text-[13.5px] text-foreground/90 leading-snug">{pp.issue}</p>
+
+                {/* Citation link */}
+                {pp.sourceUrl && (
+                  <a
+                    href={pp.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 mt-2 text-[11.5px] text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                  >
+                    <ExternalLink className="w-3 h-3 shrink-0" />
+                    <span className="truncate max-w-[280px]">
+                      {pp.sourceTitle || pp.sourceUrl}
+                    </span>
+                  </a>
+                )}
               </div>
             </div>
           )

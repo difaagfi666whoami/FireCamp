@@ -8,19 +8,21 @@ Frontend memanggil endpoint menggunakan metode `fetch` secara *synchronous* saat
 
 ---
 
-## 1. Endpoint Recon — Generate Company Profile
+## 1. Endpoint Recon — Generate Company Profile (Two-Lane Architecture)
 **URL**: `POST /api/recon`
-**Tujuan**: Mengambil URL perusahaan dari user, melakukan *scraping/scraping AI*, mencari *pain points*, *news*, dan PIC.
+**Tujuan**: Mengambil URL perusahaan dari user beserta pilihan mode, lalu Backend melakukan *multi-step research* (Tavily), mencari kontak (Apollo/Apify), dan mensintesis hasilnya (Claude).
 
 ### 📥 Request Body
+Frontend harus selalu mengirimkan parameter `mode`.
 ```json
 {
-  "url": "https://example.com"
+  "url": "https://example.com",
+  "mode": "free" // atau "pro"
 }
 ```
 
 ### 📤 Response Body (200 OK)
-Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field wajib dikembalikan (meskipun `string` kosong atau array `[]` jika tidak ditemukan).
+Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field wajib dikembalikan (meskipun `string` kosong atau array `[]` jika tidak ditemukan). Khusus mode "Pro", struktur datanya akan jauh lebih mendalam, tetapi bentuk struktur JSON-nya tetap konsisten.
 
 ```json
 {
@@ -32,6 +34,7 @@ Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field waji
   "founded": "2015",
   "hq": "Jakarta Selatan",
   "description": "Deskripsi singkat mengenai perusahaan...",
+  "reconMode": "pro",
   "linkedin": {
     "followers": "10K",
     "employees": 120,
@@ -46,23 +49,24 @@ Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field waji
       "phone": "+62...",
       "linkedinUrl": "https://linkedin.com/in/...",
       "prospectScore": 85,
-      "reasoning": "Decision maker untuk marketing..."
+      "reasoning": "Decision maker terkuat untuk marketing budget perusahaan ini.",
+      "source": "apollo" // 'apollo' | 'apify' | 'web'
     }
   ],
   "painPoints": [
     {
       "category": "Marketing",
-      "issue": "Penjelasan pain point spesifik",
+      "issue": "Ketergantungan CPA tinggi, meningkat 15% Q/Q. Berdasarkan artikel terbaru, pertumbuhan lead mereka melambat.",
       "severity": "high" // 'high' | 'medium' | 'low'
     }
   ],
   "news": [
     {
-      "title": "Judul Berita",
+      "title": "Pendanaan Seri B Perusahaan",
       "date": "10 Jan 2026",
       "source": "Tech in Asia",
       "summary": "Ringkasan...",
-      "url": "https://..."
+      "url": "https://example.com/news-link"
     }
   ]
 }
@@ -73,7 +77,7 @@ Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field waji
 
 ## 2. Endpoint Match — Run AI Matching
 **URL**: `POST /api/match`
-**Tujuan**: Backend menerima profil perusahaan lengkap dari FE, lalu backend akan me-*load* seluruh produk dari DB/Katalog internalnya, dan me-*return* 3 rekomendasi *match* produk terbaik.
+**Tujuan**: Backend menerima profil perusahaan lengkap dari FE, lalu backend akan me-*load* seluruh produk dari DB/Katalog internalnya, dan me-*return* rekomendasi *match* produk terbaik.
 
 ### 📥 Request Body
 ```json
@@ -166,11 +170,11 @@ Mengembalikan struktur `Campaign` yang mendikte 3 `CampaignEmail` draft awal (se
 ---
 
 ## 🛡️ Aturan Error Handling Backend
-Jika AI Engine / Scraping gagal pada *step* apa pun, Backend **WAJIB** return HTTP code selain `2xx` (misal `400 Bad Request` atau `500 Internal Server Error`) dengan bentuk payload *error detail* sebagai berikut:
+Jika AI Engine / Scraping gagal pada *step* apa pun, Backend **WAJIB** mengeksekusi mekanisme fall-back (contoh: Apify dari Apollo). Apabila semuanya kritis, sistem me-*return* HTTP code selain `2xx` (misal `400 Bad Request` atau `502 Bad Gateway`) dengan bentuk payload *error detail* sebagai berikut:
 
 ```json
 {
-  "detail": "Pesan error spesifik dalam Bahasa Indonesia (ex: Proxycurl limit habis, atau Timeout)."
+  "detail": "Pesan error spesifik dalam Bahasa Indonesia (ex: Apollo API rate limit tercapai, atau URL Target tidak memiliki teks yang bisa dipelajari)."
 }
 ```
 *Frontend akan otomatis menangkap pesan `detail` ini dan me-rendernya di dalam Box Error Alert yang sudah disiapkan.*

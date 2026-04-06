@@ -26,6 +26,52 @@ Jangan buat data fiktif di dalam komponen. Jika butuh data baru, tambahkan ke `m
 
 ---
 
+## Recon Mode di Mock Data
+
+Di mock mode, kedua mode (Free dan Pro) return data yang sama dari `mockdata.json` (atau variasi `reconModePro`).
+Perbedaannya ada di **UI** — loading steps, source kontak, dan badge yang berbeda.
+
+```typescript
+// lib/api/recon.ts
+export async function generateReconProfile(
+  url: string,
+  mode: 'free' | 'pro' = 'free'
+): Promise<CompanyProfile> {
+  if (USE_MOCK) {
+    // Simulasi delay berbeda untuk tiap mode
+    const delay = mode === 'pro' ? 6000 : 3000
+    await new Promise(r => setTimeout(r, delay))
+    return { ...mockData.company, url, reconMode: mode } as CompanyProfile
+  }
+  return await fetch(`${API_URL}/api/recon`, {
+    method: 'POST',
+    body: JSON.stringify({ url, mode })
+  }).then(r => r.json())
+}
+```
+
+---
+
+## Cara Demo Dua Mode
+
+**Skenario demo yang disarankan:**
+
+1. **Demo Free mode** → input URL → pilih Free → generate (loading 4 steps ~3 detik)
+   - Tunjukkan profil dengan badge "Free"
+   - Kontak mungkin tidak punya email/telp (source: "web")
+   - Pain points 3–4 item
+
+2. **Demo Pro mode** → input URL yang sama → pilih Pro ✦ → generate (loading 8 steps ~6 detik)
+   - Tunjukkan profil dengan badge "Pro ✦" (warna purple)
+   - Kontak verified dari Apollo dengan prospect score dan reasoning
+   - Pain points 4–5 item, lebih detail
+   - News lebih banyak
+
+Untuk demo ini, keduanya return `mockData.company` yang sama.
+Perbedaan visual ada di loading animation dan badge saja.
+
+---
+
 ## Detail Struktur Per Milestone
 
 ### Research Library — `researchLibrary[]`
@@ -58,17 +104,19 @@ Untuk mock: cukup update state di React, tidak perlu persist ke localStorage.
 ```
 company
 ├── id, url, name, industry, size, founded, hq, description
+├── reconMode           string    — "free" | "pro" (BARU)
 ├── linkedin { followers, employees, growth }
 │
-├── contacts[]          ← BARU
+├── contacts[]
 │   ├── id              string
 │   ├── name            string    — nama lengkap
 │   ├── title           string    — jabatan
 │   ├── email           string    — format email valid, klikabel mailto:
 │   ├── phone           string    — format "+62 8XX-XXXX-XXXX"
 │   ├── linkedinUrl     string?   — opsional
-│   ├── prospectScore   number    — 0-100
-│   └── reasoning       string    — 1 kalimat, mengapa kontak ini relevan
+│   ├── prospectScore   number    — 0-100 (Pro: 60-100, Free: 0)
+│   ├── reasoning       string    — 1 kalimat (Pro), Kosong (Free)
+│   └── source          string    — "web" | "apollo" | "apify" (BARU)
 │
 ├── painPoints[]
 │   ├── category        "Marketing"|"Operations"|"Technology"|"Growth"
@@ -80,9 +128,9 @@ company
 │   ├── date            string    — "DD Mon YYYY"
 │   ├── source          string
 │   ├── summary         string    — 1-2 kalimat
-│   └── url             string    ← BARU — wajib ada, untuk citation link
+│   └── url             string    — wajib ada, untuk citation link
 │
-├── campaignProgress    ← BARU — untuk progress indicator
+├── campaignProgress
 │   └── { recon, match, craft, polish, launch, pulse } : boolean
 │
 └── createdAt, cachedAt
@@ -95,7 +143,6 @@ company
 
 **Tentang `news.url`:**
 Gunakan URL realistis tapi fiktif (format valid, tapi tidak harus bisa dibuka).
-Untuk demo, ini cukup — yang penting UI menampilkan link yang terlihat nyata.
 
 ---
 
@@ -119,11 +166,8 @@ productCatalog[]
 1. CampaignAI Pro (email automation)
 2. InsightDash (analytics)
 3. RetainIQ (churn prediction)
-4. LeadScan (lead enrichment)
+4. LeadScan (lead enrichment) (source: pdf)
 5. FlowDesk (sales workflow)
-
-Produk 1-3 adalah primary catalog, 4-5 adalah tambahan untuk demo CRUD.
-User bisa hapus produk 4-5 untuk demo delete, lalu tambah lagi untuk demo add.
 
 ---
 
@@ -139,8 +183,6 @@ matchingResults[]
 ```
 
 **Catatan:** Hanya 3 produk yang ada di matchingResults (prod-001, 002, 003).
-LeadScan dan FlowDesk tidak muncul di matching hasil karena score < 70 untuk profile ini.
-Ini realistis — tidak semua produk akan match untuk setiap company.
 
 ---
 
@@ -157,9 +199,7 @@ pdfExtractionMock
 ```
 
 **Cara pakai di UI:**
-Saat user upload PDF dan klik "Ekstrak" → setelah loading → tampilkan form pre-filled
-dari `pdfExtractionMock`. User bisa edit sebelum klik "Simpan ke Katalog".
-Tambahkan note kecil: "Confidence: 87% — harap review sebelum menyimpan."
+Saat user upload PDF dan klik "Ekstrak" → tampilkan form pre-filled.
 
 ---
 
@@ -178,10 +218,6 @@ campaign
     └── isApproved      boolean   — default: false
 ```
 
-**Perubahan dari versi sebelumnya:**
-- `dayLabel` sekarang "Hari ke-1", "Hari ke-4", "Hari ke-10" (Bahasa Indonesia)
-- Body email menggunakan "Campfire" (bukan "Antigravity")
-
 ---
 
 ### Analytics — `analytics.tokenUsage`
@@ -195,21 +231,17 @@ tokenUsage
 └── estimatedCostIDR number  — dalam Rupiah (12750)
 ```
 
-**Perubahan dari versi sebelumnya:**
-- Key diubah dari "profiling/matching/campaignGen" ke "recon/match/craft"
-- Konsisten dengan milestone naming baru
-
 ---
 
 ## Cara Ganti Target Company
 
 1. Update `company.*` — nama, industri, ukuran, dll.
-2. Update `company.contacts[]` — 2-3 kontak dengan email/phone format yang konsisten
-3. Update `company.painPoints[]` — pastikan ada angka konkret di setiap issue
+2. Update `company.contacts[]` — 2-3 kontak dengan source yang sesuai
+3. Update `company.painPoints[]` — pastikan ada angka konkret
 4. Update `company.news[]` — sesuaikan dengan company baru, pastikan `url` ada
-5. Update `matchingResults[].reasoning` — harus referensi data company baru
-6. Update `campaign.emails[].body` — pastikan nama company di body ikut diganti
-7. Update `researchLibrary[0]` — name, industry, hq harus konsisten dengan company
+5. Update `matchingResults[].reasoning` — referensi data company baru
+6. Update `campaign.emails[].body` — pastikan nama company di body ikut berubah
+7. Update `researchLibrary[0]` — konsisten dengan company
 
 ---
 
@@ -223,9 +255,6 @@ tokenUsage
 4. **Tambah manual** — isi form baru, simpan, lihat produk baru muncul di list
 5. **Upload PDF** — drag & drop file apapun ke drop zone, klik ekstrak,
    lihat form pre-filled dari `pdfExtractionMock`, edit dan simpan
-
-Untuk poin 5, file yang di-drop tidak perlu diproses — cukup tampilkan nama file
-dan langsung mock delay 2 detik sebelum show form pre-filled.
 
 ---
 
@@ -248,12 +277,18 @@ export const formatDate = (iso: string): string =>
     day: 'numeric', month: 'long', year: 'numeric'
   })
 
-// Prospect score color
-export const getProspectScoreColor = (score: number): string => {
-  if (score >= 80) return 'success'   // hijau
-  if (score >= 60) return 'warning'   // kuning
+// Prospect score variant
+export const getProspectScoreVariant = (score: number): 'success' | 'warning' | 'neutral' => {
+  if (score >= 80) return 'success'
+  if (score >= 60) return 'warning'
   return 'neutral'
 }
+
+// Recon mode badge
+export const getReconModeBadge = (mode: 'free' | 'pro') => ({
+  label: mode === 'pro' ? 'Pro ✦' : 'Free',
+  variant: mode === 'pro' ? 'pro' : 'neutral'
+})
 
 // Progress label
 export const getMilestoneLabel = (key: string): string => {

@@ -82,7 +82,12 @@
         "phone": "+62 812-3456-7890",
         "linkedinUrl": "https://linkedin.com/in/budisantoso",
         "prospectScore": 92,
-        "reasoning": "Decision maker langsung untuk marketing tech budget dan pemilihan vendor tools."
+        "reasoning": "Decision maker langsung untuk marketing tech budget dan pemilihan vendor tools.",
+        "source": "apify",
+        "location": "Jakarta Selatan, Indonesia",
+        "connections": "500+",
+        "about": "Berpengalaman 10+ tahun di digital marketing B2B dan B2C. Spesialis dalam growth hacking, marketing automation, dan membangun tim marketing high-performance untuk startup dan scale-up Indonesia.",
+        "roleDuration": "3 tahun 2 bulan"
       },
       {
         "id": "contact-002",
@@ -92,7 +97,12 @@
         "phone": "+62 878-9012-3456",
         "linkedinUrl": "https://linkedin.com/in/saridewidm",
         "prospectScore": 85,
-        "reasoning": "Operator harian yang langsung merasakan pain point email conversion dan manual reporting."
+        "reasoning": "Operator harian yang langsung merasakan pain point email conversion dan manual reporting.",
+        "source": "apify",
+        "location": "Jakarta, Indonesia",
+        "connections": "342",
+        "about": "Mengelola seluruh operasional digital marketing Kreasi Digital — dari SEO, paid social, hingga email campaign. Fokus pada peningkatan konversi dan efisiensi reporting.",
+        "roleDuration": "1 tahun 8 bulan"
       },
       {
         "id": "contact-003",
@@ -102,7 +112,12 @@
         "phone": "+62 856-7890-1234",
         "linkedinUrl": "https://linkedin.com/in/andiwijaya-cto",
         "prospectScore": 76,
-        "reasoning": "Gatekeeper teknis untuk integrasi CRM dan evaluasi platform baru."
+        "reasoning": "Gatekeeper teknis untuk integrasi CRM dan evaluasi platform baru.",
+        "source": "apify",
+        "location": "Tangerang Selatan, Indonesia",
+        "connections": "287",
+        "about": "CTO dengan background engineering 12 tahun. Memimpin transformasi infrastruktur teknologi dari monolith ke microservices. Aktif mengevaluasi SaaS tools untuk meningkatkan efisiensi operasional.",
+        "roleDuration": "2 tahun 5 bulan"
       }
     ],
 
@@ -153,6 +168,153 @@
       }
     ],
 
+    "campaignProgress": {
+      "recon": true,
+      "match": true,
+      "craft": false,
+      "polish": false,
+      "launch": false,
+      "pulse": false
+    },
+    "createdAt": "2026-04-04T06:00:00.000Z",
+    "cachedAt": "2026-04-04T06:00:00.000Z"
+  },
+
+  "reconModePro": {
+    "id": "profile-001",
+    "url": "kreasidigital.co.id",
+    "name": "PT Kreasi Digital Indonesia",
+    "industry": "E-commerce & Digital Retail",
+    "size": "250–500 karyawan",
+    "founded": "2015",
+    "hq": "Jakarta Selatan, Indonesia",
+    "description": "PT Kreasi Digital Indonesia adalah platform e-commerce dan retail digital terkemuka yang mengelola marketplace B2C dan B2B di kategori fashion, elektronik, dan lifestyle dengan lebih dari 2 juta pelanggan aktif di 15 kota besar Indonesia. Perusahaan baru saja menutup pendanaan Seri B senilai Rp 120 miliar pada Februari 2026 untuk mendorong ekspansi regional dan modernisasi infrastruktur teknologi. Tim marketing yang berjumlah 40+ orang mengelola 6 channel digital secara bersamaan tanpa platform terintegrasi, sehingga menyebabkan inefisiensi operasional yang signifikan. Dengan target 3 juta pengguna aktif di Q2 2026, tekanan untuk meningkatkan konversi dan retensi semakin tinggi di seluruh lini.",
+    "reconMode": "pro",
+    "linkedin": {
+      "followers": "12.4K",
+      "employees": 287,
+      "growth": "+23% YoY"
+    },
+    "contacts": [
+      {
+        "id": "contact-001",
+        "name": "Budi Santoso",
+        "title": "VP of Marketing",
+        "email": "budi.santoso@kreasidigital.co.id",
+        "phone": "+62 812-3456-7890",
+        "linkedinUrl": "https://linkedin.com/in/budisantoso",
+        "prospectScore": 92,
+        "reasoning": "Decision maker langsung untuk marketing tech budget — mengontrol anggaran Rp 2M+/bulan untuk vendor tools.",
+        "source": "apify",
+        "location": "Jakarta Selatan, Indonesia",
+        "connections": "500+",
+        "about": "Berpengalaman 10+ tahun di digital marketing B2B dan B2C. Spesialis dalam growth hacking, marketing automation, dan membangun tim marketing high-performance untuk startup dan scale-up Indonesia.",
+        "roleDuration": "3 tahun 2 bulan"
+      },
+      {
+        "id": "contact-002",
+        "name": "Sari Dewi Purnama",
+        "title": "Head of Digital Marketing",
+        "email": "sari.dewi@kreasidigital.co.id",
+        "phone": "+62 878-9012-3456",
+        "linkedinUrl": "https://linkedin.com/in/saridewidm",
+        "prospectScore": 85,
+        "reasoning": "Operator harian yang langsung merasakan pain point email conversion 1.2% dan memimpin inisiatif perbaikan KPI.",
+        "source": "apify",
+        "location": "Jakarta, Indonesia",
+        "connections": "342",
+        "about": "Mengelola seluruh operasional digital marketing Kreasi Digital — dari SEO, paid social, hingga email campaign. Fokus pada peningkatan konversi dan efisiensi reporting.",
+        "roleDuration": "1 tahun 8 bulan"
+      },
+      {
+        "id": "contact-003",
+        "name": "Andi Wijaya",
+        "title": "Chief Technology Officer",
+        "email": "andi.wijaya@kreasidigital.co.id",
+        "phone": "+62 856-7890-1234",
+        "linkedinUrl": "https://linkedin.com/in/andiwijaya-cto",
+        "prospectScore": 76,
+        "reasoning": "Gatekeeper teknis untuk evaluasi dan integrasi platform baru — aktif mencari solusi CRM sejak Q4 2025.",
+        "source": "apify",
+        "location": "Tangerang Selatan, Indonesia",
+        "connections": "287",
+        "about": "CTO dengan background engineering 12 tahun. Memimpin transformasi infrastruktur teknologi dari monolith ke microservices. Aktif mengevaluasi SaaS tools untuk meningkatkan efisiensi operasional.",
+        "roleDuration": "2 tahun 5 bulan"
+      }
+    ],
+    "painPoints": [
+      {
+        "category": "Marketing",
+        "issue": "Email conversion rate hanya 1.2% vs rata-rata industri 3.5% — kerugian estimasi Rp 4.8M/bulan dalam potensi revenue yang tidak terkonversi",
+        "severity": "high"
+      },
+      {
+        "category": "Operations",
+        "issue": "Manual reporting menyita 15+ jam/minggu (3 FTE × 5 jam) dari tim marketing, setara Rp 18–22 juta biaya tenaga kerja per bulan yang tidak produktif",
+        "severity": "high"
+      },
+      {
+        "category": "Technology",
+        "issue": "Tidak ada integrasi CRM dengan email platform — data tersebar di 4 sistem berbeda, menyebabkan customer journey gap dan duplikasi kontak sebesar 23%",
+        "severity": "medium"
+      },
+      {
+        "category": "Growth",
+        "issue": "Churn B2B meningkat 18% QoQ (dari 8% ke 9.4%) tanpa early warning system — potensi kehilangan Rp 2.1M ARR per kuartal jika tidak ditangani",
+        "severity": "high"
+      },
+      {
+        "category": "Marketing",
+        "issue": "CAC meningkat 34% YoY (dari Rp 85K ke Rp 114K per pelanggan baru) akibat targeting yang tidak presisi dan tidak adanya lead scoring otomatis",
+        "severity": "medium"
+      }
+    ],
+    "news": [
+      {
+        "title": "Kreasi Digital Raih Pendanaan Seri B Rp 120 Miliar",
+        "date": "15 Feb 2026",
+        "source": "Bisnis.com",
+        "summary": "Dana digunakan untuk ekspansi ke Sumatera dan Kalimantan serta peningkatan infrastruktur teknologi perusahaan.",
+        "url": "https://bisnis.com/read/20260215/kreasi-digital-seri-b"
+      },
+      {
+        "title": "Kolaborasi Strategis dengan Platform Logistik Terkemuka",
+        "date": "3 Jan 2026",
+        "source": "Katadata.co.id",
+        "summary": "Kemitraan ini memangkas biaya pengiriman hingga 30% dan mempercepat last-mile delivery ke seluruh Indonesia.",
+        "url": "https://katadata.co.id/startup/2026/01/03/kreasi-digital-logistik"
+      },
+      {
+        "title": "Target 3 Juta Pengguna Aktif di Q2 2026",
+        "date": "20 Des 2025",
+        "source": "TechCrunch ID",
+        "summary": "CEO menyatakan fokus pada retensi pelanggan existing sebelum akuisisi pelanggan baru secara agresif di semester kedua.",
+        "url": "https://id.techcrunch.com/2025/12/20/kreasi-digital-target-q2"
+      },
+      {
+        "title": "Kreasi Digital Luncurkan Program Loyalitas B2B Pertama di Indonesia",
+        "date": "10 Nov 2025",
+        "source": "DailySocial.id",
+        "summary": "Program ini menarget 5.000 merchant aktif dengan reward tier berbasis volume transaksi — respon langsung atas naiknya churn rate Q3 2025.",
+        "url": "https://dailysocial.id/post/kreasi-digital-loyalitas-b2b-2025"
+      },
+      {
+        "title": "VP Marketing Kreasi Digital Bicara Soal Krisis Konversi Email B2B",
+        "date": "5 Okt 2025",
+        "source": "MarkPlus.id",
+        "summary": "Budi Santoso mengakui conversion rate email internal masih jauh di bawah benchmark industri dan sedang mengevaluasi platform otomasi baru.",
+        "url": "https://markplus.id/article/kreasi-digital-email-conversion-crisis"
+      }
+    ],
+    "deepInsights": [
+      "Kreasi Digital baru saja menutup pendanaan Seri B Rp 120 miliar (Feb 2026) — ada anggaran baru yang siap dialokasikan untuk modernisasi marketing stack.",
+      "Email conversion rate internal hanya 1.2% vs benchmark industri 3.5%, diakui langsung oleh VP Marketing Budi Santoso di forum MarkPlus.id Oktober 2025.",
+      "Tim marketing 40+ orang mengelola 6 channel digital secara manual — setiap bulan membuang 15+ jam per orang hanya untuk agregasi laporan.",
+      "Churn B2B naik dari 8% menjadi 9.4% QoQ — perusahaan meluncurkan program loyalitas sebagai respons darurat, namun belum ada sistem early warning otomatis.",
+      "CAC meningkat 34% YoY (Rp 85K → Rp 114K) karena targeting belum dipersonalisasi dan tidak ada lead scoring, padahal target 3 juta user harus dicapai Q2 2026.",
+      "Kemitraan logistik baru memangkas biaya pengiriman 30% — sumber daya operasional sedang diprioritaskan ke logistik, bukan marketing tech.",
+      "CTO Andi Wijaya memimpin migrasi arsitektur ke microservices sejak 2024 — stack teknologi siap menerima integrasi API, mengurangi hambatan teknis."
+    ],
     "campaignProgress": {
       "recon": true,
       "match": true,

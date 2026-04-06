@@ -1,3 +1,5 @@
+export type ReconMode = 'free' | 'pro'
+
 export interface CompanyProfile {
   id: string
   url: string
@@ -7,6 +9,7 @@ export interface CompanyProfile {
   founded: string
   hq: string
   description: string
+  deepInsights?: string[]
   linkedin: {
     followers: string
     employees: number
@@ -16,6 +19,7 @@ export interface CompanyProfile {
   painPoints: PainPoint[]
   news: NewsItem[]
   campaignProgress: CampaignProgress
+  reconMode?: ReconMode
   createdAt: string
   cachedAt: string
 }
@@ -29,12 +33,19 @@ export interface PicContact {
   linkedinUrl?: string
   prospectScore: number
   reasoning: string
+  source?: 'web' | 'linkedin_public' | 'serper'
+  location?: string
+  connections?: string
+  about?: string
+  roleDuration?: string
 }
 
 export interface PainPoint {
   category: 'Marketing' | 'Operations' | 'Technology' | 'Growth'
   issue: string
   severity: 'high' | 'medium' | 'low'
+  sourceUrl?: string
+  sourceTitle?: string
 }
 
 export interface NewsItem {

@@ -7,6 +7,7 @@ import { TokenUsage } from '@/types/analytics.types'
 export const mockData = {
   researchLibrary: mockDataRaw.researchLibrary as any[],
   company: mockDataRaw.company as unknown as CompanyProfile,
+  reconModePro: mockDataRaw.reconModePro as unknown as CompanyProfile,
   productCatalog: mockDataRaw.productCatalog as unknown as ProductCatalogItem[],
   matchingResults: mockDataRaw.matchingResults as unknown as ProductMatch[],
   pdfExtractionMock: mockDataRaw.pdfExtractionMock as unknown as PdfExtractionResult,
