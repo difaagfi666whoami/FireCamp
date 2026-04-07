@@ -3,8 +3,8 @@
 import { useState, useRef, useMemo } from "react"
 import { Plus, MoreVertical, FileText, LayoutGrid, Folder, Search, Loader2, Trash2, AlertCircle } from "lucide-react"
 import { ProductCatalogItem } from "@/types/match.types"
-import { mockData } from "@/lib/mock/mockdata"
 import { useCatalog } from "@/hooks/use-catalog"
+import { extractFromPdfSteps } from "@/lib/api/pdf-extract"
 import { ProductFormModal } from "./ProductFormModal"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -21,6 +21,7 @@ export function ProductCatalogTab() {
   const [isModalOpen, setIsModalOpen]       = useState(false)
   const [editingProduct, setEditingProduct] = useState<ProductCatalogItem | null>(null)
   const [isExtracting, setIsExtracting]     = useState(false)
+  const [extractStep, setExtractStep]       = useState("")
   const [checkedIds, setCheckedIds]         = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery]       = useState("")
 
@@ -73,21 +74,28 @@ export function ProductCatalogTab() {
   const triggerPdfUpload = () => fileInputRef.current?.click()
 
   const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.[0]) return
+    const file = e.target.files?.[0]
+    if (!file) return
     setIsExtracting(true)
-    await new Promise(r => setTimeout(r, 2000))
-    const mock = mockData.pdfExtractionMock
-    await catalog.add({
-      name:           mock.extractedName,
-      tagline:        mock.extractedTagline,
-      description:    mock.extractedDescription,
-      price:          mock.extractedPrice,
-      usp:            mock.extractedUsp,
-      painCategories: [],
-      source:         "pdf",
-    })
-    setIsExtracting(false)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    setExtractStep("")
+    try {
+      const result = await extractFromPdfSteps(file, setExtractStep)
+      await catalog.add({
+        name:           result.extractedName,
+        tagline:        result.extractedTagline,
+        description:    result.extractedDescription,
+        price:          result.extractedPrice,
+        usp:            result.extractedUsp,
+        painCategories: [],
+        source:         "pdf",
+      })
+    } catch (err) {
+      console.error("[ProductCatalogTab] PDF extraction error:", err)
+    } finally {
+      setIsExtracting(false)
+      setExtractStep("")
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
   }
 
   const recentProducts = catalog.products.slice(0, 2)
@@ -155,7 +163,7 @@ export function ProductCatalogTab() {
             </div>
             {!isExtracting && <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5" />}
           </div>
-          <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? "Mengekstrak AI..." : "Ekstrak PDF Brosur"}</div>
+          <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? (extractStep || "Mengekstrak AI...") : "Ekstrak PDF Brosur"}</div>
           <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" onChange={handlePdfUpload} />
         </div>
 

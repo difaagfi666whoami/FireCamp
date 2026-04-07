@@ -168,7 +168,10 @@ export async function getResearchLibrary(): Promise<LibraryEntry[]> {
     throw new Error(error.message)
   }
 
-  if (!data || data.length === 0) return mockData.researchLibrary as LibraryEntry[]
+  if (!data || data.length === 0) {
+    if (USE_MOCK) return mockData.researchLibrary as LibraryEntry[]
+    return []
+  }
 
   return data.map((row: any) => ({
     id:             row.id,

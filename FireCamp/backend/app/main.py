@@ -15,6 +15,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routers import recon as recon_router
+from app.api.routers import match as match_router
+from app.api.routers import catalog as catalog_router
+from app.api.routers import craft as craft_router
 from app.core.config import settings
 
 # ─── Logging setup ────────────────────────────────────────────────────────────
@@ -60,10 +63,9 @@ app.add_middleware(
 # ─── Routers ──────────────────────────────────────────────────────────────────
 
 app.include_router(recon_router.router)
-
-# Placeholder untuk router Match dan Craft (akan ditambah nanti)
-# app.include_router(match_router.router)
-# app.include_router(craft_router.router)
+app.include_router(match_router.router)
+app.include_router(catalog_router.router)
+app.include_router(craft_router.router)
 
 # ─── Startup / Shutdown events ────────────────────────────────────────────────
 

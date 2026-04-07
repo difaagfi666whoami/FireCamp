@@ -1,40 +1,24 @@
 import { PdfExtractionResult } from "@/types/match.types"
-import { mockData } from "@/lib/mock/mockdata"
 
-// Strip quotes defensif — sama seperti di catalog.ts
 function stripQuotes(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
-const _mockRaw = stripQuotes(process.env.NEXT_PUBLIC_USE_MOCK ?? "true")
-const USE_MOCK = _mockRaw === "true"
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"
-
-// Debug log saat modul pertama kali di-load (tampil di browser console)
-if (typeof window !== "undefined") {
-  console.info(
-    `[Campfire/pdf-extract] mode = ${USE_MOCK ? "MOCK" : "LIVE"} | NEXT_PUBLIC_USE_MOCK = "${process.env.NEXT_PUBLIC_USE_MOCK}"`
-  )
-}
+const API_URL = stripQuotes(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
 
 // -----------------------------------------------------------------------------
 // extractFromPdf — single-call extraction
 // -----------------------------------------------------------------------------
 
 export async function extractFromPdf(file: File): Promise<PdfExtractionResult> {
-  if (USE_MOCK) {
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    return mockData.pdfExtractionMock
-  }
-
   const formData = new FormData()
   formData.append("file", file)
 
-  const res = await fetch(`${API_URL}/api/pdf-extract`, {
+  const res = await fetch(`${API_URL}/api/catalog/pdf-extract`, {
     method: "POST",
     body: formData,
   })
 
   if (!res.ok) {
-    throw new Error(`PDF extraction failed: ${res.status} ${res.statusText}`)
+    const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }))
+    throw new Error(err.detail || `PDF extraction failed: ${res.status}`)
   }
 
   return res.json() as Promise<PdfExtractionResult>
@@ -44,30 +28,25 @@ export async function extractFromPdf(file: File): Promise<PdfExtractionResult> {
 // extractFromPdfSteps — step-by-step version for loading animation
 // -----------------------------------------------------------------------------
 
-const MOCK_STEPS = [
-  "Membaca dokumen...",
+const STEPS = [
+  "Mengunggah dokumen...",
+  "Membaca teks PDF...",
   "Mengidentifikasi informasi produk...",
-  "Mengekstrak nama, harga...",
+  "Mengekstrak nama, harga, dan USP...",
 ]
 
 export async function extractFromPdfSteps(
+  file: File,
   onStep: (step: string) => void
 ): Promise<PdfExtractionResult> {
-  if (USE_MOCK) {
-    for (const step of MOCK_STEPS) {
-      onStep(step)
-      await new Promise((resolve) => setTimeout(resolve, 500))
-    }
-    return mockData.pdfExtractionMock
+  // Kick off the API call immediately (non-blocking)
+  const apiPromise = extractFromPdf(file)
+
+  // Animate steps while waiting
+  for (const step of STEPS) {
+    onStep(step)
+    await new Promise<void>((resolve) => setTimeout(resolve, 600))
   }
 
-  // Live mode — call onStep first, then POST to backend (Phase 2)
-  onStep("Mengunggah dokumen...")
-  const res = await fetch(`${API_URL}/api/pdf-extract`, { method: "POST" })
-
-  if (!res.ok) {
-    throw new Error(`PDF extraction failed: ${res.status} ${res.statusText}`)
-  }
-
-  return res.json() as Promise<PdfExtractionResult>
+  return apiPromise
 }

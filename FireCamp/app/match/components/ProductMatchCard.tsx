@@ -1,7 +1,15 @@
 import { ProductMatch } from "@/types/match.types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Edit2, Trash2 } from "lucide-react"
+import { Edit2, Trash2, Target, Lightbulb, CheckCircle2 } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 export function ProductMatchCard({ match }: { match: ProductMatch & { painPointTargeted?: string, usp?: string[] } }) {
   const scoreColor = match.matchScore >= 90 ? "stroke-success text-success" 
@@ -63,9 +71,79 @@ export function ProductMatchCard({ match }: { match: ProductMatch & { painPointT
           </div>
         </div>
 
-        <Button variant="outline" className="w-full font-semibold border-border/80 shadow-sm">
-          View Details
-        </Button>
+        <Dialog>
+          <DialogTrigger render={<Button variant="outline" className="w-full font-semibold border-border/80 shadow-sm" onClick={(e) => e.stopPropagation()} />}>
+            View Details
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-3xl md:max-w-4xl w-[90vw] max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-1">
+                <div className={`px-2.5 py-1 text-xs font-bold rounded-full ${scoreColor.split(' ')[1]} bg-muted/30 border border-muted`}>
+                  {match.matchScore}% Cocok
+                </div>
+                {match.isRecommended && (
+                  <div className="px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                    ★ Direkomendasikan
+                  </div>
+                )}
+              </div>
+              <DialogTitle className="text-2xl font-bold">{match.name}</DialogTitle>
+              <DialogDescription className="text-base mt-2 font-medium">
+                {match.tagline || match.description || "Solusi yang ditargetkan untuk kebutuhan perusahaan."}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6 py-4">
+              {/* AI Reasoning */}
+              <div className="space-y-3">
+                <h4 className="flex items-center gap-2 font-bold text-foreground">
+                  <Lightbulb className="w-5 h-5 text-brand" />
+                  Analisis AI (Reasoning)
+                </h4>
+                <div className="bg-muted/40 border border-border/60 rounded-xl p-4 text-[14px] leading-relaxed text-muted-foreground">
+                  {match.reasoning || "Tidak ada detail analisis spesifik yang disediakan untuk produk ini."}
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Pain Points Targeted */}
+                <div className="space-y-3">
+                  <h4 className="flex items-center gap-2 font-bold text-foreground">
+                    <Target className="w-4 h-4 text-destructive" />
+                    Targeted Pain Points
+                  </h4>
+                  <div className="space-y-2">
+                    {(match.painPointTargeted ? match.painPointTargeted.split(' & ') : []).map((point, idx) => (
+                      <div key={idx} className="flex gap-2 text-[13px] text-muted-foreground bg-destructive/5 rounded-lg p-3 border border-destructive/10">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-destructive/70 mt-0.5" />
+                        <span>{point}</span>
+                      </div>
+                    ))}
+                    {(!match.painPointTargeted || match.painPointTargeted.length === 0) && (
+                      <p className="text-[13px] text-muted-foreground italic">Tidak ada pain point terdeteksi.</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* USPs */}
+                <div className="space-y-3">
+                  <h4 className="flex items-center gap-2 font-bold text-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-success" />
+                    Unique Selling Propositions
+                  </h4>
+                  <div className="space-y-2">
+                    {(match.usp && match.usp.length > 0 ? match.usp : ["-"]).map((usp, idx) => (
+                      <div key={idx} className="flex gap-2 text-[13px] text-foreground font-medium bg-success/5 rounded-lg p-3 border border-success/10">
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-success mt-0.5" />
+                        <span>{usp}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

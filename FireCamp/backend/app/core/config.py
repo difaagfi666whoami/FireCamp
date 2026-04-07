@@ -34,11 +34,24 @@ class Settings(BaseSettings):
     NEXT_PUBLIC_USE_MOCK: str = "true"
     NEXT_PUBLIC_DEFAULT_RECON_MODE: str = "free"
 
+    # ── Supabase ──────────────────────────────────────────────────────────────
+    NEXT_PUBLIC_SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
+
     # ── External APIs ─────────────────────────────────────────────────────────
     TAVILY_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     SERPER_API_KEY: str = ""
     JINA_API_KEY: str = ""
+
+    @field_validator("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", mode="before")
+    @classmethod
+    def strip_quotes(cls, v: object) -> str:
+        """Strip surrounding quotes dari value .env.local."""
+        s = str(v).strip()
+        if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+            return s[1:-1]
+        return s
 
     @field_validator("NEXT_PUBLIC_USE_MOCK", mode="before")
     @classmethod

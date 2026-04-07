@@ -22,6 +22,7 @@ async def search_serper(
     query: str,
     endpoint: str = "search",
     num: int = 5,
+    tbs: str | None = None,
 ) -> dict[str, Any]:
     """
     Kirim query ke Serper.dev (Google Search API gratis).
@@ -30,6 +31,7 @@ async def search_serper(
         query:    String pencarian.
         endpoint: "search" untuk pencarian umum, "news" untuk berita.
         num:      Jumlah hasil yang diminta.
+        tbs:      Time Binding Search — filter waktu Google (contoh: "qdr:y" = 1 tahun, "qdr:m" = 1 bulan).
 
     Returns:
         dict JSON response dari Serper, atau {} jika gagal.
@@ -43,7 +45,9 @@ async def search_serper(
         "X-API-KEY": settings.SERPER_API_KEY,
         "Content-Type": "application/json",
     }
-    payload = {"q": query, "num": num, "gl": "id", "hl": "id"}
+    payload: dict[str, Any] = {"q": query, "num": num, "gl": "id", "hl": "id"}
+    if tbs:
+        payload["tbs"] = tbs
 
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:

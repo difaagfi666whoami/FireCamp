@@ -51,7 +51,7 @@ export function usePdfUpload() {
     setIsExtracting(true)
     setError(null)
     try {
-      const result = await extractFromPdfSteps(() => {})
+      const result = await extractFromPdfSteps(file, () => {})
       setExtractionResult(result)
       return result
     } catch (err) {

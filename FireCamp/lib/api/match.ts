@@ -53,7 +53,8 @@ export async function saveCampaignAndMatching(
   companyId: string,
   selectedProductId: string,
   selectedProductName: string,
-  matchResults: RawMatchResult[]
+  matchResults: RawMatchResult[],
+  existingCampaignId?: string | null
 ): Promise<string> {
   if (!UUID_RE.test(companyId)) {
     throw new Error(`[Campfire/match] companyId bukan UUID valid: "${companyId}". Simpan profil recon terlebih dahulu.`)
@@ -61,30 +62,58 @@ export async function saveCampaignAndMatching(
 
   const isRealUuid = UUID_RE.test(selectedProductId)
 
-  const { data: campaign, error: campaignErr } = await supabase
-    .from("campaigns")
-    .insert({
-      company_id:            companyId,
-      selected_product_id:   isRealUuid ? selectedProductId : null,
-      status:                "draft",
-      automation_mode:       "ai",
-    })
-    .select("id")
-    .single()
+  // 1. Simpan atau perbarui Campaign
+  let finalCampaignId = existingCampaignId ?? null
 
-  if (campaignErr) {
-    console.error("[Campfire/match] insert campaign:", campaignErr)
-    throw new Error(campaignErr.message)
+  if (finalCampaignId && UUID_RE.test(finalCampaignId)) {
+    // Coba update data yang sudah ada
+    const { data: updated, error: updateErr } = await supabase
+      .from("campaigns")
+      .update({
+        selected_product_id: isRealUuid ? selectedProductId : null,
+      })
+      .eq("id", finalCampaignId)
+      .select("id")
+      .single()
+
+    if (updateErr || !updated) {
+      console.warn("[Campfire/match] Update campaign gagal, fallback insert baru", updateErr)
+      finalCampaignId = null
+    }
   }
 
-  const campaignId: string = campaign.id
+  if (!finalCampaignId) {
+    // Insert baru
+    const { data: campaign, error: campaignErr } = await supabase
+      .from("campaigns")
+      .insert({
+        company_id:            companyId,
+        selected_product_id:   isRealUuid ? selectedProductId : null,
+        status:                "draft",
+        automation_mode:       "ai",
+      })
+      .select("id")
+      .single()
 
-  if (matchResults.length) {
+    if (campaignErr) {
+      console.error("[Campfire/match] insert campaign:", campaignErr)
+      throw new Error(campaignErr.message)
+    }
+    finalCampaignId = campaign.id
+  }
+
+  // 2. Bersihkan dan masukkan ulang Matching Results (HANYA PRODUK TERPILIH)
+  const filteredMatches = matchResults.filter(m => m.productId === selectedProductId)
+
+  if (filteredMatches.length > 0) {
+    // Hapus sisa-sisa hasil terdahulu dari ID campaign ini agar tidak ganda
+    await supabase.from("matching_results").delete().eq("campaign_id", finalCampaignId)
+
     const { error: matchErr } = await supabase
       .from("matching_results")
       .insert(
-        matchResults.map(m => ({
-          campaign_id:            campaignId,
+        filteredMatches.map(m => ({
+          campaign_id:            finalCampaignId,
           product_id:             UUID_RE.test(m.productId) ? m.productId : null,
           match_score:            m.matchScore,
           addressed_pain_indices: m.addressedPainIndices,
@@ -98,5 +127,5 @@ export async function saveCampaignAndMatching(
     }
   }
 
-  return campaignId
+  return finalCampaignId!
 }

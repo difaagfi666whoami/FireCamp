@@ -210,19 +210,19 @@ def _is_relevant_article(article: dict[str, Any], company_name: str, domain: str
     return False
 
 
-async def _try_serper_news(query: str, label: str) -> list[dict[str, Any]]:
-    """Coba satu query ke Serper /news, return list artikel mentah."""
-    logger.info("[lane_c] %s | query=%r", label, query[:80])
-    data = await search_serper(query, endpoint="news", num=6)
+async def _try_serper_news(query: str, label: str, tbs: str | None = "qdr:y") -> list[dict[str, Any]]:
+    """Coba satu query ke Serper /news dengan limit 1 tahun terakhir (qdr:y) secara default."""
+    logger.info("[lane_c] %s | query=%r tbs=%s", label, query[:80], tbs)
+    data = await search_serper(query, endpoint="news", num=6, tbs=tbs)
     articles = data.get("news", [])
     logger.info("[lane_c] %s | results=%d", label, len(articles))
     return articles
 
 
-async def _try_serper_search_as_news(query: str) -> list[dict[str, Any]]:
-    """Fallback: Serper /search biasa + filter domain media Indonesia."""
-    logger.info("[lane_c] fallback_search | query=%r", query[:80])
-    data = await search_serper(query, endpoint="search", num=10)
+async def _try_serper_search_as_news(query: str, tbs: str | None = "qdr:y") -> list[dict[str, Any]]:
+    """Fallback: Serper /search biasa + filter domain media Indonesia (limit 1 tahun terakhir)."""
+    logger.info("[lane_c] fallback_search | query=%r tbs=%s", query[:80], tbs)
+    data = await search_serper(query, endpoint="search", num=10, tbs=tbs)
     organic = data.get("organic", [])
 
     news_domains = {
@@ -241,6 +241,28 @@ async def _try_serper_search_as_news(query: str) -> list[dict[str, Any]]:
 
     logger.info("[lane_c] fallback_search | news_like=%d", len(news_like))
     return news_like
+
+
+async def _try_serper_search_intent(query: str, tbs: str | None = "qdr:m") -> list[dict[str, Any]]:
+    """Cari sinyal rekrutmen via Google Search organik (default 1 bulan terakhir)."""
+    logger.info("[lane_c] intent_search | query=%r tbs=%s", query[:80], tbs)
+    data = await search_serper(query, endpoint="search", num=10, tbs=tbs)
+    organic = data.get("organic", [])
+
+    intent_domains = {
+        "linkedin.com/jobs", "glints.com", "jobstreet.co.id",
+        "kalibrr.com", "techinasia.com/jobs",
+    }
+
+    intent_like: list[dict[str, Any]] = []
+    for item in organic:
+        link = item.get("link", "").lower()
+        if any(d in link for d in intent_domains):
+            item["_signal_type"] = "intent"
+            intent_like.append(item)
+
+    logger.info("[lane_c] intent_search | intent_like=%d", len(intent_like))
+    return intent_like
 
 
 async def _enrich_with_jina(articles: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[str]]:
@@ -309,7 +331,8 @@ async def _extract_news_signals(
                             "yang relevan untuk tim sales yang menargetkan perusahaan tersebut. "
                             "Balas JSON: {event_summary, implied_challenge, pain_category, signal_type} "
                             "pain_category harus salah satu dari: Marketing, Operations, Technology, Growth. "
-                            "signal_type harus salah satu dari: direct, regulatory, competitive, technology."
+                            "signal_type harus salah satu dari: direct, regulatory, competitive, technology, intent. "
+                            "Jika ada penanda [LOWONGAN PEKERJAAN], simpulkan implikasi bisnis dari mengapa mereka butuh posisi tersebut (misal: perlu ekspansi besar, transisi teknologi, dll)."
                         ),
                     },
                     {
@@ -416,6 +439,21 @@ async def run_lane_c_news(
     raw_articles: list[dict[str, Any]] = []
     is_industry_news = False
 
+    # ── Strategy 0: Intent Signals (Kebutuhan SDM / Ekspansi) ─────────────────
+    query_intent = (
+        f'site:linkedin.com/jobs OR site:glints.com/id/opportunities '
+        f'OR site:jobstreet.co.id "{company_name}"'
+    )
+    logger.info("[lane_c] strategy0_intent | query=%r", query_intent)
+    intent_raw = await _try_serper_search_intent(query_intent, tbs="qdr:m")
+    intent_raw = [a for a in intent_raw if _is_relevant_article(a, company_name, domain)]
+    saved_intents: list[dict[str, Any]] = []
+    if intent_raw:
+        for item in intent_raw:
+            original_snippet = item.get("snippet", "")
+            item["snippet"] = f"[LOWONGAN PEKERJAAN] {original_snippet}"
+        saved_intents.extend(intent_raw[:2])
+
     # ── Strategy 1: Serper /news dengan nama lengkap ──────────────────────────
     raw_articles = await _try_serper_news(
         f'"{company_name}"', "strategy1_news_full"
@@ -464,10 +502,11 @@ async def run_lane_c_news(
         if raw_articles:
             is_industry_news = True
 
-    if not raw_articles:
+    if not raw_articles and not saved_intents:
         logger.warning("[lane_c] SEMUA strategy gagal untuk %r — 0 berita", company_name)
         return [], []
 
+    raw_articles = saved_intents + raw_articles
     # ── Deduplikasi & ambil top 4 ─────────────────────────────────────────────
     unique_articles = _deduplicate_articles(raw_articles)[:4]
     logger.info(

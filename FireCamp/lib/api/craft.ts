@@ -1,11 +1,9 @@
 import { CompanyProfile } from "@/types/recon.types"
 import { ProductCatalogItem } from "@/types/match.types"
 import { Campaign } from "@/types/craft.types"
-import { mockData } from "@/lib/mock/mockdata"
 import { supabase } from "@/lib/supabase/client"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
-const USE_MOCK = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") === "true"
 const API_URL  = sq(process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000")
 
 // -----------------------------------------------------------------------------
@@ -16,8 +14,6 @@ export async function generateCampaign(
   companyProfile: CompanyProfile,
   selectedProduct: ProductCatalogItem
 ): Promise<Campaign> {
-  if (USE_MOCK) return mockData.campaign as unknown as Campaign
-
   const res = await fetch(`${API_URL}/api/craft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

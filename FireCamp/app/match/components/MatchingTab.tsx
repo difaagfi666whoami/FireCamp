@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Play, ArrowRight, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { mockData } from "@/lib/mock/mockdata"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { ProductMatchCard } from "./ProductMatchCard"
 import { cn } from "@/lib/utils"
@@ -22,33 +21,39 @@ const MATCHING_STEPS = [
   "Menyusun argumentasi value proposition..."
 ]
 
-const SESSION_KEY   = "campfire_match_done"
-const PRODUCT_KEY   = "campfire_selected_product"
-
-function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
-const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
-
-// Ambil company profile yang disimpan setelah Recon generate
-function getStoredProfile(): any {
-  return session.getReconProfile() ?? mockData.company
-}
+const SESSION_KEY = "campfire_match_done"
+const PRODUCT_KEY = "campfire_selected_product"
 
 export function MatchingTab() {
   const router = useRouter()
 
-  const [isMatching, setIsMatching] = useState(false)
-  const [currentStep, setCurrentStep] = useState(0)
-  const [hasMatched, setHasMatched]   = useState(false)   // false = SSR-safe
-  const [selectedId, setSelectedId]   = useState<string | null>(null)  // null = SSR-safe
-  const [realMatches, setRealMatches] = useState<ProductMatch[]>([])
+  const [isMatching, setIsMatching]     = useState(false)
+  const [currentStep, setCurrentStep]   = useState(0)
+  const [hasMatched, setHasMatched]     = useState(false)   // false = SSR-safe
+  const [selectedId, setSelectedId]     = useState<string | null>(null)  // null = SSR-safe
+  const [realMatches, setRealMatches]   = useState<ProductMatch[]>([])
   const [isProceeding, setIsProceeding] = useState(false)
+  const [companyProfile, setCompanyProfile] = useState<any>(null)
+  const [companyName, setCompanyName]   = useState<string>("")
 
-  // ─── Mount: restore from sessionStorage (client-only) ───────────────────
+  // ─── Mount: restore from sessionStorage (client-only) ────────────────────
 
   useEffect(() => {
     if (sessionStorage.getItem(SESSION_KEY) === "1") setHasMatched(true)
     const saved = sessionStorage.getItem(PRODUCT_KEY)
     if (saved) setSelectedId(saved)
+    const savedMatches = sessionStorage.getItem("campfire_match_results")
+    if (savedMatches) {
+      try { setRealMatches(JSON.parse(savedMatches)) } catch (e) {}
+    }
+  }, [])
+
+  useEffect(() => {
+    const profile = session.getReconProfile()
+    if (profile) {
+      setCompanyProfile(profile)
+      setCompanyName(profile.name ?? "")
+    }
   }, [])
 
   const handleSelectProduct = (id: string) => {
@@ -57,37 +62,21 @@ export function MatchingTab() {
     session.setSelectedProductId(id)
   }
 
-  // ─── Compute display matches ────────────────────────────────────────────────
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const companyProfile = useMemo(() => IS_LIVE ? getStoredProfile() : mockData.company, [])
-  const companyName = session.getReconProfile()?.name ?? mockData.company.name
+  // ─── Compute display matches ──────────────────────────────────────────────
 
   const matches = useMemo(() => {
-    if (IS_LIVE && hasMatched) {
-      return realMatches.map((m: ProductMatch) => ({
-        ...m,
-        id: m.id,
-        painPointTargeted: m.addressedPainIndices
-          .map(idx => companyProfile?.painPoints?.[idx]?.issue ?? "")
-          .filter(Boolean)
-          .join(" & "),
-      }))
-    }
-    return mockData.matchingResults.map((match: any) => {
-      const product = mockData.productCatalog.find((p: any) => p.id === match.productId)
-      const pains   = match.addressedPainIndices.map((idx: number) => mockData.company.painPoints[idx]?.issue)
-      return {
-        ...product,
-        ...match,
-        id: match.productId,
-        name: product?.name || "Unknown Product",
-        painPointTargeted: pains.join(" & "),
-      }
-    })
+    if (!hasMatched || !realMatches.length) return []
+    return realMatches.map((m: ProductMatch) => ({
+      ...m,
+      id: m.id,
+      painPointTargeted: m.addressedPainIndices
+        .map(idx => companyProfile?.painPoints?.[idx]?.issue ?? "")
+        .filter(Boolean)
+        .join(" & "),
+    }))
   }, [hasMatched, realMatches, companyProfile])
 
-  // ─── Proceed to Craft ───────────────────────────────────────────────────────
+  // ─── Proceed to Craft ─────────────────────────────────────────────────────
 
   const handleProceedToCraft = async () => {
     if (!selectedId || isProceeding) return
@@ -96,7 +85,7 @@ export function MatchingTab() {
       let companyId = session.getCompanyId()
       console.log("[Debug] Current Company ID:", companyId)
 
-      if (IS_LIVE && !session.isValidUuid(companyId ?? "")) {
+      if (!session.isValidUuid(companyId ?? "")) {
         toast.error("Simpan profil di Recon terlebih dahulu.", {
           description: "Company ID tidak valid. Klik 'Simpan ke Database' di halaman Recon."
         })
@@ -108,67 +97,69 @@ export function MatchingTab() {
       // Update progress di Supabase (non-blocking)
       updateCompanyProgress(companyId!, "match").catch(console.error)
 
-      const selectedMatch  = matches.find(m => m.id === selectedId)
-      const selectedName   = selectedMatch?.name ?? selectedId
+      // Upsert mock product to Supabase to get a real UUID
+      let realSelectedId = selectedId
+      if (!session.isValidUuid(selectedId)) {
+        // AI matched a non-UUID product (still using legacy backend JSON logic)
+        const productFromMatch = matches.find(m => m.id === selectedId)
+        
+        if (productFromMatch) {
+          const saved = await createProduct({
+            name:           productFromMatch.name,
+            tagline:        productFromMatch.tagline ?? "",
+            description:    productFromMatch.description ?? "",
+            price:          productFromMatch.price ?? "",
+            painCategories: productFromMatch.painCategories ?? [],
+            usp:            productFromMatch.usp ?? [],
+            source:         "manual",
+          })
+          realSelectedId = saved.id
+          session.setSelectedProductId(realSelectedId)
+          setSelectedId(realSelectedId)
+
+          // Update realMatches as well so caching survives with the new UUID
+          const updatedMatches = realMatches.map(m => 
+            m.id === selectedId ? { ...m, id: realSelectedId } : m
+          )
+          setRealMatches(updatedMatches)
+          sessionStorage.setItem("campfire_match_results", JSON.stringify(updatedMatches))
+        }
+      }
+
+      const selectedMatch = matches.find(m => m.id === selectedId)
+      const selectedName  = selectedMatch?.name ?? selectedId
 
       // Build match results list untuk Supabase
-      const matchPayload = IS_LIVE
-        ? realMatches.map(m => ({
-            productId:            m.id,
-            productName:          m.name,
-            matchScore:           m.matchScore,
-            addressedPainIndices: m.addressedPainIndices,
-            reasoning:            m.reasoning,
-            isRecommended:        m.isRecommended,
-          }))
-        : mockData.matchingResults.map((m: any) => ({
-            productId:            m.productId,
-            productName:          mockData.productCatalog.find((p: any) => p.id === m.productId)?.name ?? m.productId,
-            matchScore:           m.matchScore,
-            addressedPainIndices: m.addressedPainIndices,
-            reasoning:            m.reasoning,
-            isRecommended:        m.isRecommended,
-          }))
+      const matchPayload = realMatches.map(m => ({
+        productId:            m.id,
+        productName:          m.name,
+        matchScore:           m.matchScore,
+        addressedPainIndices: m.addressedPainIndices,
+        reasoning:            m.reasoning,
+        isRecommended:        m.isRecommended,
+      }))
 
       // Re-read sesaat sebelum save — background auto-save recon mungkin baru selesai
       companyId = session.getCompanyId() ?? companyId
       console.log("[Hybrid-Trace] Saving campaign for company:", companyId)
 
-      // Upsert mock product to Supabase to get a real UUID
-      let realSelectedId = selectedId
-      if (!session.isValidUuid(selectedId)) {
-        const mockProduct = mockData.productCatalog.find((p: any) => p.id === selectedId)
-        if (mockProduct) {
-          const saved = await createProduct({
-            name:           mockProduct.name,
-            tagline:        mockProduct.tagline,
-            description:    mockProduct.description,
-            price:          mockProduct.price,
-            painCategories: mockProduct.painCategories,
-            usp:            mockProduct.usp,
-            source:         "manual",
-          })
-          realSelectedId = saved.id
-          session.setSelectedProductId(realSelectedId)
-        }
-      }
+      const existingCampaignId = session.getCampaignId()
 
       const campaignId = await saveCampaignAndMatching(
-        companyId!, realSelectedId, selectedName, matchPayload
+        companyId!, realSelectedId, selectedName, matchPayload, existingCampaignId
       )
       session.setCampaignId(campaignId)
     } catch (e) {
       console.error("[MatchingTab] saveCampaignAndMatching error:", e)
       // Non-blocking — tetap lanjut ke Craft meski gagal simpan ke Supabase
     }
-    if (!session.getCampaignId()) session.setCampaignId("mock-campaign-id")
     router.push("/craft")
   }
 
-  // ─── Start Matching ─────────────────────────────────────────────────────────
+  // ─── Start Matching ───────────────────────────────────────────────────────
 
   const handleStartMatching = () => {
-    if (IS_LIVE && !companyProfile) {
+    if (!companyProfile) {
       toast.error("Profil perusahaan tidak ditemukan.", {
         description: "Lakukan Recon dan simpan profil terlebih dahulu."
       })
@@ -179,31 +170,11 @@ export function MatchingTab() {
     setCurrentStep(0)
   }
 
-  // ─── Matching useEffect ────────────────────────────────────────────────────
+  // ─── Matching useEffect ───────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isMatching) return
+    if (!isMatching || !companyProfile) return
 
-    if (!IS_LIVE) {
-      // Mock mode — animasi saja, data dari mockData
-      const interval = setInterval(() => {
-        setCurrentStep(prev => {
-          if (prev >= MATCHING_STEPS.length - 1) {
-            clearInterval(interval)
-            setTimeout(() => {
-              sessionStorage.setItem(SESSION_KEY, "1")
-              setIsMatching(false)
-              setHasMatched(true)
-            }, 600)
-            return prev  // stay at last step while timeout fires
-          }
-          return prev + 1
-        })
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-
-    // Live mode — concurrent: animasi + API call
     let resolvedResults: ProductMatch[] | null | undefined = undefined
     let animDone = false
 
@@ -211,6 +182,7 @@ export function MatchingTab() {
       if (!animDone || resolvedResults === undefined) return
       if (resolvedResults !== null) {
         setRealMatches(resolvedResults)
+        sessionStorage.setItem("campfire_match_results", JSON.stringify(resolvedResults))
         sessionStorage.setItem(SESSION_KEY, "1")
         setHasMatched(true)
       }
@@ -239,9 +211,19 @@ export function MatchingTab() {
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [isMatching])
+  }, [isMatching, companyProfile])
 
-  // ─── Render: belum mulai ───────────────────────────────────────────────────
+  // ─── Render: belum ada profil (masih loading dari sessionStorage) ─────────
+
+  if (!companyProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
+        <p className="text-[14px] font-medium">Memuat profil perusahaan...</p>
+      </div>
+    )
+  }
+
+  // ─── Render: belum mulai ──────────────────────────────────────────────────
 
   if (!isMatching && !hasMatched) {
     return (
@@ -265,7 +247,7 @@ export function MatchingTab() {
     )
   }
 
-  // ─── Render: sedang matching ───────────────────────────────────────────────
+  // ─── Render: sedang matching ──────────────────────────────────────────────
 
   if (isMatching) {
     return (
@@ -276,7 +258,7 @@ export function MatchingTab() {
     )
   }
 
-  // ─── Render: hasil matching ────────────────────────────────────────────────
+  // ─── Render: hasil matching ───────────────────────────────────────────────
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
@@ -319,7 +301,9 @@ export function MatchingTab() {
               )}>
                 {selectedId === match.id && <div className="w-2 h-2 rounded-full bg-brand" />}
               </div>
-              {selectedId === match.id ? "Dipilih untuk Campaign" : "Pilih produk ini"}
+              {selectedId === match.id ? (
+                <span className="truncate">Dipilih untuk Campaign — <span className="font-black">{match.name}</span></span>
+              ) : "Pilih produk ini"}
               {match.isRecommended && selectedId !== match.id && (
                 <span className="ml-auto text-[11px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
                   ★ Direkomendasikan
@@ -339,19 +323,34 @@ export function MatchingTab() {
       </div>
 
       {/* Footer CTA */}
-      <div className="pt-4 border-t border-border/40 flex items-center justify-between">
-        {selectedId ? (
-          <p className="text-[13px] text-emerald-700 font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            {matches.find(m => m.id === selectedId)?.name} dipilih
-          </p>
-        ) : (
+      <div className="pt-5 border-t border-border/40 flex items-center justify-between gap-4">
+        {selectedId ? (() => {
+          const selected = matches.find(m => m.id === selectedId)
+          return (
+            <div className="flex items-center gap-3 min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 shrink-0">
+                <CheckCircle2 className="w-[18px] h-[18px] text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11.5px] text-emerald-600 font-bold tracking-wide uppercase">Produk Dipilih</p>
+                <p className="text-[14px] font-bold text-foreground truncate leading-tight">
+                  {selected?.name ?? "—"}
+                </p>
+              </div>
+              {selected?.matchScore != null && (
+                <span className="shrink-0 ml-1 inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
+                  {selected.matchScore}% cocok
+                </span>
+              )}
+            </div>
+          )
+        })() : (
           <p className="text-[13px] text-muted-foreground font-medium">Pilih produk di atas untuk melanjutkan.</p>
         )}
         <Button
           onClick={handleProceedToCraft}
           disabled={!selectedId || isProceeding}
-          className="bg-brand hover:bg-brand/90 text-white font-bold rounded-xl px-6 h-11 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="bg-brand hover:bg-brand/90 text-white font-bold rounded-xl px-6 h-11 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
           {isProceeding ? "Menyimpan..." : "Lanjutkan ke Craft"}
           <ArrowRight className="w-4 h-4 ml-2" />

@@ -6,3 +6,5 @@ httpx
 openai
 tavily-python
 python-dotenv
+pypdf
+python-multipart

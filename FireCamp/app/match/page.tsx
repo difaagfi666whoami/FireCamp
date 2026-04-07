@@ -1,17 +1,23 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MatchingTab } from "./components/MatchingTab"
 import { ProductCatalogTab } from "./components/ProductCatalogTab"
-import { mockData } from "@/lib/mock/mockdata"
 import { session } from "@/lib/session"
 
 export default function MatchPage() {
   const router = useRouter()
-  const companyName = session.getReconProfile()?.name ?? mockData.company.name
+
+  const [companyName, setCompanyName] = useState<string>("")
+
+  useEffect(() => {
+    const profile = session.getReconProfile()
+    if (profile?.name) setCompanyName(profile.name)
+  }, [])
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -21,7 +27,10 @@ export default function MatchPage() {
           <h1 className="text-2xl font-bold tracking-tight">Product Matching</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
             Cocokkan produk terbaik dengan pain points{" "}
-            <span className="font-bold text-foreground">{companyName}</span>.
+            {companyName && (
+              <span className="font-bold text-foreground">{companyName}</span>
+            )}
+            .
           </p>
         </div>
         <Button
