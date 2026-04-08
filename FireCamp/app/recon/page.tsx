@@ -128,6 +128,17 @@ export default function ReconPage() {
 
   const handleSave = async () => {
     if (!profile || isSaving) return
+
+    // Jika auto-save background sudah berhasil (profile.id sudah UUID asli),
+    // jangan simpan ulang — cukup arahkan ke library untuk mencegah baris ganda di Supabase
+    if (profile.id && session.isValidUuid(profile.id)) {
+      session.setCompanyId(profile.id)
+      session.setReconProfile(profile)
+      toast.success("Profil disimpan ke Research Library")
+      router.push("/research-library")
+      return
+    }
+
     setIsSaving(true)
     try {
       const companyId = await saveCompanyProfile(profile)

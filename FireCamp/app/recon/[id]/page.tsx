@@ -8,6 +8,8 @@ import { getCompanyById } from "@/lib/api/recon"
 import { session } from "@/lib/session"
 import { CompanyProfile } from "@/types/recon.types"
 import { CompanyHeader } from "../components/CompanyHeader"
+import { StrategicMainContent } from "../components/StrategicMainContent"
+import { StrategicSidebar } from "../components/StrategicSidebar"
 import { PainPointList } from "../components/PainPointList"
 import { NewsSection } from "../components/NewsSection"
 import { KeyContacts } from "../components/KeyContacts"
@@ -132,13 +134,15 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
       {/* Content */}
       <CompanyHeader company={profile} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 mt-6">
+        <div className="md:col-span-8 space-y-5">
+          <StrategicMainContent report={profile.strategicReport} />
           <PainPointList painPoints={profile.painPoints} />
-          <NewsSection news={profile.news} />
         </div>
-        <div>
+        <div className="md:col-span-4 space-y-4">
+          <StrategicSidebar company={profile} />
           <KeyContacts contacts={profile.contacts} />
+          <NewsSection news={profile.news} />
         </div>
       </div>
     </div>

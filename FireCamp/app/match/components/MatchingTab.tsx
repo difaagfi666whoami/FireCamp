@@ -8,7 +8,7 @@ import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { ProductMatchCard } from "./ProductMatchCard"
 import { cn } from "@/lib/utils"
 import { session } from "@/lib/session"
-import { runMatching, saveCampaignAndMatching } from "@/lib/api/match"
+import { runMatching, saveCampaignAndMatching, getCampaignWithMatchResult } from "@/lib/api/match"
 import { createProduct } from "@/lib/api/catalog"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { ProductMatch } from "@/types/match.types"
@@ -36,16 +36,37 @@ export function MatchingTab() {
   const [companyProfile, setCompanyProfile] = useState<any>(null)
   const [companyName, setCompanyName]   = useState<string>("")
 
-  // ─── Mount: restore from sessionStorage (client-only) ────────────────────
+  // ─── Mount: restore from sessionStorage, with DB hydration fallback ─────
 
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_KEY) === "1") setHasMatched(true)
-    const saved = sessionStorage.getItem(PRODUCT_KEY)
-    if (saved) setSelectedId(saved)
-    const savedMatches = sessionStorage.getItem("campfire_match_results")
-    if (savedMatches) {
-      try { setRealMatches(JSON.parse(savedMatches)) } catch (e) {}
+    // 1. Session hit — restore directly from local storage
+    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      setHasMatched(true)
+      const saved = sessionStorage.getItem(PRODUCT_KEY)
+      if (saved) setSelectedId(saved)
+      const savedMatches = sessionStorage.getItem("campfire_match_results")
+      if (savedMatches) {
+        try { setRealMatches(JSON.parse(savedMatches)) } catch {}
+      }
+      return
     }
+
+    // 2. Session cold — always attempt hydration from DB if profile has a
+    //    real UUID. Do NOT gate on `campaignProgress.match` flag, it can lag.
+    const profile = session.getReconProfile()
+    if (!profile?.id || !session.isValidUuid(profile.id)) return
+
+    getCampaignWithMatchResult(profile.id).then(dbData => {
+      if (!dbData || !dbData.matches?.length) return
+      setHasMatched(true)
+      if (dbData.selectedProductId) setSelectedId(dbData.selectedProductId)
+      setRealMatches(dbData.matches)
+      // Mirror into session so Craft page isn't blank
+      session.setCampaignId(dbData.campaignId)
+      if (dbData.selectedProductId) session.setSelectedProductId(dbData.selectedProductId)
+      sessionStorage.setItem("campfire_match_results", JSON.stringify(dbData.matches))
+      sessionStorage.setItem(SESSION_KEY, "1")
+    }).catch(console.error)
   }, [])
 
   useEffect(() => {

@@ -28,6 +28,14 @@ export function Sidebar() {
     setActiveCompany(profile?.name ?? null)
   }, [pathname])
 
+  useEffect(() => {
+    const handleSessionChange = () => {
+      setActiveCompany(session.getReconProfile()?.name ?? null)
+    }
+    window.addEventListener("campfire_session_changed", handleSessionChange)
+    return () => window.removeEventListener("campfire_session_changed", handleSessionChange)
+  }, [])
+
   const isActive = (href: string) =>
     href === "/recon"
       ? pathname.startsWith("/recon")

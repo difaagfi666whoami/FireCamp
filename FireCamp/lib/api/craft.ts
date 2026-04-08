@@ -55,9 +55,11 @@ export async function saveCraftedEmails(
     throw new Error(reasoningErr.message)
   }
 
+  // Upsert by (campaign_id, sequence_number) agar re-generate / re-mount
+  // tidak menduplikasi baris campaign_emails.
   const { error: emailsErr } = await supabase
     .from("campaign_emails")
-    .insert(
+    .upsert(
       emails.map(e => ({
         campaign_id:     campaignId,
         sequence_number: e.sequenceNumber,
@@ -68,12 +70,55 @@ export async function saveCraftedEmails(
         tone:            e.tone,
         is_approved:     e.isApproved,
         status:          "draft",
-      }))
+      })),
+      { onConflict: "campaign_id,sequence_number" }
     )
 
   if (emailsErr) {
     console.error("[Campfire/craft] insert campaign_emails:", emailsErr)
     throw new Error(emailsErr.message)
+  }
+}
+
+// -----------------------------------------------------------------------------
+// GET crafted emails dari Supabase (untuk hydration saat session kosong)
+// -----------------------------------------------------------------------------
+
+export async function getCraftedEmailsByCompany(companyId: string): Promise<any | null> {
+  // Cegat Campaign terbaru milik Company ini (kebal terhadap duplicate rows!)
+  const { data: campaign, error: campErr } = await supabase
+    .from("campaigns")
+    .select("id, reasoning")
+    .eq("company_id", companyId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (campErr || !campaign) return null
+
+  // Dengan Campaign.id, raup semua email
+  const { data: emails, error: emailErr } = await supabase
+    .from("campaign_emails")
+    .select("*")
+    .eq("campaign_id", campaign.id)
+    .order("sequence_number")
+
+  if (emailErr) return null
+
+  return {
+    campaignId:    campaign.id,
+    reasoning:     campaign.reasoning ?? "",
+    targetCompany: "N/A", // diisi ulang dari UI state dengan profile.name
+    emails: (emails ?? []).map((e: any) => ({
+      id:             e.id,
+      sequenceNumber: e.sequence_number,
+      dayLabel:       e.day_label,
+      scheduledDay:   e.scheduled_day,
+      subject:        e.subject,
+      body:           e.body,
+      tone:           e.tone,
+      isApproved:     e.is_approved,
+    })),
   }
 }
 

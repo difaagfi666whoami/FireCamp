@@ -1,0 +1,20 @@
+-- Migrasi: Expanded Recon Models
+
+ALTER TABLE companies
+ADD COLUMN IF NOT EXISTS deep_insights JSONB DEFAULT '[]'::jsonb,
+ADD COLUMN IF NOT EXISTS strategic_report JSONB,
+ADD COLUMN IF NOT EXISTS recon_mode TEXT;
+
+ALTER TABLE contacts
+ADD COLUMN IF NOT EXISTS location TEXT,
+ADD COLUMN IF NOT EXISTS connections TEXT,
+ADD COLUMN IF NOT EXISTS about TEXT,
+ADD COLUMN IF NOT EXISTS role_duration TEXT,
+ADD COLUMN IF NOT EXISTS source TEXT;
+
+ALTER TABLE pain_points
+ADD COLUMN IF NOT EXISTS source_url TEXT,
+ADD COLUMN IF NOT EXISTS source_title TEXT;
+
+ALTER TABLE news
+ADD COLUMN IF NOT EXISTS signal_type TEXT;

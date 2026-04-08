@@ -14,13 +14,36 @@ function ss(key: string): string | null {
   return sessionStorage.getItem(key)
 }
 
+function triggerChange() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("campfire_session_changed"))
+}
+
 function set(key: string, value: string): void {
-  if (typeof window !== "undefined") sessionStorage.setItem(key, value)
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem(key, value)
+    triggerChange()
+  }
 }
 
 export const session = {
   getCompanyId:           ()           => ss(KEYS.COMPANY_ID),
-  setCompanyId:           (id: string) => set(KEYS.COMPANY_ID, id),
+  setCompanyId: (id: string) => {
+    if (typeof window !== "undefined") {
+      const oldId = sessionStorage.getItem(KEYS.COMPANY_ID)
+      if (oldId && oldId !== id) {
+        // Target company is switching. Nuke ALL downstream + recon profile
+        // so the new target mounts fresh and re-hydrates from DB.
+        sessionStorage.removeItem(KEYS.CAMPAIGN_ID)
+        sessionStorage.removeItem(KEYS.SELECTED_PRODUCT_ID)
+        sessionStorage.removeItem(KEYS.CRAFT_CAMPAIGN)
+        sessionStorage.removeItem(KEYS.RECON_PROFILE)
+        sessionStorage.removeItem("campfire_match_results")
+        sessionStorage.removeItem("campfire_match_done")
+        sessionStorage.removeItem("campfire_craft_done")
+      }
+    }
+    set(KEYS.COMPANY_ID, id)
+  },
 
   getCampaignId:          ()           => ss(KEYS.CAMPAIGN_ID),
   setCampaignId:          (id: string) => set(KEYS.CAMPAIGN_ID, id),
@@ -47,4 +70,11 @@ export const session = {
   // Validates that an ID is a real Supabase UUID (not a mock ID like "profile-001")
   isValidUuid: (id: string): boolean =>
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id),
+
+  // Hapus semua data target aktif dari sessionStorage dan beritahu UI
+  clearActiveTarget: (): void => {
+    if (typeof window === "undefined") return
+    Object.values(KEYS).forEach(k => sessionStorage.removeItem(k))
+    window.dispatchEvent(new Event("campfire_session_changed"))
+  },
 }

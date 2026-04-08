@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { mockData } from "@/lib/mock/mockdata"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { session } from "@/lib/session"
-import { generateCampaign, saveCraftedEmails } from "@/lib/api/craft"
+import { generateCampaign, saveCraftedEmails, getCraftedEmailsByCompany } from "@/lib/api/craft"
 import { getProductById } from "@/lib/api/catalog"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { CampaignReasoning } from "./components/CampaignReasoning"
@@ -36,34 +36,33 @@ export default function CraftPage() {
   const [isCrafting, setIsCrafting] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [realCampaign, setRealCampaign] = useState<Campaign | null>(null)
+  const [companyProfile, setCompanyProfile] = useState<any>(null)
 
   // ─── Mount: restore from sessionStorage (client-only) ───────────────────
   // Must be declared BEFORE crafting useEffect so it runs first.
 
   useEffect(() => {
+    const profile = session.getReconProfile()
+    if (profile) setCompanyProfile(profile)
+
     if (sessionStorage.getItem(SESSION_KEY) === "1") {
+      // Session hit — restore from local storage. Jangan re-save ke DB:
+      // itu membuat duplikasi baris campaign_emails setiap kali mount.
       setRealCampaign(session.getCraftCampaign())
-      setHasStarted(true)   // already done, skip idle screen
-      // Sync to Supabase if we have a valid campaignId (may not have been saved yet)
-      const campaignId = session.getCampaignId()
-      if (campaignId && session.isValidUuid(campaignId)) {
-        const craftCampaign = session.getCraftCampaign() ?? mockData.campaign
-        saveCraftedEmails(
-          campaignId,
-          (craftCampaign as any).emails.map((e: any) => ({
-            sequenceNumber: e.sequenceNumber,
-            dayLabel:       e.dayLabel,
-            scheduledDay:   e.scheduledDay,
-            subject:        e.subject,
-            body:           e.body,
-            tone:           e.tone,
-            isApproved:     e.isApproved,
-          })),
-          (craftCampaign as any).reasoning
-        ).catch(e => console.error("[CraftPage] sync on restore:", e))
-      }
+      setHasStarted(true)
+    } else if (profile?.id && session.isValidUuid(profile.id)) {
+      // HYDRATION: User merevisit tab Craft! (cari lewat companyId dari Profile!)
+      getCraftedEmailsByCompany(profile.id).then(dbData => {
+        if (dbData) {
+          dbData.targetCompany = profile.name
+          setRealCampaign(dbData)
+          setHasStarted(true)
+          session.setCampaignId(dbData.campaignId)
+          session.setCraftCampaign(dbData)
+          sessionStorage.setItem(SESSION_KEY, "1")
+        }
+      }).catch(console.error)
     }
-    // else: do nothing — show idle screen with button
   }, [])
 
   // ─── Crafting useEffect ──────────────────────────────────────────────────
@@ -192,10 +191,20 @@ export default function CraftPage() {
     setIsCrafting(true)
   }
 
+  // ─── Render: belum ada profil (masih loading dari sessionStorage) ─────────
+
+  if (!companyProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
+        <p className="text-[14px] font-medium">Memuat profil perusahaan...</p>
+      </div>
+    )
+  }
+
   // ─── Render: idle ─────────────────────────────────────────────────────────
 
   if (!hasStarted && !isCrafting) {
-    const companyName = session.getReconProfile()?.name ?? mockData.company.name
+    const companyName = companyProfile.name
 
     return (
       <div className="flex justify-center py-16 animate-in fade-in duration-500">

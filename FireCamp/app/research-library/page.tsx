@@ -6,6 +6,7 @@ import { Plus, BookOpen, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProfileCard } from "@/components/research-library/ProfileCard"
 import { getResearchLibrary, deleteCompanyProfile, LibraryEntry } from "@/lib/api/recon"
+import { session } from "@/lib/session"
 import { toast } from "sonner"
 
 export default function ResearchLibraryPage() {
@@ -25,10 +26,20 @@ export default function ResearchLibraryPage() {
   }, [])
 
   const handleDelete = async (id: string) => {
+    const targetToDelete = profiles.find(p => p.id === id)
     // Optimistic update — hapus dari UI dulu
     setProfiles(prev => prev.filter(p => p.id !== id))
     try {
       await deleteCompanyProfile(id)
+      const activeSessionId = session.getCompanyId()
+      const activeProfile   = session.getReconProfile()
+      if (
+        activeSessionId === id ||
+        activeProfile?.id === id ||
+        activeProfile?.name === targetToDelete?.name
+      ) {
+        session.clearActiveTarget()
+      }
       toast.success("Profil dihapus.")
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error"

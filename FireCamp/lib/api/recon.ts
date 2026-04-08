@@ -61,13 +61,14 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     .from("companies")
     .select(`
       id, url, name, industry, size, founded, hq, description,
+      deep_insights, strategic_report, recon_mode,
       linkedin_followers, linkedin_employees, linkedin_growth,
       progress_recon, progress_match, progress_craft,
       progress_polish, progress_launch, progress_pulse,
       created_at, cached_at,
-      contacts (id, name, title, email, phone, linkedin_url, prospect_score, reasoning),
-      pain_points (id, category, issue, severity),
-      news (id, title, published_date, source, summary, url)
+      contacts (id, name, title, email, phone, linkedin_url, prospect_score, reasoning, location, connections, about, role_duration, source),
+      pain_points (id, category, issue, severity, source_url, source_title),
+      news (id, title, published_date, source, summary, url, signal_type)
     `)
     .eq("id", id)
     .single()
@@ -80,14 +81,17 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
   }
 
   return {
-    id:          data.id,
-    url:         data.url,
-    name:        data.name,
-    industry:    data.industry,
-    size:        data.size        ?? "",
-    founded:     data.founded     ?? "",
-    hq:          data.hq          ?? "",
-    description: data.description ?? "",
+    id:             data.id,
+    url:            data.url,
+    name:           data.name,
+    industry:       data.industry,
+    size:           data.size           ?? "",
+    founded:        data.founded        ?? "",
+    hq:             data.hq             ?? "",
+    description:    data.description    ?? "",
+    deepInsights:   data.deep_insights  ?? [],
+    strategicReport: data.strategic_report ?? undefined,
+    reconMode:      data.recon_mode     ?? undefined,
     linkedin: {
       followers: data.linkedin_followers ?? "0",
       employees: data.linkedin_employees ?? 0,
@@ -96,17 +100,24 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     contacts: (data.contacts ?? []).map((c: any) => ({
       id:            c.id,
       name:          c.name,
-      title:         c.title        ?? "",
-      email:         c.email        ?? "",
-      phone:         c.phone        ?? "",
-      linkedinUrl:   c.linkedin_url ?? null,
+      title:         c.title          ?? "",
+      email:         c.email          ?? "",
+      phone:         c.phone          ?? "",
+      linkedinUrl:   c.linkedin_url   ?? null,
       prospectScore: c.prospect_score ?? 0,
-      reasoning:     c.reasoning    ?? "",
+      reasoning:     c.reasoning      ?? "",
+      location:      c.location       ?? undefined,
+      connections:   c.connections    ?? undefined,
+      about:         c.about          ?? undefined,
+      roleDuration:  c.role_duration  ?? undefined,
+      source:        c.source         ?? undefined,
     })),
     painPoints: (data.pain_points ?? []).map((p: any) => ({
-      category: p.category,
-      issue:    p.issue,
-      severity: p.severity,
+      category:    p.category,
+      issue:       p.issue,
+      severity:    p.severity,
+      sourceUrl:   p.source_url   ?? undefined,
+      sourceTitle: p.source_title ?? undefined,
     })),
     news: (data.news ?? []).map((n: any) => ({
       title:   n.title,
@@ -207,6 +218,9 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
       founded:            profile.founded,
       hq:                 profile.hq,
       description:        profile.description,
+      deep_insights:      profile.deepInsights     ?? [],
+      strategic_report:   profile.strategicReport  ?? null,
+      recon_mode:         profile.reconMode        ?? null,
       linkedin_followers: profile.linkedin.followers,
       linkedin_employees: profile.linkedin.employees,
       linkedin_growth:    profile.linkedin.growth,
@@ -236,9 +250,14 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
         title:          c.title,
         email:          c.email,
         phone:          c.phone,
-        linkedin_url:   c.linkedinUrl ?? null,
+        linkedin_url:   c.linkedinUrl   ?? null,
         prospect_score: c.prospectScore,
         reasoning:      c.reasoning,
+        location:       c.location      ?? null,
+        connections:    c.connections   ?? null,
+        about:          c.about         ?? null,
+        role_duration:  c.roleDuration  ?? null,
+        source:         c.source        ?? null,
       }))
     )
     if (error) throw new Error(error.message)
@@ -247,10 +266,12 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
   if (profile.painPoints?.length) {
     const { error } = await supabase.from("pain_points").insert(
       profile.painPoints.map(p => ({
-        company_id: companyId,
-        category:   p.category,
-        issue:      p.issue,
-        severity:   p.severity,
+        company_id:   companyId,
+        category:     p.category,
+        issue:        p.issue,
+        severity:     p.severity,
+        source_url:   p.sourceUrl   ?? null,
+        source_title: p.sourceTitle ?? null,
       }))
     )
     if (error) throw new Error(error.message)
@@ -265,6 +286,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
         source:         n.source,
         summary:        n.summary,
         url:            n.url,
+        signal_type:    (n as any).signal_type ?? null,
       }))
     )
     if (error) throw new Error(error.message)
