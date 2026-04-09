@@ -1,5 +1,5 @@
 import { CompanyProfile } from "@/types/recon.types"
-import { ProductCatalogItem } from "@/types/match.types"
+import { ProductMatch } from "@/types/match.types"
 import { Campaign } from "@/types/craft.types"
 import { supabase } from "@/lib/supabase/client"
 
@@ -12,17 +12,33 @@ const API_URL  = sq(process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000")
 
 export async function generateCampaign(
   companyProfile: CompanyProfile,
-  selectedProduct: ProductCatalogItem
+  selectedProduct: ProductMatch
 ): Promise<Campaign> {
+  const body = { companyProfile, selectedProduct }
   const res = await fetch(`${API_URL}/api/craft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ companyProfile, selectedProduct }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
-    throw new Error(err.detail || `HTTP ${res.status}`)
+    // Log payload + error detail agar 422 Pydantic bisa didiagnosa di DevTools
+    console.error("[Campfire/craft] POST /api/craft failed", {
+      status:  res.status,
+      detail:  err?.detail,
+      error:   err,
+      payload: body,
+    })
+    const detailMsg =
+      typeof err?.detail === "string"
+        ? err.detail
+        : Array.isArray(err?.detail)
+        ? err.detail
+            .map((d: any) => `${(d.loc || []).join(".")}: ${d.msg}`)
+            .join(" | ")
+        : `HTTP ${res.status}`
+    throw new Error(detailMsg)
   }
 
   return res.json()
@@ -103,7 +119,7 @@ export async function getCraftedEmailsByCompany(companyId: string): Promise<any 
     .eq("campaign_id", campaign.id)
     .order("sequence_number")
 
-  if (emailErr) return null
+  if (emailErr || !emails || emails.length === 0) return null
 
   return {
     campaignId:    campaign.id,

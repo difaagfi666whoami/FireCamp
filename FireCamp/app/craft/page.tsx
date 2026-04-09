@@ -9,7 +9,9 @@ import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { session } from "@/lib/session"
 import { generateCampaign, saveCraftedEmails, getCraftedEmailsByCompany } from "@/lib/api/craft"
 import { getProductById } from "@/lib/api/catalog"
+import { getCampaignWithMatchResult } from "@/lib/api/match"
 import { updateCompanyProgress } from "@/lib/api/recon"
+import { ProductMatch } from "@/types/match.types"
 import { CampaignReasoning } from "./components/CampaignReasoning"
 import { EmailPreviewCard } from "./components/EmailPreviewCard"
 import { Campaign } from "@/types/craft.types"
@@ -45,12 +47,19 @@ export default function CraftPage() {
     const profile = session.getReconProfile()
     if (profile) setCompanyProfile(profile)
 
-    if (sessionStorage.getItem(SESSION_KEY) === "1") {
+    const cached = session.getCraftCampaign()
+    const cachedValid =
+      cached && Array.isArray(cached.emails) && cached.emails.length > 0 &&
+      typeof cached.reasoning === "string" && cached.reasoning.trim().length > 0
+
+    if (sessionStorage.getItem(SESSION_KEY) === "1" && cachedValid) {
       // Session hit — restore from local storage. Jangan re-save ke DB:
       // itu membuat duplikasi baris campaign_emails setiap kali mount.
-      setRealCampaign(session.getCraftCampaign())
+      setRealCampaign(cached)
       setHasStarted(true)
     } else if (profile?.id && session.isValidUuid(profile.id)) {
+      // Purge stale/empty session biar hydration DB tidak di-bypass
+      sessionStorage.removeItem(SESSION_KEY)
       // HYDRATION: User merevisit tab Craft! (cari lewat companyId dari Profile!)
       getCraftedEmailsByCompany(profile.id).then(dbData => {
         if (dbData) {
@@ -117,6 +126,25 @@ export default function CraftPage() {
 
     const settle = () => {
       if (!animDone || resolvedCampaign === undefined) return
+
+      // Guard: tolak campaign kosong/invalid agar session tidak ter-pollute
+      const valid =
+        !!resolvedCampaign &&
+        Array.isArray(resolvedCampaign.emails) &&
+        resolvedCampaign.emails.length >= 3 &&
+        typeof resolvedCampaign.reasoning === "string" &&
+        resolvedCampaign.reasoning.trim().length > 0 &&
+        resolvedCampaign.emails.every(
+          (e: any) => (e?.subject ?? "").trim() && (e?.body ?? "").trim()
+        )
+
+      if (resolvedCampaign !== null && !valid) {
+        toast.error("AI mengembalikan campaign kosong.", {
+          description: "Respons AI invalid / terpotong. Silakan coba generate ulang.",
+        })
+        resolvedCampaign = null
+      }
+
       if (resolvedCampaign !== null) {
         setRealCampaign(resolvedCampaign)
         session.setCraftCampaign(resolvedCampaign)
@@ -152,16 +180,98 @@ export default function CraftPage() {
       try {
         const companyProfile  = session.getReconProfile() ?? mockData.company
         const selectedId      = session.getSelectedProductId()
-        const selectedProduct = selectedId ? await getProductById(selectedId) : null
 
-        if (!selectedProduct) {
+        if (!selectedId) {
           toast.error("Produk tidak ditemukan.", { description: "Kembali ke Match dan pilih produk terlebih dahulu." })
           resolvedCampaign = null
           settle()
           return
         }
 
-        const campaign = await generateCampaign(companyProfile, selectedProduct)
+        // 1) Prefer session match results (rich ProductMatch w/ reasoning)
+        let fullProductMatch: ProductMatch | null = null
+        const cachedMatches = session.getMatchResults()
+        if (cachedMatches && cachedMatches.length > 0) {
+          const hit = cachedMatches.find((m: any) => m.id === selectedId)
+          if (hit && hit.reasoning !== undefined) {
+            // Hydration dari DB hanya mengembalikan baris sparse (tanpa
+            // tagline/description/price/usp/painCategories/source). Selalu
+            // enrich dari katalog kalau ada field ProductCatalogItem yang hilang.
+            const needsEnrich =
+              !hit.tagline || !hit.description || hit.price === undefined ||
+              !Array.isArray(hit.usp) || !Array.isArray(hit.painCategories) ||
+              !hit.source
+            if (needsEnrich) {
+              const catalog = await getProductById(selectedId).catch(() => null)
+              fullProductMatch = {
+                id:             hit.id,
+                name:           hit.name ?? catalog?.name ?? "",
+                tagline:        hit.tagline ?? catalog?.tagline ?? "",
+                description:    hit.description ?? catalog?.description ?? "",
+                price:          hit.price ?? catalog?.price ?? "",
+                painCategories: Array.isArray(hit.painCategories)
+                  ? hit.painCategories
+                  : (catalog?.painCategories ?? []),
+                usp:            Array.isArray(hit.usp) ? hit.usp : (catalog?.usp ?? []),
+                source:         (hit.source ?? catalog?.source ?? "manual") as ProductMatch["source"],
+                createdAt:      hit.createdAt ?? catalog?.createdAt ?? "",
+                updatedAt:      hit.updatedAt ?? catalog?.updatedAt ?? "",
+                matchScore:           hit.matchScore ?? 0,
+                addressedPainIndices: hit.addressedPainIndices ?? [],
+                reasoning:            hit.reasoning ?? "",
+                isRecommended:        hit.isRecommended ?? false,
+              }
+            } else {
+              fullProductMatch = hit as ProductMatch
+            }
+          }
+        }
+
+        // 2) Fallback: hydrate from Supabase matching_results
+        if (!fullProductMatch && companyProfile?.id && session.isValidUuid(companyProfile.id)) {
+          const dbMatch = await getCampaignWithMatchResult(companyProfile.id).catch(() => null)
+          const dbHit   = dbMatch?.matches.find((m: any) => m.id === selectedId) ?? null
+          if (dbHit) {
+            // DB rows are sparse — enrich with catalog item for missing fields
+            const catalog = await getProductById(selectedId).catch(() => null)
+            fullProductMatch = {
+              id:             selectedId,
+              name:           dbHit.name ?? catalog?.name ?? "",
+              tagline:        catalog?.tagline ?? "",
+              description:    catalog?.description ?? "",
+              price:          catalog?.price ?? "",
+              painCategories: catalog?.painCategories ?? [],
+              usp:            catalog?.usp ?? [],
+              source:         (catalog?.source ?? "manual") as ProductMatch["source"],
+              createdAt:      catalog?.createdAt ?? "",
+              updatedAt:      catalog?.updatedAt ?? "",
+              matchScore:           dbHit.matchScore ?? 0,
+              addressedPainIndices: dbHit.addressedPainIndices ?? [],
+              reasoning:            dbHit.reasoning ?? "",
+              isRecommended:        dbHit.isRecommended ?? false,
+            }
+          }
+        }
+
+        // 3) Last-resort: catalog item only (no AI reasoning — degraded mode)
+        if (!fullProductMatch) {
+          const catalog = await getProductById(selectedId)
+          if (!catalog) {
+            toast.error("Produk tidak ditemukan.", { description: "Kembali ke Match dan pilih produk terlebih dahulu." })
+            resolvedCampaign = null
+            settle()
+            return
+          }
+          fullProductMatch = {
+            ...catalog,
+            matchScore:           0,
+            addressedPainIndices: [],
+            reasoning:            "",
+            isRecommended:        false,
+          }
+        }
+
+        const campaign = await generateCampaign(companyProfile, fullProductMatch)
         resolvedCampaign = campaign
         settle()
       } catch (e) {
@@ -258,8 +368,52 @@ export default function CraftPage() {
 
   // ─── Render: hasil ────────────────────────────────────────────────────────
 
-  const campaign = (IS_LIVE ? (realCampaign ?? session.getCraftCampaign()) : null)
-    ?? mockData.campaign as unknown as Campaign
+  const liveCandidate = IS_LIVE ? (realCampaign ?? session.getCraftCampaign()) : null
+  const liveValid =
+    !!liveCandidate &&
+    Array.isArray(liveCandidate.emails) &&
+    liveCandidate.emails.length > 0 &&
+    typeof liveCandidate.reasoning === "string" &&
+    liveCandidate.reasoning.trim().length > 0
+
+  // LIVE mode: kalau belum ada campaign valid, JANGAN jatuh ke mockData —
+  // kembalikan user ke idle agar bisa generate ulang dengan data bersih.
+  if (IS_LIVE && !liveValid) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-500">
+        <div className="bg-white flex flex-col items-center justify-center p-8
+                        border border-dashed border-border/80 rounded-2xl
+                        w-[340px] shadow-sm text-center">
+          <div className="bg-brand/10 p-5 rounded-full mb-6">
+            <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
+            Belum ada campaign valid
+          </h3>
+          <p className="text-[13px] text-muted-foreground font-medium mb-4">
+            Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
+          </p>
+          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+            Generate sebelumnya gagal atau kosong. Coba generate ulang sekarang.
+          </p>
+          <Button
+            onClick={() => {
+              sessionStorage.removeItem(SESSION_KEY)
+              setRealCampaign(null)
+              setHasStarted(true)
+              setIsCrafting(true)
+              setCurrentStep(0)
+            }}
+            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
+          >
+            Generate Ulang Campaign
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const campaign = (liveCandidate ?? mockData.campaign) as unknown as Campaign
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">

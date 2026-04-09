@@ -18,11 +18,11 @@ from app.services import craft_service
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/craft", tags=["craft"])
+router = APIRouter(prefix="/api", tags=["craft"])
 
 
 @router.post(
-    "/",
+    "/craft",
     response_model=CraftResponse,
     summary="Generate AI Email Campaign",
     description=(

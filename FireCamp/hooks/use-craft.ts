@@ -6,7 +6,7 @@ import { session } from "@/lib/session"
 import { markStageDone } from "@/lib/progress"
 import { Campaign } from "@/types/craft.types"
 import { CompanyProfile } from "@/types/recon.types"
-import { ProductCatalogItem } from "@/types/match.types"
+import { ProductMatch } from "@/types/match.types"
 
 export function useCraft() {
   const [campaign, setCampaign] = useState<Campaign | null>(null)
@@ -23,7 +23,7 @@ export function useCraft() {
     "Memfinalisasi campaign & reasoning...",
   ]
 
-  const generate = async (companyProfile: CompanyProfile, selectedProduct: ProductCatalogItem) => {
+  const generate = async (companyProfile: CompanyProfile, selectedProduct: ProductMatch) => {
     setIsLoading(true)
     setError(null)
     setCurrentStep(0)

@@ -11,8 +11,10 @@ from __future__ import annotations
 import logging
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.routers import recon as recon_router
 from app.api.routers import match as match_router
@@ -59,6 +61,30 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Validation error handler (log 422 detail) ───────────────────────────────
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    """
+    Log full Pydantic validation errors untuk memudahkan debug 422 di frontend.
+    Response body tetap mengikuti format FastAPI default (errors[]).
+    """
+    errors = exc.errors()
+    logger.error(
+        "[422] %s %s — %d validation error(s)",
+        request.method, request.url.path, len(errors),
+    )
+    for err in errors:
+        loc = ".".join(str(x) for x in err.get("loc", []))
+        logger.error("  └─ loc=%s  msg=%s  type=%s", loc, err.get("msg"), err.get("type"))
+    return JSONResponse(
+        status_code=422,
+        content={"detail": errors},
+    )
+
 
 # ─── Routers ──────────────────────────────────────────────────────────────────
 

@@ -7,6 +7,7 @@ const KEYS = {
   SELECTED_PRODUCT_ID: "campfire_selected_product",  // Product UUID dipilih di Match
   RECON_PROFILE:       "campfire_recon_profile",      // Full CompanyProfile dari Recon generate
   CRAFT_CAMPAIGN:      "campfire_craft_campaign",     // Generated Campaign dari Craft
+  MATCH_RESULTS:       "campfire_match_results",      // ProductMatch[] hasil AI matching
 } as const
 
 function ss(key: string): string | null {
@@ -66,6 +67,17 @@ export const session = {
     try { return JSON.parse(raw) } catch { return null }
   },
   setCraftCampaign:       (campaign: any) => set(KEYS.CRAFT_CAMPAIGN, JSON.stringify(campaign)),
+
+  // Full ProductMatch[] hasil AI matching (stored di Match tab, dibaca oleh Craft)
+  getMatchResults: (): any[] | null => {
+    const raw = ss(KEYS.MATCH_RESULTS)
+    if (!raw) return null
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : null
+    } catch { return null }
+  },
+  setMatchResults: (data: any) => set(KEYS.MATCH_RESULTS, JSON.stringify(data)),
 
   // Validates that an ID is a real Supabase UUID (not a mock ID like "profile-001")
   isValidUuid: (id: string): boolean =>

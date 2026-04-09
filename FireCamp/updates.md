@@ -1,5 +1,78 @@
 # Updates
 
+## Pipeline Craft & Match — Bug Fixes & Stabilization (2026-04-09)
+
+### Bug Fix: FastAPI Router Trailing Slash (307 Redirect → 405 Drop)
+- **Root cause**: `craft.py` router was registered as `APIRouter(prefix="/api/craft")` with route `"/"`, creating the path `/api/craft/` (with trailing slash). Frontend `fetch()` POST to `/api/craft` (no trailing slash) received a `307 Temporary Redirect`, which browsers follow but **drop the body** and downgrade to GET — resulting in silent empty responses.
+- **Fix**: `backend/app/api/routers/craft.py` — aligned router prefix/route pattern to match `recon.py` and `match.py`: `prefix="/api"` + route `"/craft"`. This immediately resolved the silent failure as uvicorn auto-reloaded.
+
+### Bug Fix: Empty Campaign Hydration (getCraftedEmailsByCompany returning empty campaigns)
+- **Root cause**: The Match phase always creates a `campaigns` row in Supabase (via `saveCampaignAndMatching`) before any emails are generated. So when `CraftPage` mounted and hydrated, it fetched this empty row and treated it as "already crafted", bypassing the Generate button entirely and showing a blank result view.
+- **Fix**: `lib/api/craft.ts` — `getCraftedEmailsByCompany()` now returns `null` if `emails.length === 0`, so the mount-time hydration falls through and correctly shows the "Generate Campaign" idle screen.
+
+### Bug Fix: CraftPage Session Cache Skipping Valid DB Hydration
+- **Root cause**: Old mount `useEffect` only checked `sessionStorage(SESSION_KEY) === "1"` to decide whether to show results. If a stale key existed from a prior invalid generation run, it would restore an empty/invalid `cached` object and mark `hasStarted = true`, jumping directly to the broken result render.
+- **Fix**: `app/craft/page.tsx` — mount now validates the cached object (emails non-empty + reasoning non-empty = `cachedValid`). If `SESSION_KEY` is set but cache is invalid, the key is purged (`sessionStorage.removeItem(SESSION_KEY)`) and DB hydration runs fresh.
+
+### Bug Fix: settle() Guard — Prevent Session Pollution from Truncated AI Responses
+- **`app/craft/page.tsx`** — `settle()` now validates the resolved campaign before committing to state/session/DB:
+  - Must have `emails.length >= 3`
+  - `reasoning` must be a non-empty string
+  - Every email must have non-empty `subject` and `body`
+  - If invalid: shows toast error "AI mengembalikan campaign kosong" and sets `resolvedCampaign = null` — does not write to session or Supabase.
+
+### Bug Fix: Live Mode Render Guard — No More mockData Fallback
+- **`app/craft/page.tsx`** — Render section now has an explicit `liveValid` check. In `IS_LIVE` mode, if `liveCandidate` is null or fails validation, the page renders a dedicated "Belum ada campaign valid" panel with a **"Generate Ulang Campaign"** button instead of silently showing empty mock data.
+
+### Upstream: craft_service.py — Hardened Validation & Token Increase
+- `max_tokens`: `3000 → 6000` to prevent response truncation.
+- `temperature=0.7` added for more natural language variation.
+- `finish_reason == "length"` → explicit `RuntimeError("respons ter-truncate")`.
+- `message.refusal` truthy → explicit `RuntimeError`.
+- `content is None` → explicit `RuntimeError`.
+- Post-parse hard validation: `len(emails) >= 3`, `reasoning` non-empty, `targetCompany` non-empty, all email `subject`/`body` non-empty. Raises `RuntimeError` with descriptive message on any failure.
+
+### Upstream: main.py — Pydantic 422 Logging Middleware
+- `backend/app/main.py` — added `@app.exception_handler(RequestValidationError)` that prints each validation error's `loc`, `msg`, and `type` to stdout. Makes diagnosing future Pydantic 422 errors in `/api/craft`, `/api/match`, `/api/recon` much faster.
+
+---
+
+## Craft Pipeline Enhancement — Challenger Sale + Robust Validation (2026-04-09)
+
+### Fase 1: Deep Context Wiring (ProductMatch end-to-end)
+
+- `backend/app/models/schemas.py` — `CraftRequest.selectedProduct` diubah dari `ProductCatalogItem` → `ProductMatch` agar `matchScore`, `reasoning`, `addressedPainIndices`, `isRecommended` dari tahap Match ikut terbawa ke Craft.
+- `lib/api/craft.ts` — `generateCampaign()` sekarang menerima `ProductMatch`. Error handler diperkuat: log payload penuh + Pydantic `detail` array ke DevTools saat non-2xx.
+- `hooks/use-craft.ts` — parameter `generate()` diselaraskan ke `ProductMatch`.
+- `lib/session.ts` — tambah `getMatchResults()` / `setMatchResults()` + key `MATCH_RESULTS` (terintegrasi auto-nuke saat switch target company).
+- `app/craft/page.tsx` — rewrite kick-off live-mode dengan **hydration 3-layer** untuk `ProductMatch`:
+  1. `session.getMatchResults()` — cari `hit` by `selectedId`; enrich dari `getProductById()` bila field `ProductCatalogItem` (tagline/description/price/usp/painCategories/source) hilang (sparse row dari DB hydration).
+  2. Fallback `getCampaignWithMatchResult(profile.id)` dari Supabase + enrich via catalog.
+  3. Last-resort: catalog item only (mode degraded, reasoning kosong).
+
+### Fase 2: Craft Service Rewrite (Challenger Sale framework)
+- `backend/app/services/craft_service.py` — `SYSTEM_PROMPT` dirombak total ke framework **Challenger Sale + Consultative Selling**: insight-led, teach-tailor-take control, challenge status quo, blacklist pembukaan kaku ("Dear Sir/Madam", "Saya menulis email..."), subject lowercase punchy 3-7 kata. Struktur sequence:
+  - Email 1 (Hari 1, profesional) — insight-led ice breaker dari `executiveInsight`/`marketDynamics`, singgung pain spesifik, USP 1 kalimat.
+  - Email 2 (Hari 4, friendly) — business case + social proof pakai `reasoning` dari AI match.
+  - Email 3 (Hari 10, direct) — breakup/urgency, 2 paragraf pendek, CTA ya/tidak.
+- `user_prompt` — ekstrak `strategicReport` (title, executiveInsight, internalCapabilities, marketDynamics, roadmap), `deepInsights`, `match reasoning`. **Filter `painPoints` via `addressedPainIndices`** supaya AI hanya menyentuh pain yang di-address produk.
+
+### Fase 3: Robust Validation & Silent-Success Fix
+- `CRAFT_JSON_SCHEMA` — `reasoning.minLength=40`, `targetCompany.minLength=1`, `emails.minItems=3/maxItems=3`.
+- `craft_service.generate_campaign_emails()` — tambah guard eksplisit: `finish_reason == "length"` → RuntimeError "respons ter-truncate"; `message.refusal` → RuntimeError; `content is None` → RuntimeError. Hard-validate payload: `len(emails) >= 3`, `reasoning` & `targetCompany` non-empty, tiap email `subject`/`body` non-empty. `max_tokens: 3000 → 6000`, `temperature=0.7`.
+- `backend/app/main.py` — tambah `@app.exception_handler(RequestValidationError)` yang log setiap validation error (`loc`, `msg`, `type`) ke stdout. Memudahkan debug 422 Pydantic.
+- `app/craft/page.tsx` `settle()` — guard: tolak campaign dengan <3 email, reasoning kosong, atau subject/body kosong. Tampilkan toast, **jangan pollute session/DB**.
+- `app/craft/page.tsx` mount restore — validasi `cachedValid` (emails non-empty + reasoning non-empty). Kalau tidak valid, purge `SESSION_KEY` agar hydration DB re-run.
+- Render akhir — **tidak lagi fallback ke `mockData.campaign`** di mode LIVE kalau belum ada campaign valid. Tampilkan panel "Belum ada campaign valid" + tombol **Generate Ulang**.
+
+### Bug Fix: 422 Unprocessable Entity pada /api/craft
+- **Root cause**: `getCampaignWithMatchResult` mengembalikan baris sparse (`matching_results` di Supabase tidak menyimpan `tagline/description/price/usp/painCategories/source`). `MatchingTab` menyimpan baris sparse ini ke `sessionStorage['campfire_match_results']`. CraftPage lama langsung cast jadi `ProductMatch` → Pydantic tolak dengan 3 field required missing.
+- **Fix**: CraftPage cached-session path sekarang deteksi missing fields dan enrich via `getProductById(selectedId)` sebelum kirim ke `/api/craft`. Sama dengan DB-fallback path.
+
+### Verification
+- `npx tsc --noEmit` — lulus tanpa error.
+- Re-test UI Craft: request body lengkap, backend validasi lolos, 3 email ter-generate dengan reasoning insight-led.
+
 ## Strategic Intelligence Overhaul — Recon (2026-04-06)
 
 ### Fase 1: Data Contract

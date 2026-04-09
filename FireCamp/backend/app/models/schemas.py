@@ -230,7 +230,7 @@ class Campaign(BaseModel):
 class CraftRequest(BaseModel):
     """POST /api/craft — request body dari Frontend."""
     companyProfile:  CompanyProfile
-    selectedProduct: ProductCatalogItem
+    selectedProduct: ProductMatch
 
 
 class CraftResponse(Campaign):
