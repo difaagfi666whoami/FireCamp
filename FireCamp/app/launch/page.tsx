@@ -1,10 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowRight, Rocket } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { mockData } from "@/lib/mock/mockdata"
 import { ModeSelector } from "./components/ModeSelector"
 import { AiScheduleView } from "./components/AiScheduleView"
 import { ManualScheduleForm } from "./components/ManualScheduleForm"
@@ -16,33 +15,96 @@ import { updateCompanyProgress } from "@/lib/api/recon"
 
 type Mode = "ai" | "manual"
 
+export interface ScheduleItem {
+  emailNumber: number
+  dayLabel: string
+  date: string
+  time: string
+  status: string
+}
+
+// ─── Dynamic schedule generator (B2B Day 1 → 4 → 10 methodology) ────────
+
+function generateDefaultSchedule(): ScheduleItem[] {
+  const now = new Date()
+  // Email 1: Tomorrow 09:00
+  const d1 = new Date(now)
+  d1.setDate(d1.getDate() + 1)
+  // Email 2: Day 4 (3 days after Email 1) 10:00
+  const d2 = new Date(d1)
+  d2.setDate(d2.getDate() + 3)
+  // Email 3: Day 10 (6 days after Email 2) 09:30
+  const d3 = new Date(d2)
+  d3.setDate(d3.getDate() + 6)
+
+  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+
+  return [
+    { emailNumber: 1, dayLabel: "Hari ke-1",  date: fmt(d1), time: "09:00", status: "scheduled" },
+    { emailNumber: 2, dayLabel: "Hari ke-4",  date: fmt(d2), time: "10:00", status: "scheduled" },
+    { emailNumber: 3, dayLabel: "Hari ke-10", date: fmt(d3), time: "09:30", status: "scheduled" },
+  ]
+}
+
 export default function LaunchPage() {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("ai")
   const [isActive, setIsActive] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
+  const [companyName, setCompanyName] = useState("")
+  const [schedule, setSchedule] = useState<ScheduleItem[]>(generateDefaultSchedule)
 
-  const schedule = mockData.schedule
+  // ─── Mount: validate session & hydrate company name ───────────────────
 
-  const handleActivate = () => {
-    setIsActive(true)
-    markStageDone("launch")
-    toast.success("Campaign berhasil diaktifkan! Pantau progres di halaman Pulse.")
-    const companyId  = session.getCompanyId()
+  useEffect(() => {
     const campaignId = session.getCampaignId()
-    if (companyId) {
-      updateCompanyProgress(companyId, "launch").catch(console.error)
+    const craft = session.getCraftCampaign()
+
+    if (!campaignId && !craft) {
+      toast.error("Tidak ada campaign aktif", {
+        description: "Silakan buat campaign terlebih dahulu dari tahap Craft.",
+      })
+      router.push("/research-library")
+      return
     }
-    if (campaignId) {
-      saveCampaignSchedule(
-        campaignId,
-        mode,
-        schedule.map((s: any) => ({
-          emailNumber: s.emailNumber,
-          date:        s.date,
-          time:        s.time,
-          status:      s.status,
-        }))
-      ).catch(e => console.error("[LaunchPage] activateCampaign:", e))
+
+    const name = session.getReconProfile()?.name ?? craft?.targetCompany ?? ""
+    setCompanyName(name)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ─── Activate handler (awaited, with error boundary) ──────────────────
+
+  const handleActivate = async () => {
+    const campaignId = session.getCampaignId()
+    const companyId = session.getCompanyId()
+
+    setIsActivating(true)
+    try {
+      if (campaignId) {
+        await saveCampaignSchedule(
+          campaignId,
+          mode,
+          schedule.map(s => ({
+            emailNumber: s.emailNumber,
+            date: s.date,
+            time: s.time,
+            status: s.status,
+          }))
+        )
+      }
+      if (companyId) {
+        await updateCompanyProgress(companyId, "launch")
+      }
+      markStageDone("launch")
+      setIsActive(true)
+      toast.success("Campaign berhasil diaktifkan! Pantau progres di halaman Pulse.")
+    } catch (err: any) {
+      toast.error("Gagal meluncurkan automation", {
+        description: err.message ?? "Koneksi ke database gagal.",
+      })
+    } finally {
+      setIsActivating(false)
     }
   }
 
@@ -54,7 +116,10 @@ export default function LaunchPage() {
           <h1 className="text-2xl font-bold tracking-tight">Launch — Automation Setup</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
             Pilih mode pengiriman dan aktifkan campaign untuk{" "}
-            <span className="font-bold text-foreground">{mockData.company.name}</span>.
+            {companyName
+              ? <span className="font-bold text-foreground">{companyName}</span>
+              : <span className="text-muted-foreground italic">memuat...</span>
+            }.
           </p>
         </div>
         <div className="flex gap-3">
@@ -92,30 +157,35 @@ export default function LaunchPage() {
           <AiScheduleView
             schedule={schedule}
             isActive={isActive}
+            isActivating={isActivating}
             onActivate={handleActivate}
           />
         ) : (
           <ManualScheduleForm
             defaultSchedule={schedule}
             isActive={isActive}
+            isActivating={isActivating}
             onActivate={handleActivate}
+            onScheduleChange={setSchedule}
           />
         )}
       </div>
 
       {/* Footer CTA after activation */}
       {isActive && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white border border-border/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 pr-5 rounded-2xl flex items-center gap-5 z-50 animate-in slide-in-from-bottom-5">
-          <div className="w-11 h-11 bg-brand/10 text-brand rounded-full flex items-center justify-center shrink-0">
-            <Rocket className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="font-bold text-[15px] text-foreground">Campaign diluncurkan!</p>
-            <p className="text-[13px] text-muted-foreground font-medium">Pantau open rate, click, dan reply di Pulse.</p>
+        <div className="mt-8 bg-brand/5 border border-brand/20 shadow-sm p-5 pr-6 rounded-2xl flex items-center justify-between z-10 animate-in fade-in duration-500">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 bg-brand/10 text-brand rounded-full flex items-center justify-center shrink-0 shadow-sm">
+              <Rocket className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold text-[16px] text-foreground tracking-tight">Campaign diluncurkan!</p>
+              <p className="text-[13.5px] text-muted-foreground font-medium">Pantau open rate, click, dan reply di Pulse.</p>
+            </div>
           </div>
           <Button
             onClick={() => router.push("/pulse")}
-            className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold ml-4 rounded-xl px-6 h-11"
+            className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]"
           >
             Buka Pulse
             <ArrowRight className="w-4 h-4 ml-2" />

@@ -13,7 +13,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from app.models.schemas import CraftRequest, CraftResponse
+from app.models.schemas import CraftRequest, CraftResponse, RewriteRequest, RewriteResponse
 from app.services import craft_service
 
 logger = logging.getLogger(__name__)
@@ -72,3 +72,44 @@ async def generate_craft(payload: CraftRequest) -> CraftResponse:
         len(result.get("emails", [])),
     )
     return CraftResponse(**result)
+
+
+@router.post(
+    "/craft/rewrite",
+    response_model=RewriteResponse,
+    summary="Rewrite AI Email Tone",
+    description="Rewrite a specific email's tone while preserving the Challenger Sale context and reasoning.",
+)
+async def regenerate_craft_tone(payload: RewriteRequest) -> RewriteResponse:
+    """
+    POST /api/craft/rewrite
+    """
+    logger.info(
+        "[POST /api/craft/rewrite] START | target=%r seq=%d tone=%s",
+        payload.targetCompany,
+        payload.sequenceNumber,
+        payload.newTone,
+    )
+
+    try:
+        result = await craft_service.rewrite_email_tone_async(
+            target_company=payload.targetCompany,
+            original_subject=payload.originalSubject,
+            original_body=payload.originalBody,
+            campaign_reasoning=payload.campaignReasoning,
+            new_tone=payload.newTone,
+            sequence_number=payload.sequenceNumber,
+        )
+    except RuntimeError as exc:
+        msg = str(exc)
+        logger.error("[POST /api/craft/rewrite] error | %s", msg)
+        raise HTTPException(status_code=502, detail=msg) from exc
+    except Exception as exc:
+        logger.exception("[POST /api/craft/rewrite] unexpected error")
+        raise HTTPException(
+            status_code=500,
+            detail="Terjadi kesalahan internal saat merombak tone email.",
+        ) from exc
+
+    logger.info("[POST /api/craft/rewrite] DONE")
+    return RewriteResponse(**result)

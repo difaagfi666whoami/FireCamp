@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button"
-
-export type ToneType = "profesional" | "friendly" | "direct" | "storytelling";
+import { Loader2 } from "lucide-react"
+import { ToneType } from "@/lib/mock/toneVariants"
 
 interface ToneSelectorProps {
   currentTone: ToneType;
   onChange: (tone: ToneType) => void;
   disabled?: boolean;
+  isRegenerating?: boolean;
 }
 
 const TONES: { label: string, value: ToneType }[] = [
@@ -15,21 +16,25 @@ const TONES: { label: string, value: ToneType }[] = [
   { label: "Storytelling", value: "storytelling" },
 ]
 
-export function ToneSelector({ currentTone, onChange, disabled }: ToneSelectorProps) {
+export function ToneSelector({ currentTone, onChange, disabled, isRegenerating }: ToneSelectorProps) {
   return (
     <div className="flex flex-wrap gap-2">
-      {TONES.map(tone => (
-        <Button
-          key={tone.value}
-          variant={currentTone === tone.value ? "default" : "outline"}
-          size="sm"
-          onClick={() => onChange(tone.value)}
-          disabled={disabled}
-          className={`${currentTone === tone.value ? 'bg-black text-white hover:bg-black/90' : 'bg-white hover:bg-slate-50'} h-8 rounded-full px-4 text-[12px] font-bold shadow-sm transition-all`}
-        >
-          {tone.label}
-        </Button>
-      ))}
+      {TONES.map(tone => {
+        const isActive = currentTone === tone.value
+        return (
+          <Button
+            key={tone.value}
+            variant={isActive ? "default" : "outline"}
+            size="sm"
+            onClick={() => onChange(tone.value)}
+            disabled={disabled || isRegenerating}
+            className={`${isActive ? 'bg-black text-white hover:bg-black/90' : 'bg-white hover:bg-slate-50'} h-8 rounded-full px-4 text-[12px] font-bold shadow-sm transition-all`}
+          >
+            {isActive && isRegenerating && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            {tone.label}
+          </Button>
+        )
+      })}
     </div>
   )
 }

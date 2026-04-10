@@ -10,11 +10,15 @@ import { ToneSelector } from "./components/ToneSelector"
 import { EmailEditor } from "./components/EmailEditor"
 import { ApproveButton } from "./components/ApproveButton"
 import { Button } from "@/components/ui/button"
-import { Check, ArrowRight, ArrowLeft, RotateCcw, FileEdit } from "lucide-react"
+import { Check, ArrowRight, ArrowLeft, RotateCcw, FileEdit, Loader2 } from "lucide-react"
 import { markStageDone } from "@/lib/progress"
 import { session } from "@/lib/session"
-import { syncPolishedEmails } from "@/lib/api/craft"
+import { syncPolishedEmails, regenerateEmailTone, getCraftedEmailsByCompany } from "@/lib/api/craft"
 import { updateCompanyProgress } from "@/lib/api/recon"
+import { toast } from "sonner"
+
+function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
+const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
 
 const POLISH_KEY = "campfire_polish_state"
 
@@ -36,46 +40,131 @@ export default function PolishPage() {
   )
   const [hasStarted, setHasStarted] = useState(false)
   const [restoredFromSession, setRestoredFromSession] = useState(false)
-  const [activeTab, setActiveTab] = useState(() =>
-    String(mockData.campaign.emails[0]?.id ?? 1)
-  )
+  const [companyName, setCompanyName] = useState(mockData.company.name)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSyncing, setIsSyncing] = useState(false)
+  // Helper: AI payload might not have `id`, fallback to sequenceNumber
+  const getEmailId = (e: CampaignEmail) => String(e.id || e.sequenceNumber)
 
-  // ─── Mount: restore emails from sessionStorage (client-only) ────────────
+  const [activeTab, setActiveTab] = useState(() => {
+    const defaultEmail = mockData.campaign.emails[0]
+    return defaultEmail ? String(defaultEmail.id || defaultEmail.sequenceNumber) : "1"
+  })
+
+  // ─── Mount: restore emails (4-level hierarchy) ─────────────────────────
 
   useEffect(() => {
-    const saved = loadSavedEmails()
-    if (saved) {
-      setEmails(saved)
-      setRestoredFromSession(true)
-      setActiveTab(String(saved[0]?.id ?? 1))
-    } else {
-      const craftCampaign = session.getCraftCampaign()
-      if (craftCampaign?.emails?.length) {
-        const restored = JSON.parse(JSON.stringify(craftCampaign.emails))
-        setEmails(restored)
-        setActiveTab(String(restored[0]?.id ?? 1))
-      }
-    }
+    const reconName = session.getReconProfile()?.name
+    if (reconName) setCompanyName(reconName)
+
     const alreadyStarted = sessionStorage.getItem("campfire_polish_started")
-    if (alreadyStarted === "1") {
-      setHasStarted(true)
+    if (alreadyStarted === "1") setHasStarted(true)
+
+    const applyEmails = (list: CampaignEmail[], restored?: boolean) => {
+      setEmails(list)
+      setActiveTab(String(list[0]?.id || list[0]?.sequenceNumber || 1))
+      if (restored) setRestoredFromSession(true)
     }
-    // else: show idle screen until user clicks button
+
+    ;(async () => {
+      try {
+        // Level 1: sessionStorage polish state
+        const saved = loadSavedEmails()
+        if (saved) { applyEmails(saved, true); return }
+
+        // Level 2: sessionStorage craft campaign
+        const craftCampaign = session.getCraftCampaign()
+        if (craftCampaign?.emails?.length) {
+          applyEmails(JSON.parse(JSON.stringify(craftCampaign.emails)))
+          return
+        }
+
+        // Level 3: Supabase (live mode only)
+        if (IS_LIVE) {
+          const companyId = session.getCompanyId()
+          if (companyId) {
+            const dbResult = await getCraftedEmailsByCompany(companyId)
+            if (dbResult?.emails?.length) {
+              applyEmails(dbResult.emails)
+              return
+            }
+          }
+        }
+
+        // Level 4: mock data fallback (already set as initial state)
+      } catch (err) {
+        console.error("[PolishPage] hydration error:", err)
+      } finally {
+        setIsLoading(false)
+      }
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const [isRegenerating, setIsRegenerating] = useState<Record<string, boolean>>({})
+
   const updateEmail = (id: number | string, updates: Partial<CampaignEmail>) => {
-    setEmails(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e))
+    setEmails(prev => prev.map(e => getEmailId(e) === String(id) ? { ...e, ...updates } : e))
   }
 
-  const handleToneChange = (emailId: number | string, tone: ToneType) => {
-    const email = emails.find(e => e.id === emailId)
+  const handleToneChange = async (emailId: string | number, tone: ToneType) => {
+    const stringId = String(emailId)
+    const email = emails.find(e => getEmailId(e) === stringId)
     if (!email) return
-    const idx = email.sequenceNumber - 1
-    const variant = toneVariants[tone]?.[idx]
-    if (variant) {
-      updateEmail(emailId, { tone, subject: variant.subject, body: variant.body })
-    } else {
-      updateEmail(emailId, { tone })
+
+    // Jika sedang regenerate, ignore click
+    if (isRegenerating[stringId]) return
+
+    // Jika MOCK mode, gunakan text statis dari toneVariants (simulasi delay 1 detik)
+    if (!IS_LIVE) {
+      setIsRegenerating(prev => ({ ...prev, [stringId]: true }))
+      updateEmail(emailId, { tone, isApproved: false })
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const idx = email.sequenceNumber - 1
+      const variant = toneVariants[tone]?.[idx]
+      if (variant) {
+        updateEmail(emailId, { subject: variant.subject, body: variant.body })
+      }
+      setIsRegenerating(prev => ({ ...prev, [stringId]: false }))
+      return
+    }
+
+    // --- LIVE MODE: Panggil AI Backend ---
+    const craftCampaign = session.getCraftCampaign()
+
+    if (!craftCampaign || !craftCampaign.reasoning) {
+      toast.error("Gagal merubah tone", { description: "Data Campaign asli hilang dari sesi, tidak ada context reasoning untuk AI." })
+      return
+    }
+
+    try {
+      setIsRegenerating(prev => ({ ...prev, [stringId]: true }))
+      
+      // Update UI seketika: ganti tone, unapprove, subject dan body belum ganti (tunggu asinkronus)
+      updateEmail(emailId, { tone: tone, isApproved: false })
+
+      const newContent = await regenerateEmailTone({
+        targetCompany:     companyName,
+        originalSubject:   email.subject,
+        originalBody:      email.body,
+        campaignReasoning: craftCampaign.reasoning,
+        newTone:           tone,
+        sequenceNumber:    email.sequenceNumber,
+      })
+
+      updateEmail(emailId, { 
+        subject: newContent.subject, 
+        body: newContent.body,
+        isApproved: false // pastikan dicabut kembali kalau-kalau dicentang sembari nunggu
+      })
+      toast.success(`Berhasil meregenerasi tone Email ${email.sequenceNumber}`)
+      
+    } catch (err: any) {
+      toast.error("Gagal meregenerasi tone email", { description: err.message })
+      // rollback UI tone
+      updateEmail(emailId, { tone: email.tone })
+    } finally {
+      setIsRegenerating(prev => ({ ...prev, [stringId]: false }))
     }
   }
 
@@ -127,17 +216,29 @@ export default function PolishPage() {
   const handleProceedToLaunch = async () => {
     const campaignId = session.getCampaignId()
     if (campaignId) {
+      setIsSyncing(true)
       try {
         await syncPolishedEmails(campaignId, buildEmailPayload())
-      } catch (e) {
-        console.error("[PolishPage] syncPolishedEmails on proceed:", e)
+      } catch (err: any) {
+        toast.error("Gagal menyimpan hasil edit", { description: err.message ?? "Koneksi ke database gagal." })
+        setIsSyncing(false)
+        return
       }
+      setIsSyncing(false)
     }
     router.push("/launch")
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 animate-in fade-in duration-300">
+        <Loader2 className="w-8 h-8 text-brand animate-spin mb-4" />
+        <p className="text-[13.5px] text-muted-foreground font-medium">Memuat data email...</p>
+      </div>
+    )
+  }
+
   if (!hasStarted) {
-    const companyName = session.getReconProfile()?.name ?? mockData.company.name
     return (
       <div className="flex justify-center py-16 animate-in fade-in duration-500">
         <div className="bg-white flex flex-col items-center justify-center p-8
@@ -182,9 +283,10 @@ export default function PolishPage() {
             Kembali
           </Button>
           {allApproved ? (
-            <Button onClick={handleProceedToLaunch} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
-              Lanjut ke Launch
-              <ArrowRight className="w-4 h-4 ml-2" />
+            <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
+              {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
+              {!isSyncing && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           ) : (
             <Button disabled className="bg-muted text-muted-foreground font-semibold text-[13.5px]">
@@ -224,10 +326,12 @@ export default function PolishPage() {
       <div className="pt-2 relative">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex flex-col">
           <TabsList className="w-full justify-start bg-transparent p-0 h-auto gap-8 border-b border-border/60 rounded-none mb-8">
-            {emails.map(email => (
+            {emails.map(email => {
+              const eId = getEmailId(email)
+              return (
               <TabsTrigger
-                key={email.id}
-                value={email.id.toString()}
+                key={eId}
+                value={eId}
                 className="rounded-none border-b-[3px] border-transparent px-4 pb-3 pt-2 text-[15.5px] font-bold text-muted-foreground hover:text-foreground data-[state=active]:border-brand data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all relative"
               >
                 Email {email.sequenceNumber}
@@ -235,20 +339,23 @@ export default function PolishPage() {
                   <div className="absolute xl:top-2.5 top-1.5 right-0.5 w-2 h-2 rounded-full bg-emerald-500 shadow-sm border border-emerald-200"></div>
                 )}
               </TabsTrigger>
-            ))}
+            )})}
           </TabsList>
 
-          {emails.map(email => (
-            <TabsContent key={email.id} value={email.id.toString()} className="mt-0 outline-none border-none w-full">
+          {emails.map(email => {
+            const eId = getEmailId(email)
+            return (
+            <TabsContent key={eId} value={eId} className="mt-0 outline-none border-none w-full">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_340px] gap-10">
                 <div className="space-y-6">
-                  <div className={`transition-all duration-300 ${email.isApproved ? 'opacity-85 pointer-events-none' : ''}`}>
+                  <div className={`relative transition-all duration-300 ${email.isApproved ? 'opacity-85 pointer-events-none' : ''}`}>
                     <EmailEditor
                       subject={email.subject}
                       body={email.body}
-                      onChangeSubject={(val) => updateEmail(email.id, { subject: val })}
-                      onChangeBody={(val) => updateEmail(email.id, { body: val })}
-                      disabled={email.isApproved}
+                      onChangeSubject={(val) => updateEmail(eId, { subject: val })}
+                      onChangeBody={(val) => updateEmail(eId, { body: val })}
+                      disabled={email.isApproved || isRegenerating[eId]}
+                      isRegenerating={isRegenerating[eId]}
                     />
                   </div>
                 </div>
@@ -259,8 +366,9 @@ export default function PolishPage() {
                     <p className="text-[12px] text-muted-foreground mb-4">Pilih tone untuk regenerasi otomatis isi email.</p>
                     <ToneSelector
                       currentTone={email.tone}
-                      onChange={(val) => handleToneChange(email.id, val)}
-                      disabled={email.isApproved}
+                      onChange={(val) => handleToneChange(eId, val)}
+                      disabled={email.isApproved || isRegenerating[eId]}
+                      isRegenerating={isRegenerating[eId]}
                     />
                   </div>
 
@@ -269,7 +377,7 @@ export default function PolishPage() {
                     <ApproveButton
                       isApproved={email.isApproved}
                       emailNumber={email.sequenceNumber}
-                      onToggle={() => updateEmail(email.id, { isApproved: !email.isApproved })}
+                      onToggle={() => updateEmail(eId, { isApproved: !email.isApproved })}
                     />
                     {email.isApproved && (
                       <p className="text-[12.5px] text-muted-foreground mt-4 font-medium leading-relaxed bg-white border border-border/50 p-3 rounded-lg">
@@ -280,22 +388,25 @@ export default function PolishPage() {
                 </div>
               </div>
             </TabsContent>
-          ))}
+          )})}
         </Tabs>
       </div>
 
       {allApproved && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-white border border-border/80 shadow-[0_8px_30px_rgb(0,0,0,0.12)] p-4 pr-5 rounded-2xl flex items-center gap-5 z-50 animate-in slide-in-from-bottom-5">
-          <div className="w-11 h-11 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
-            <Check className="w-6 h-6 stroke-[3]" />
+        <div className="mt-8 bg-emerald-50/50 border border-emerald-200 shadow-sm p-5 pr-6 rounded-2xl flex items-center justify-between z-10 animate-in fade-in duration-500">
+          <div className="flex items-center gap-5">
+            <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 shadow-sm">
+              <Check className="w-6 h-6 stroke-[3]" />
+            </div>
+            <div>
+              <p className="font-bold text-[16px] text-emerald-900 tracking-tight">Semua draft diapprove!</p>
+              <p className="text-[13.5px] text-emerald-700 font-medium">Siap masuk jadwal automation.</p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-[15px] text-foreground">Semua draft diapprove!</p>
-            <p className="text-[13px] text-muted-foreground font-medium">Siap masuk jadwal automation.</p>
-          </div>
-          <Button onClick={handleProceedToLaunch} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold ml-4 rounded-xl px-6 h-11">
-            Lanjut ke Launch
-            <ArrowRight className="w-4 h-4 ml-2" />
+          <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]">
+            {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
+            {!isSyncing && <ArrowRight className="w-4 h-4 ml-2" />}
           </Button>
         </div>
       )}

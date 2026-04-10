@@ -176,3 +176,43 @@ export async function syncPolishedEmails(
     throw error
   }
 }
+
+// -----------------------------------------------------------------------------
+// REWRITE EMAIL TONE (Panggil AI backend untuk regenerasi specific email)
+// -----------------------------------------------------------------------------
+
+export interface RewriteRequestPayload {
+  targetCompany: string
+  originalSubject: string
+  originalBody: string
+  campaignReasoning: string
+  newTone: string
+  sequenceNumber: number
+}
+
+export interface RewriteResponsePayload {
+  subject: string
+  body: string
+  tone: string
+}
+
+export async function regenerateEmailTone(req: RewriteRequestPayload): Promise<RewriteResponsePayload> {
+  const res = await fetch(`${API_URL}/api/craft/rewrite`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "Unknown error" }))
+    const detailMsg =
+      typeof err?.detail === "string"
+        ? err.detail
+        : Array.isArray(err?.detail)
+        ? err.detail.map((d: any) => `${(d.loc || []).join(".")}: ${d.msg}`).join(" | ")
+        : `HTTP ${res.status}`
+    throw new Error(detailMsg)
+  }
+
+  return res.json()
+}

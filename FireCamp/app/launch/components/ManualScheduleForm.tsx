@@ -1,22 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, CheckCircle2, AlertCircle, CalendarDays } from "lucide-react"
+import { Mail, CheckCircle2, AlertCircle, CalendarDays, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-
-interface ScheduleRow {
-  emailNumber: number
-  dayLabel: string
-  date: string
-  time: string
-}
+import type { ScheduleItem } from "../page"
 
 interface ManualScheduleFormProps {
-  defaultSchedule: ScheduleRow[]
+  defaultSchedule: ScheduleItem[]
   isActive: boolean
+  isActivating?: boolean
   onActivate: () => void
+  onScheduleChange?: (schedule: ScheduleItem[]) => void
 }
 
 function toDateTime(date: string, time: string): Date | null {
@@ -24,13 +20,17 @@ function toDateTime(date: string, time: string): Date | null {
   return new Date(`${date}T${time}:00`)
 }
 
-export function ManualScheduleForm({ defaultSchedule, isActive, onActivate }: ManualScheduleFormProps) {
-  const [rows, setRows] = useState<ScheduleRow[]>(
-    defaultSchedule.map(s => ({ emailNumber: s.emailNumber, dayLabel: s.dayLabel, date: s.date, time: s.time }))
+export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, onActivate, onScheduleChange }: ManualScheduleFormProps) {
+  const [rows, setRows] = useState<ScheduleItem[]>(
+    defaultSchedule.map(s => ({ ...s }))
   )
 
   const updateRow = (index: number, field: "date" | "time", value: string) => {
-    setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r))
+    setRows(prev => {
+      const next = prev.map((r, i) => i === index ? { ...r, [field]: value } : r)
+      onScheduleChange?.(next)
+      return next
+    })
   }
 
   // Returns an error message for a row, or null if valid
@@ -150,11 +150,11 @@ export function ManualScheduleForm({ defaultSchedule, isActive, onActivate }: Ma
       {!isActive ? (
         <Button
           onClick={handleSave}
-          disabled={hasErrors || !allFilled}
+          disabled={hasErrors || !allFilled || isActivating}
           className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <CalendarDays className="w-4 h-4 mr-2" />
-          Simpan Jadwal & Aktifkan
+          {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarDays className="w-4 h-4 mr-2" />}
+          {isActivating ? "Mengaktifkan..." : "Simpan Jadwal & Aktifkan"}
         </Button>
       ) : (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">

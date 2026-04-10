@@ -1,5 +1,20 @@
 # Updates
 
+## Pipeline Polish — Live Tone Rewrite & Async Editor (2026-04-09)
+
+### Feature: Dedicated API Endpoint untuk Resolusi Tone
+- **`backend/app/api/routers/craft.py`**: Ditambahkan rute spesifik `POST /api/craft/rewrite` yang didesain ringan untuk menangani *cost-effective single-email rewrite* agar prompt hanya difokuskan pada tugas menterjemahkan esensi ("reasoning" & "original body") ke dalam tone yang diinginkan tanpa harus me-_remake_ 3 iterasi sequence penuh.
+- **Model Schema Strictness**: Menempatkan `RewriteRequest` & `RewriteResponse` (beserta JSON schema dari _System Prompt_ `craft_service.py`) untuk garansi balikan parsing respons JSON dari provider gpt-4o.
+
+### Feature: Menghapus Dependency Terhadap Mock "Kreasi Digital" pada State Live
+- **Root Problem**: Tombol `ToneSelector` di `PolishPage` sebelumnya berpegangan secara ketat pada object statis `toneVariants.ts`. Efeknya: Ketika operator *Craft* menghasilkan _masterpiece B2B pitch_ dan lalu iseng klik tombol *Friendly* di halaman *Polish*, email _masterpiece_-nya tadi seketika hilang disapu bersih dan ditimpa tulisan sampel "Kreasi Digital".
+- **Fix `handleToneChange`**: Ditambahkan cek `if (!IS_LIVE)` agar mock tetap berjalan bagi lingkungan testing lokal dev, lalu di-*bypass* untuk masuk ke sesi panggilan asinkronus _Backend Call_ (`regenerateEmailTone()`).
+
+### UX Flow: Prevent Data Sabotage Lewat Auto-Unapprove dan Overlay Spinner
+- **`isRegenerating` state**: Tab pada Polish bisa saling pindah selagi API Gen-AI memproses satu elemen di-*background*. Untuk menanggulangi korupsi input: 
+  - `EmailEditor` diberikan parameter *disabled* tambahan & *overlay spinner*. 
+  - Status `isApproved = true` akan dipaksa rontok menjadi `false` setiap kali `newTone` diaplikasikan (AI Write success/fail) agar memandu Salesperson membaca ulang hasilnya.
+
 ## Pipeline Craft & Match — Bug Fixes & Stabilization (2026-04-09)
 
 ### Bug Fix: FastAPI Router Trailing Slash (307 Redirect → 405 Drop)

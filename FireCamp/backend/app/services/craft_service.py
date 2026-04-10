@@ -302,3 +302,112 @@ async def generate_campaign_emails(
     except Exception as exc:
         logger.error("[craft_service] OpenAI error: %s", exc)
         raise RuntimeError(f"Generate campaign gagal: {exc}") from exc
+
+
+REWRITE_JSON_SCHEMA = {
+    "name": "email_rewrite",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "subject": {
+                "type": "string",
+                "description": "Subject email baru (tetap lowercase 3-7 kata)",
+            },
+            "body": {
+                "type": "string",
+                "description": "Isi email baru sesuai tone",
+            },
+            "tone": {
+                "type": "string",
+                "description": "Tone yang digunakan (echo dari input)",
+            },
+        },
+        "required": ["subject", "body", "tone"],
+        "additionalProperties": False,
+    },
+}
+
+REWRITE_SYSTEM_PROMPT = """\
+Anda adalah Elite B2B Sales Copywriter spesialis metodologi Challenger Sale.
+Tugas Anda adalah menulis ulang / merevisi sebuah draf email B2B tanpa mengubah argumen esensial atau "reasoning" utamanya.
+Pertahankan status quo challenge, pain point, dan value proposition.
+
+Kriteria Revisi:
+1. UBAH TONE sesuai permintaan ("profesional", "friendly", "direct", atau "storytelling").
+   - profesional: Sopan, lugas, fokus pada efisiensi/ROI, bahasa korporat modern.
+   - friendly: Hangat, kasual, membangun koneksi, tidak terlalu kaku.
+   - direct: Sangat singkat, to-the-point, hilangkan basa-basi sama sekali.
+   - storytelling: Mengambil sudut pandang naratif (contoh dari klien lain, situasi analogi).
+2. JANGAN gunakan sapaan kaku seperti "Dear Sir/Madam", "Kepada Yth.", "Hormat kami".
+3. TULIS dalam Bahasa Indonesia natural bergaya startup/tech (boleh meminjam istilah bahasa inggris yang lazim seperti "churn", "revenue", "bottleneck" dll).
+4. SUBJECT email WAJIB 100% lowercase (huruf kecil semua), panjang 3-7 kata.
+5. Email TIDAK BOLEH mempromosikan fitur kosong, harus selalu mengikat ke "pain points" atau "reasoning" (akan diberikan).
+"""
+
+
+async def rewrite_email_tone_async(
+    target_company: str,
+    original_subject: str,
+    original_body: str,
+    campaign_reasoning: str,
+    new_tone: str,
+    sequence_number: int,
+) -> dict[str, str]:
+    if not settings.OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY belum diset di .env.local")
+
+    client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+
+    user_prompt = f"""\
+TARGET COMPANY: {target_company}
+CAMPAIGN REASONING:
+{campaign_reasoning}
+
+[Original Draft Email {sequence_number}]
+Subject: {original_subject}
+Body:
+{original_body}
+
+TUGAS:
+Revisi draf di atas menjadi tone: "{new_tone}".
+Pertahankan konteks dan alur email sesuai dengan urutan (Sequence {sequence_number}).
+Ingat: Subject wajib 100% huruf kecil dan panjang 3-7 kata.
+"""
+
+    logger.info("[craft_service] Memulai rewrite tone ke %r untuk email %d", new_tone, sequence_number)
+
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o",
+            max_tokens=2000,
+            temperature=0.7,
+            response_format={"type": "json_schema", "json_schema": REWRITE_JSON_SCHEMA},
+            messages=[
+                {"role": "system", "content": REWRITE_SYSTEM_PROMPT},
+                {"role": "user",   "content": user_prompt},
+            ],
+        )
+
+        choice       = response.choices[0]
+        finish       = choice.finish_reason
+        message      = choice.message
+        refusal      = getattr(message, "refusal", None)
+        content      = message.content
+
+        if finish == "length":
+            raise RuntimeError("Respons AI ter-truncate.")
+        if refusal:
+            raise RuntimeError(f"AI menolak: {refusal}")
+        if not content:
+            raise RuntimeError("Respons AI kosong.")
+
+        result = json.loads(content)
+        return result
+
+    except json.JSONDecodeError as exc:
+        logger.error("[craft_service] JSON parse error: %s", exc)
+        raise RuntimeError(f"Respons AI bukan JSON valid: {exc}") from exc
+    except Exception as exc:
+        logger.error("[craft_service] OpenAI error: %s", exc)
+        raise RuntimeError(f"Rewrite tone gagal: {exc}") from exc

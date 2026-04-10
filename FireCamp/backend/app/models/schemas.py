@@ -241,6 +241,23 @@ class CraftResponse(Campaign):
     pass
 
 
+class RewriteRequest(BaseModel):
+    """POST /api/craft/rewrite — request body dari Frontend."""
+    targetCompany:     str
+    originalSubject:   str
+    originalBody:      str
+    campaignReasoning: str
+    newTone:           str
+    sequenceNumber:    int
+
+
+class RewriteResponse(BaseModel):
+    """POST /api/craft/rewrite — response body."""
+    subject: str
+    body:    str
+    tone:    str
+
+
 # ── Error ──────────────────────────────────────────────────────────────────────
 
 class ErrorDetail(BaseModel):

@@ -1,21 +1,14 @@
 "use client"
 
-import { Sparkles, Mail, CheckCircle2, Clock, Zap } from "lucide-react"
+import { Sparkles, Mail, CheckCircle2, Clock, Zap, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
-interface ScheduleItem {
-  emailId: number
-  emailNumber: number
-  dayLabel: string
-  date: string
-  time: string
-  status: string
-}
+import type { ScheduleItem } from "../page"
 
 interface AiScheduleViewProps {
   schedule: ScheduleItem[]
   isActive: boolean
+  isActivating?: boolean
   onActivate: () => void
 }
 
@@ -29,7 +22,7 @@ function formatDate(dateStr: string): string {
   })
 }
 
-export function AiScheduleView({ schedule, isActive, onActivate }: AiScheduleViewProps) {
+export function AiScheduleView({ schedule, isActive, isActivating, onActivate }: AiScheduleViewProps) {
   return (
     <div className="space-y-6">
       {/* AI Recommendation Card */}
@@ -58,7 +51,7 @@ export function AiScheduleView({ schedule, isActive, onActivate }: AiScheduleVie
         </h3>
         {schedule.map((item) => (
           <div
-            key={item.emailId}
+            key={item.emailNumber}
             className={cn(
               "flex items-center gap-4 p-4 rounded-xl border bg-white transition-all duration-300",
               isActive ? "border-emerald-200 shadow-sm" : "border-border/60"
@@ -121,10 +114,11 @@ export function AiScheduleView({ schedule, isActive, onActivate }: AiScheduleVie
       {!isActive ? (
         <Button
           onClick={onActivate}
-          className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md"
+          disabled={isActivating}
+          className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md disabled:opacity-60"
         >
-          <Zap className="w-4 h-4 mr-2" />
-          Aktifkan Automation
+          {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Zap className="w-4 h-4 mr-2" />}
+          {isActivating ? "Mengaktifkan..." : "Aktifkan Automation"}
         </Button>
       ) : (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
