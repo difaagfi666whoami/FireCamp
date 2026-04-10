@@ -5,6 +5,8 @@ const USE_MOCK = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") === "true"
 
 interface ScheduleItem {
   emailNumber: number
+  dayLabel: string
+  scheduledDay: number
   date: string
   time: string
   status: string
@@ -37,6 +39,8 @@ export async function activateCampaign(
     const { error } = await supabase
       .from("campaign_emails")
       .update({
+        day_label:      item.dayLabel,
+        scheduled_day:  item.scheduledDay,
         scheduled_date: item.date,
         scheduled_time: item.time,
         status: item.status === "sent" ? "sent" : "scheduled",

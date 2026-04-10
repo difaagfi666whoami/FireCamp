@@ -9,6 +9,8 @@ type LaunchMode = "ai" | "manual"
 
 interface ScheduleItem {
   emailNumber: number
+  dayLabel: string
+  scheduledDay: number
   date: string
   time: string
   status: string

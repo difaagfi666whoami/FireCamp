@@ -18,6 +18,7 @@ type Mode = "ai" | "manual"
 export interface ScheduleItem {
   emailNumber: number
   dayLabel: string
+  scheduledDay: number
   date: string
   time: string
   status: string
@@ -40,9 +41,9 @@ function generateDefaultSchedule(): ScheduleItem[] {
   const fmt = (d: Date) => d.toISOString().slice(0, 10)
 
   return [
-    { emailNumber: 1, dayLabel: "Hari ke-1",  date: fmt(d1), time: "09:00", status: "scheduled" },
-    { emailNumber: 2, dayLabel: "Hari ke-4",  date: fmt(d2), time: "10:00", status: "scheduled" },
-    { emailNumber: 3, dayLabel: "Hari ke-10", date: fmt(d3), time: "09:30", status: "scheduled" },
+    { emailNumber: 1, dayLabel: "Hari ke-1",  scheduledDay: 1,  date: fmt(d1), time: "09:00", status: "scheduled" },
+    { emailNumber: 2, dayLabel: "Hari ke-4",  scheduledDay: 4,  date: fmt(d2), time: "10:00", status: "scheduled" },
+    { emailNumber: 3, dayLabel: "Hari ke-10", scheduledDay: 10, date: fmt(d3), time: "09:30", status: "scheduled" },
   ]
 }
 
@@ -74,8 +75,11 @@ export default function LaunchPage() {
   }, [])
 
   // ─── Activate handler (awaited, with error boundary) ──────────────────
+  // `finalSchedule` parameter allows child components (ManualScheduleForm)
+  // to pass their local edited rows directly, avoiding stale parent state.
 
-  const handleActivate = async () => {
+  const handleActivate = async (finalSchedule?: ScheduleItem[]) => {
+    const dataToSave = finalSchedule ?? schedule
     const campaignId = session.getCampaignId()
     const companyId = session.getCompanyId()
 
@@ -85,11 +89,13 @@ export default function LaunchPage() {
         await saveCampaignSchedule(
           campaignId,
           mode,
-          schedule.map(s => ({
-            emailNumber: s.emailNumber,
-            date: s.date,
-            time: s.time,
-            status: s.status,
+          dataToSave.map(s => ({
+            emailNumber:  s.emailNumber,
+            dayLabel:     s.dayLabel,
+            scheduledDay: s.scheduledDay,
+            date:         s.date,
+            time:         s.time,
+            status:       s.status,
           }))
         )
       }
@@ -97,6 +103,7 @@ export default function LaunchPage() {
         await updateCompanyProgress(companyId, "launch")
       }
       markStageDone("launch")
+      setSchedule(dataToSave)
       setIsActive(true)
       toast.success("Campaign berhasil diaktifkan! Pantau progres di halaman Pulse.")
     } catch (err: any) {
@@ -166,7 +173,6 @@ export default function LaunchPage() {
             isActive={isActive}
             isActivating={isActivating}
             onActivate={handleActivate}
-            onScheduleChange={setSchedule}
           />
         )}
       </div>

@@ -11,8 +11,7 @@ interface ManualScheduleFormProps {
   defaultSchedule: ScheduleItem[]
   isActive: boolean
   isActivating?: boolean
-  onActivate: () => void
-  onScheduleChange?: (schedule: ScheduleItem[]) => void
+  onActivate: (finalSchedule: ScheduleItem[]) => Promise<void>
 }
 
 function toDateTime(date: string, time: string): Date | null {
@@ -20,17 +19,13 @@ function toDateTime(date: string, time: string): Date | null {
   return new Date(`${date}T${time}:00`)
 }
 
-export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, onActivate, onScheduleChange }: ManualScheduleFormProps) {
+export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, onActivate }: ManualScheduleFormProps) {
   const [rows, setRows] = useState<ScheduleItem[]>(
     defaultSchedule.map(s => ({ ...s }))
   )
 
   const updateRow = (index: number, field: "date" | "time", value: string) => {
-    setRows(prev => {
-      const next = prev.map((r, i) => i === index ? { ...r, [field]: value } : r)
-      onScheduleChange?.(next)
-      return next
-    })
+    setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r))
   }
 
   // Returns an error message for a row, or null if valid
@@ -49,13 +44,38 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
   const hasErrors = errors.some(e => e !== null)
   const allFilled = rows.every(r => r.date && r.time)
 
-  const handleSave = () => {
+  const getDynamicLabel = (currentIndex: number) => {
+    if (currentIndex === 0) return "Hari ke-1"
+    const curr = toDateTime(rows[currentIndex].date, rows[currentIndex].time)
+    const first = toDateTime(rows[0].date, rows[0].time)
+    if (!curr || !first) return "Menunggu tanggal"
+    
+    const currDay = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate())
+    const firstDay = new Date(first.getFullYear(), first.getMonth(), first.getDate())
+    const diffDays = Math.round((currDay.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24))
+    
+    if (diffDays <= 0) {
+      if (currentIndex > 0 && curr > first) return "Hari yang sama"
+      return "Jadwal mundur" // handled by row error visually
+    }
+    return `Hari ke-${diffDays + 1}`
+  }
+
+  const handleSave = async () => {
     if (hasErrors || !allFilled) {
       toast.error("Periksa kembali jadwal — ada konflik waktu atau field yang kosong.")
       return
     }
-    onActivate()
-    toast.success("Jadwal berhasil disimpan dan campaign diaktifkan!")
+    // Recompute dayLabel + scheduledDay from actual dates before saving
+    const firstDate = new Date(rows[0].date + "T00:00:00")
+    const finalRows = rows.map((r, i) => {
+      if (i === 0) return { ...r, dayLabel: "Hari ke-1", scheduledDay: 1 }
+      const currDate = new Date(r.date + "T00:00:00")
+      const diffDays = Math.round((currDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
+      const day = diffDays + 1
+      return { ...r, dayLabel: `Hari ke-${day}`, scheduledDay: day }
+    })
+    await onActivate(finalRows)
   }
 
   return (
@@ -84,7 +104,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
               <div>
                 <p className="font-bold text-[14px] text-foreground">
                   Email {row.emailNumber}
-                  <span className="ml-2 text-[12px] font-medium text-muted-foreground">({row.dayLabel})</span>
+                  <span className="ml-2 text-[12px] font-medium text-muted-foreground bg-slate-100 px-2 py-1 rounded-md">({getDynamicLabel(index)})</span>
                 </p>
               </div>
               {isActive && (
