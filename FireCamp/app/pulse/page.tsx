@@ -3,12 +3,11 @@
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { mockData } from "@/lib/mock/mockdata"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
 import { markStageDone } from "@/lib/progress"
 import { session } from "@/lib/session"
-import { savePulseAnalytics, getCampaignAnalytics, AnalyticsData } from "@/lib/api/analytics"
+import { getCampaignAnalytics, AnalyticsData } from "@/lib/api/analytics"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { StatCards } from "./components/StatCards"
 import { PerformanceBarChart } from "./components/PerformanceBarChart"
@@ -36,15 +35,25 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
   },
 }
 
+const ZERO_ANALYTICS: AnalyticsData = {
+  summary: { emailsSent: 0, openRate: 0, clickRate: 0, replyRate: 0, industryBenchmarks: { openRate: 22.0, clickRate: 3.5, replyRate: 8.0 } },
+  perEmail: [
+    { emailNumber: 1, name: "Email 1", opens: 0, clicks: 0, replies: 0, status: "scheduled" },
+    { emailNumber: 2, name: "Email 2", opens: 0, clicks: 0, replies: 0, status: "scheduled" },
+    { emailNumber: 3, name: "Email 3", opens: 0, clicks: 0, replies: 0, status: "scheduled" },
+  ],
+  timeline: [],
+  tokenUsage: { recon: 0, match: 0, craft: 0, total: 0, estimatedCostIDR: 0 },
+}
+
 export default function PulsePage() {
   const router = useRouter()
-  const companyName = session.getReconProfile()?.name ?? mockData.company.name
-  const [analytics, setAnalytics] = useState<AnalyticsData>(
-    mockData.analytics as unknown as AnalyticsData
-  )
+  const [companyName, setCompanyName] = useState("Perusahaan")
+  const [analytics, setAnalytics] = useState<AnalyticsData>(ZERO_ANALYTICS)
   const { summary, perEmail, timeline, tokenUsage } = analytics
 
   useEffect(() => {
+    setCompanyName(session.getReconProfile()?.name ?? "Perusahaan")
     markStageDone("pulse")
     const companyId  = session.getCompanyId()
     const campaignId = session.getCampaignId()
@@ -52,37 +61,9 @@ export default function PulsePage() {
       updateCompanyProgress(companyId, "pulse").catch(console.error)
     }
     if (campaignId) {
-      ;(async () => {
-        try {
-          await savePulseAnalytics(campaignId, {
-            summary: {
-              emailsSent:         mockData.analytics.summary.emailsSent,
-              openRate:           mockData.analytics.summary.openRate,
-              clickRate:          mockData.analytics.summary.clickRate,
-              replyRate:          mockData.analytics.summary.replyRate,
-              industryBenchmarks: mockData.analytics.summary.industryBenchmarks,
-            },
-            perEmail: mockData.analytics.perEmail.map((e: any) => ({
-              emailNumber: e.emailNumber,
-              opens:       e.opens,
-              clicks:      e.clicks,
-              replies:     e.replies,
-              status:      e.status,
-            })),
-            timeline: mockData.analytics.timeline,
-            tokenUsage: {
-              recon:            mockData.analytics.tokenUsage.recon,
-              match:            mockData.analytics.tokenUsage.match,
-              craft:            mockData.analytics.tokenUsage.craft,
-              estimatedCostIDR: mockData.analytics.tokenUsage.estimatedCostIDR,
-            },
-          })
-          const data = await getCampaignAnalytics(campaignId)
-          setAnalytics(data)
-        } catch (e) {
-          console.error("[PulsePage] analytics:", e)
-        }
-      })()
+      getCampaignAnalytics(campaignId)
+        .then(setAnalytics)
+        .catch((e) => console.error("[PulsePage] analytics:", e))
     }
   }, [])
 

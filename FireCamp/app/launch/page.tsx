@@ -38,7 +38,12 @@ function generateDefaultSchedule(): ScheduleItem[] {
   const d3 = new Date(d2)
   d3.setDate(d3.getDate() + 6)
 
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
+  const fmt = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, "0")
+    const day = String(d.getDate()).padStart(2, "0")
+    return `${y}-${m}-${day}`
+  }
 
   return [
     { emailNumber: 1, dayLabel: "Hari ke-1",  scheduledDay: 1,  date: fmt(d1), time: "09:00", status: "scheduled" },
@@ -165,7 +170,7 @@ export default function LaunchPage() {
             schedule={schedule}
             isActive={isActive}
             isActivating={isActivating}
-            onActivate={handleActivate}
+            onActivate={() => handleActivate()}
           />
         ) : (
           <ManualScheduleForm

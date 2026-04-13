@@ -1,8 +1,4 @@
 import { supabase } from "@/lib/supabase/client"
-import { mockData } from "@/lib/mock/mockdata"
-
-function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
-const USE_MOCK = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") === "true"
 
 // -----------------------------------------------------------------------------
 // Shared return type — dipakai oleh getCampaignAnalytics & PulsePage
@@ -156,8 +152,35 @@ export async function getCampaignAnalytics(campaignId: string): Promise<Analytic
     .maybeSingle()
 
   if (error || !data) {
-    console.warn("[Campfire/analytics] getCampaignAnalytics: no data, using mock fallback")
-    return mockData.analytics as unknown as AnalyticsData
+    // Zeroed-out default — Pulse is read-only, no mock seeding
+    const { data: emails } = await supabase
+      .from("campaign_emails")
+      .select("sequence_number, status")
+      .eq("campaign_id", campaignId)
+      .order("sequence_number")
+
+    const perEmail = (emails ?? []).map((e: any) => ({
+      emailNumber: e.sequence_number,
+      name:        `Email ${e.sequence_number}`,
+      opens:       0,
+      clicks:      0,
+      replies:     0,
+      status:      e.status ?? "scheduled",
+    }))
+
+    // Fallback if no campaign_emails exist yet
+    if (perEmail.length === 0) {
+      for (let i = 1; i <= 3; i++) {
+        perEmail.push({ emailNumber: i, name: `Email ${i}`, opens: 0, clicks: 0, replies: 0, status: "scheduled" })
+      }
+    }
+
+    return {
+      summary: { emailsSent: 0, openRate: 0, clickRate: 0, replyRate: 0, industryBenchmarks: { openRate: 22.0, clickRate: 3.5, replyRate: 8.0 } },
+      perEmail,
+      timeline: [],
+      tokenUsage: { recon: 0, match: 0, craft: 0, total: 0, estimatedCostIDR: 0 },
+    }
   }
 
   const recon = (data as any).token_recon ?? 0
