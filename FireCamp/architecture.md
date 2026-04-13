@@ -46,7 +46,7 @@
 | Search & Extract | Tavily API | Aktif | `/search` (general + news) + `/extract` (homepage + sub-pages) |
 | Contact Discovery | Serper.dev | Aktif | LinkedIn dorking via Google organic snippets |
 | Article Extraction | Jina Reader | Aktif | Baca konten penuh artikel berita (`r.jina.ai/{url}`) |
-| Automation | n8n (self-hosted) | Tidak berubah | Email scheduling di Launch |
+| Automation | In-House (Vercel Cron + Resend API + Webhook) | Aktif | Email dispatch & tracking — n8n dihapus |
 | Email | Resend | Tidak berubah | Email delivery |
 | PDF Gen | Puppeteer | Tidak berubah | Export profil ke PDF |
 | File Storage | Supabase Storage | Tidak berubah | PDF dan dokumen upload |
@@ -531,12 +531,15 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# Automation
-N8N_WEBHOOK_URL=
-N8N_API_KEY=
-
-# Email
+# Email & Automation (In-House — n8n removed)
 RESEND_API_KEY=
+RESEND_FROM_EMAIL=Campfire <noreply@yourdomain.com>
+RESEND_WEBHOOK_SECRET=
+CRON_SECRET=
+
+# DIHAPUS — hapus dari .env.local jika masih ada
+# N8N_WEBHOOK_URL=
+# N8N_API_KEY=
 
 # DIHAPUS — hapus dari .env.local jika masih ada
 # ANTHROPIC_API_KEY=
