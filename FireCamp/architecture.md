@@ -535,19 +535,97 @@ SUPABASE_SERVICE_ROLE_KEY=
 RESEND_API_KEY=
 RESEND_FROM_EMAIL=Campfire <noreply@yourdomain.com>
 RESEND_WEBHOOK_SECRET=
+RESEND_INBOUND_DOMAIN=
 CRON_SECRET=
 
-# DIHAPUS — hapus dari .env.local jika masih ada
-# N8N_WEBHOOK_URL=
-# N8N_API_KEY=
-
-# DIHAPUS — hapus dari .env.local jika masih ada
+# N8N removed in v4
 # ANTHROPIC_API_KEY=
 # APOLLO_API_KEY=
 # APIFY_API_TOKEN=
 # PROXYCURL_API_KEY=
 # FIRECRAWL_API_KEY=
 ```
+
+---
+
+## Pulse — Webhook Tracking Architecture (3-Layer Defense)
+
+### Diagram Alur
+
+```
+Resend sends email → Resend Outbound Webhook → /api/webhooks/resend
+                       (email.opened, email.clicked)
+                       │
+                       ├─ 1. RPC: increment_email_opens / increment_email_clicks
+                       │     (atomic increment + rate recalculation)
+                       └─ 2. JSONB timeline update on campaign_analytics
+                             (append/increment day entry: { day, opens, clicks, replies })
+
+Prospect replies   → Resend Inbound Routing → /api/webhooks/inbound
+                       │
+                       ├─ 3-Layer Defense (sequential, first-match wins)
+                       │   ├─ Layer 1: Plus-Address (To: reply+{uuid}@domain)
+                       │   ├─ Layer 2: In-Reply-To header → campaign_emails.resend_message_id
+                       │   └─ Layer 3: From email → contacts → active campaign (heuristic)
+                       │
+                       ├─ 1. RPC: increment_email_replies
+                       │     (atomic increment + reply_rate recalculation)
+                       └─ 2. JSONB timeline update on campaign_analytics
+                             (append/increment replies for today)
+```
+
+### Layer 1 — Plus-Address (Fastest)
+
+Saat dispatcher mengirim email, field `Reply-To` diisi dengan format:
+`reply+{campaign_email_id}@{RESEND_INBOUND_DOMAIN}`
+
+Ketika prospect membalas, email masuk ke inbound webhook. Parser mengekstrak UUID dari `+addressing` di header `To`. Jika UUID valid, langsung resolve tanpa query DB.
+
+**Keandalan:** Tinggi — selama prospect membalas via Reply (bukan Compose baru).
+
+### Layer 2 — In-Reply-To Header Trace
+
+Jika Layer 1 gagal (misal: prospect menghapus `+uuid` dari alamat), parser membaca header `In-Reply-To` yang berisi Message-ID dari email asli. Message-ID ini dicocokkan dengan kolom `campaign_emails.resend_message_id` yang disimpan saat dispatch.
+
+**Keandalan:** Sedang — bergantung pada email client yang menyertakan `In-Reply-To` header.
+
+### Layer 3 — DB Fallback (Heuristic)
+
+Jika kedua layer di atas gagal (misal: prospect menekan Compose baru, bukan Reply), parser membaca `From` header dan melakukan:
+1. `SELECT company_id FROM contacts WHERE email = '{sender}'`
+2. `SELECT id FROM campaigns WHERE company_id = '{...}' AND status = 'active'`
+3. `SELECT id FROM campaign_emails WHERE campaign_id = '{...}' AND status = 'sent' ORDER BY sent_at DESC LIMIT 1`
+
+**Keandalan:** Rendah — heuristic, bisa salah jika contact punya >1 campaign aktif. Digunakan sebagai last resort.
+
+### Timeline JSONB Schema
+
+```typescript
+// campaign_analytics.timeline (JSONB array)
+Array<{
+  day: string     // "13 Apr" — format DD Mon
+  opens: number
+  clicks: number
+  replies: number
+}>
+```
+
+Timeline di-update oleh kedua webhook endpoint (resend + inbound). Setiap event menambahkan entry baru jika tanggal belum ada, atau increment angka jika sudah ada. Sanitasi `Number() || 0` mencegah NaN dari data lama.
+
+### Migration Reference
+
+| Migration | Isi |
+|---|---|
+| `008_resend_rpc.sql` | RPC: `increment_campaign_emails_sent`, `increment_email_opens`, `increment_email_clicks` |
+| `010_reply_tracking.sql` | Kolom `campaign_emails.resend_message_id`, RPC: `increment_email_replies` |
+
+### API Route Reference
+
+| Route | Method | Fungsi |
+|---|---|---|
+| `/api/webhooks/resend` | POST | Terima outbound events (opened, clicked) → increment + timeline |
+| `/api/webhooks/inbound` | POST | Terima inbound replies → 3-layer resolve → increment + timeline |
+| `/api/cron/dispatch` | GET | Kirim email terjadwal via Resend, simpan `resend_message_id` |
 
 ---
 

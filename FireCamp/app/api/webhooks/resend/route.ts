@@ -40,6 +40,13 @@ function getTagValue(
   return tag?.value ?? null
 }
 
+/** Format Date to "DD Mon" label matching EngagementLineChart (e.g. "13 Apr") */
+function formatDayLabel(date: Date): string {
+  const day = date.getDate()
+  const month = date.toLocaleString("en-US", { month: "short", timeZone: "Asia/Jakarta" })
+  return `${day} ${month}`
+}
+
 interface ResendWebhookEvent {
   type: string
   data: {
@@ -86,15 +93,67 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, event: eventType, action: "ignored" })
   }
 
+  const isOpen = eventType === "email.opened"
+
   try {
     const sb = buildSupabase()
-    const { error } = await sb.rpc(rpcName, {
+
+    // 1. Atomic increment on email_analytics
+    const { error: rpcErr } = await sb.rpc(rpcName, {
       p_campaign_email_id: campaignEmailId,
     })
 
-    if (error) {
-      console.error(`[Webhook/resend] ${rpcName} error:`, error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (rpcErr) {
+      console.error(`[Webhook/resend] ${rpcName} error:`, rpcErr)
+      return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+    }
+
+    // 2. Update JSONB timeline on campaign_analytics
+    //    Resolve campaign_id from email_analytics → campaign_analytics
+    const { data: eaRow } = await sb
+      .from("email_analytics")
+      .select("campaign_analytics_id")
+      .eq("campaign_email_id", campaignEmailId)
+      .maybeSingle()
+
+    if (eaRow?.campaign_analytics_id) {
+      const analyticsId: string = eaRow.campaign_analytics_id
+
+      const { data: caRow } = await sb
+        .from("campaign_analytics")
+        .select("id, timeline")
+        .eq("id", analyticsId)
+        .single()
+
+      if (caRow) {
+        const today = formatDayLabel(new Date())
+        const timeline: Array<{ day: string; opens: number; clicks: number; replies: number }> =
+          Array.isArray(caRow.timeline) ? caRow.timeline : []
+
+        const existing = timeline.find((t) => t.day === today)
+        if (existing) {
+          // Sanitise any NaN that may have crept in from earlier writes
+          existing.opens = (Number(existing.opens) || 0) + (isOpen ? 1 : 0)
+          existing.clicks = (Number(existing.clicks) || 0) + (isOpen ? 0 : 1)
+          existing.replies = Number(existing.replies) || 0
+        } else {
+          timeline.push({
+            day: today,
+            opens: isOpen ? 1 : 0,
+            clicks: isOpen ? 0 : 1,
+            replies: 0,
+          })
+        }
+
+        const { error: updateErr } = await sb
+          .from("campaign_analytics")
+          .update({ timeline })
+          .eq("id", analyticsId)
+
+        if (updateErr) {
+          console.error("[Webhook/resend] timeline update error:", updateErr)
+        }
+      }
     }
 
     return NextResponse.json({ ok: true, event: eventType })

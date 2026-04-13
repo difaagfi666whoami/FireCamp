@@ -1,5 +1,26 @@
 # Updates
 
+## Launch & Pulse Pipeline — Final Sync & Resend Migration (2026-04-13)
+
+### Architectural Pivot: Removing n8n for Resend + Vercel Cron
+- **Root Cause**: n8n orchestration adds significant deployment overhead, race conditions, and requires a separate server instance.
+- **Migration**: Replaced n8n specific tracking and scheduling with a fully localized In-House architecture using Next.js API routes, Vercel Cron, and the Resend SDK.
+- **Database Cleanup (`009_remove_n8n_view.sql`)**: Dropped the old `v_n8n_pending_emails` view to forcibly disconnect any running n8n services, and created a vendor-neutral `v_pending_emails`.
+- **Database RPC (`008_resend_rpc.sql`)**: Deployed native PostgreSQL functions (`increment_email_opens`, `increment_email_clicks`, `increment_campaign_emails_sent`) to increment engagement rates natively within the database.
+
+### Feature: In-House Vercel Cron Dispatcher
+- **`app/api/cron/dispatch/route.ts`**: New securely guarded Next.js API route serving as the periodic execution runtime.
+- **Logic**: Queries `v_pending_emails`. Evaluates localized time correctly against Jakarta `+07:00` in JS-memory.
+- **Execution**: Sends overdue scheduled emails via `resend.emails.send()`, crucially injecting `tags: [{ name: "campaign_email_id" }]` for downstream tracking. Changes DB status to `sent`.
+
+### Feature: Resend Webhook Analytics Receiver
+- **`app/api/webhooks/resend/route.ts`**: New public webhook endpoint explicitly listening to `email.opened` and `email.clicked` events from the Resend Cloud.
+- **Logic**: Reads the custom `campaign_email_id` tag sent during the Cron Dispatch phase, mapping events to Supabase RPC endpoints to alter the analytics table dynamically bypassing the frontend logic.
+
+### UI Polish: Pulse Analytics Zero-State Conversion
+- **`lib/api/analytics.ts`**: Purged all generic mock representations. `getCampaignAnalytics()` now returns accurate unembellished initialized models (Rate 0%, Sent 0) before any engagement happens.
+- **`app/pulse/page.tsx`**: Purged the component's `useEffect` of any forced DB seeding actions. The Pulse dashboard is now entirely a pure `Read-Only` visual observer of the `campaign_analytics` table.
+
 ## Pipeline Polish — Live Tone Rewrite & Async Editor (2026-04-09)
 
 ### Feature: Dedicated API Endpoint untuk Resolusi Tone

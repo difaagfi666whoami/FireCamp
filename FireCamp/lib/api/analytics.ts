@@ -20,7 +20,7 @@ export interface AnalyticsData {
     replies: number
     status: string
   }>
-  timeline: Array<{ day: string; opens: number; clicks: number }>
+  timeline: Array<{ day: string; opens: number; clicks: number; replies: number }>
   tokenUsage: {
     recon: number
     match: number
@@ -106,7 +106,7 @@ export async function getCampaignAnalytics(campaignId: string): Promise<Analytic
         replies:     ea.replies ?? 0,
         status:      ea.engagement_status ?? "sent",
       })),
-    timeline: ((data as any).timeline ?? []) as Array<{ day: string; opens: number; clicks: number }>,
+    timeline: ((data as any).timeline ?? []) as Array<{ day: string; opens: number; clicks: number; replies: number }>,
     tokenUsage: {
       recon,
       match,

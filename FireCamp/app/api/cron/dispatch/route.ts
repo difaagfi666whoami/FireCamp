@@ -77,11 +77,19 @@ export async function GET(req: NextRequest) {
 
     for (const email of emails) {
       try {
-        const { error: resendErr } = await resend.emails.send({
-          from: process.env.RESEND_FROM_EMAIL ?? "Campfire <noreply@campfire.app>",
+        // Build reply-to with +addressing so inbound replies carry campaign_email_id
+        const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Campfire <noreply@campfire.app>"
+        const replyDomain = process.env.RESEND_INBOUND_DOMAIN ?? ""
+        const replyTo = replyDomain
+          ? `reply+${email.email_id}@${replyDomain}`
+          : undefined
+
+        const { data: resendData, error: resendErr } = await resend.emails.send({
+          from: fromEmail,
           to: [email.target_email],
           subject: email.subject,
-          html: email.body, // Use our standard formatting
+          html: email.body,
+          ...(replyTo ? { replyTo: [replyTo] } : {}),
           tags: [{ name: "campaign_email_id", value: email.email_id }],
         })
 
@@ -89,10 +97,16 @@ export async function GET(req: NextRequest) {
           throw new Error(resendErr.message)
         }
 
-        // Mark as sent and update summary DB incrementally via RPC (if deployed) or fallback
+        // Store Resend message ID for In-Reply-To header matching (Layer 2)
+        const resendMessageId = resendData?.id ?? null
+
         const { error: updateErr } = await sb
           .from("campaign_emails")
-          .update({ status: "sent", sent_at: new Date().toISOString() })
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            ...(resendMessageId ? { resend_message_id: resendMessageId } : {}),
+          })
           .eq("id", email.email_id)
 
         if (updateErr) {

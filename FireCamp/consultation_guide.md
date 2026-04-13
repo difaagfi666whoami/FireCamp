@@ -8,7 +8,7 @@ Dokumen ini berisi struktur pertanyaan komprehensif yang bisa kamu gunakan saat 
 *Tujuan: Memastikan apakah fondasi teknologi yang kamu rancang bisa menangani visi produk.*
 
 * **Q1:** "Saat ini kami menggunakan _Next.js (App Router)_ untuk *Frontend* dan merencanakan _FastAPI (Python)_ untuk *Backend AI Engine*. Menurut Anda, apakah pemisahan arsitektur ini adalah pendekatan terbaik untuk aplikasi yang banyak bergantung pada AI API (seperti Claude & Tavily)?"
-* **Q2:** "Untuk otomasi email, kami berencana memadukan *Supabase* (database) dengan perangkat self-hosted *n8n* dan *Resend*. Apakah kombinasi ini cukup tangguh untuk menghindari *spam filter* saat melakukan _cold outreach_ B2B berskala besar?"
+* **Q2:** "Untuk otomasi email, kami berencana memadukan *Supabase* (database) dengan *Vercel Cron* dan *Resend API*. Apakah kombinasi In-House ini cukup tangguh untuk menghindari *spam filter* saat melakukan _cold outreach_ B2B berskala besar dibandingkan menggunakan orchestrator third-party?"
 * **Q3:** "Berdasarkan pengalaman Anda melihat aplikasi sejenis, apa *bottleneck* (hambatan) terbesar yang biasanya membuat aplikasi manajemen *campaign* gagal berfungsi dengan baik?"
 
 ## 2. Transisi Frontend (Fase 1) ke Database (Fase 2)
@@ -26,7 +26,7 @@ Dokumen ini berisi struktur pertanyaan komprehensif yang bisa kamu gunakan saat 
 ## 4. Automation & Deployment Plan (Strategi & Eksekusi Masa Depan)
 *Tujuan: Merencanakan *hosting* dan pengiriman tahap produksi.*
 
-* **Q8:** "Mengingat akan ada *Next.js*, *FastAPI*, *Supabase*, dan *n8n*, bagaimana strategi infrastruktur (*Deployment Plan*) teraman dan terjangkau yang Anda sarankan untuk *Minimum Viable Product* (MVP)? (Misal: Vercel + Railway/Render + Supabase Cloud)."
+* **Q8:** "Mengingat akan ada *Next.js*, *FastAPI*, *Supabase*, dan *Resend*, bagaimana strategi infrastruktur (*Deployment Plan*) teraman dan terjangkau yang Anda sarankan untuk *Minimum Viable Product* (MVP)? (Misal: Vercel + Render + Supabase Cloud)."
 * **Q9:** "Jika saya menugaskan Anda untuk menyelesaikan integrasi Fase 2 dan membangun pondasi Fase 3 sesuai dengan _API Contract_ yang ada, bagaimana estimasi *Timeline* pekerjaan Anda, dan *milestone* mana yang akan Anda utamakan terlebih dahulu?"
 * **Q10:** "Apakah ada *blindspot* (titik lemah atau celah keamanan) dari proyek saya—setelah melihat *Project Audit* dan *Specs*—yang belum saya sadari dan harus segera diperbaiki?"
 
