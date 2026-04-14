@@ -43,7 +43,7 @@ export async function getCampaignAnalytics(campaignId: string): Promise<Analytic
       benchmark_open_rate, benchmark_click_rate, benchmark_reply_rate,
       token_recon, token_match, token_craft, estimated_cost_idr,
       timeline,
-      email_analytics (email_number, opens, clicks, replies, engagement_status)
+      email_analytics (email_number, opens, clicks, replies, engagement_status, campaign_emails!inner (status))
     `)
     .eq("campaign_id", campaignId)
     .maybeSingle()
@@ -98,14 +98,21 @@ export async function getCampaignAnalytics(campaignId: string): Promise<Analytic
     },
     perEmail: ((data as any).email_analytics ?? [] as any[])
       .sort((a: any, b: any) => a.email_number - b.email_number)
-      .map((ea: any) => ({
-        emailNumber: ea.email_number,
-        name:        `Email ${ea.email_number}`,
-        opens:       ea.opens   ?? 0,
-        clicks:      ea.clicks  ?? 0,
-        replies:     ea.replies ?? 0,
-        status:      ea.engagement_status ?? "sent",
-      })),
+      .map((ea: any) => {
+        // Supabase nested join may return the related row as object or array
+        const joined = Array.isArray(ea.campaign_emails) ? ea.campaign_emails[0] : ea.campaign_emails
+        const dispatchStatus = joined?.status
+        return {
+          emailNumber: ea.email_number,
+          name:        `Email ${ea.email_number}`,
+          opens:       ea.opens   ?? 0,
+          clicks:      ea.clicks  ?? 0,
+          replies:     ea.replies ?? 0,
+          status:      dispatchStatus === "scheduled"
+            ? "scheduled"
+            : (ea.engagement_status ?? "sent"),
+        }
+      }),
     timeline: ((data as any).timeline ?? []) as Array<{ day: string; opens: number; clicks: number; replies: number }>,
     tokenUsage: {
       recon,

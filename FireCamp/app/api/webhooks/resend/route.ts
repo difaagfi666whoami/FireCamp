@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { Resend } from "resend"
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 // ---------------------------------------------------------------------------
 // Resend Webhook Receiver
@@ -30,14 +33,12 @@ function buildSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey)
 }
 
-/** Extract a tag value from Resend's tags array */
 function getTagValue(
-  tags: Array<{ name: string; value: string }> | undefined,
+  tags: Record<string, string> | undefined,
   name: string
 ): string | null {
   if (!tags) return null
-  const tag = tags.find((t) => t.name === name)
-  return tag?.value ?? null
+  return tags[name] ?? null
 }
 
 /** Format Date to "DD Mon" label matching EngagementLineChart (e.g. "13 Apr") */
@@ -51,26 +52,43 @@ interface ResendWebhookEvent {
   type: string
   data: {
     email_id?: string
-    tags?: Array<{ name: string; value: string }>
+    tags?: Record<string, string>
   }
 }
 
 export async function POST(req: NextRequest) {
-  // ----- Optional: verify Svix webhook signature -----
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
-  if (webhookSecret) {
-    const svixId = req.headers.get("svix-id")
-    const svixSignature = req.headers.get("svix-signature")
-    if (!svixId || !svixSignature) {
-      return NextResponse.json({ error: "Missing signature headers" }, { status: 401 })
-    }
+  if (!webhookSecret) {
+    console.error("[Webhook/resend] Missing RESEND_WEBHOOK_SECRET env var")
+    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
+  }
+
+  // Raw body preserves the exact bytes Svix signed — JSON.parse would rewrite
+  // whitespace/ordering and break the HMAC.
+  const payload = await req.text()
+
+  const svixId = req.headers.get("svix-id")
+  const svixTimestamp = req.headers.get("svix-timestamp")
+  const svixSignature = req.headers.get("svix-signature")
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return NextResponse.json({ error: "Missing signature headers" }, { status: 400 })
   }
 
   let event: ResendWebhookEvent
   try {
-    event = await req.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 })
+    event = resend.webhooks.verify({
+      payload,
+      headers: {
+        id: svixId,
+        timestamp: svixTimestamp,
+        signature: svixSignature,
+      },
+      webhookSecret,
+    }) as unknown as ResendWebhookEvent
+  } catch (err) {
+    console.error("[Webhook/resend] signature verification failed:", err)
+    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 })
   }
 
   const eventType = event.type
