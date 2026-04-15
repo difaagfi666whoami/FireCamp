@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, ArrowRight, Rocket } from "lucide-react"
+import { ArrowLeft, ArrowRight, Rocket, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ModeSelector } from "./components/ModeSelector"
 import { AiScheduleView } from "./components/AiScheduleView"
@@ -59,6 +59,8 @@ export default function LaunchPage() {
   const [isActivating, setIsActivating] = useState(false)
   const [companyName, setCompanyName] = useState("")
   const [schedule, setSchedule] = useState<ScheduleItem[]>(generateDefaultSchedule)
+  const [hasCampaign, setHasCampaign] = useState(true)
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false)
 
   // ─── Mount: validate session & hydrate company name ───────────────────
 
@@ -67,15 +69,12 @@ export default function LaunchPage() {
     const craft = session.getCraftCampaign()
 
     if (!campaignId && !craft) {
-      toast.error("Tidak ada campaign aktif", {
-        description: "Silakan buat campaign terlebih dahulu dari tahap Craft.",
-      })
-      router.push("/research-library")
-      return
+      setHasCampaign(false)
+    } else {
+      const name = session.getReconProfile()?.name ?? craft?.targetCompany ?? ""
+      setCompanyName(name)
     }
-
-    const name = session.getReconProfile()?.name ?? craft?.targetCompany ?? ""
-    setCompanyName(name)
+    setIsSessionLoaded(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -118,6 +117,36 @@ export default function LaunchPage() {
     } finally {
       setIsActivating(false)
     }
+  }
+
+  if (!isSessionLoaded) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
+        <Loader2 className="w-5 h-5 animate-spin text-brand" />
+        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+      </div>
+    )
+  }
+
+  if (!hasCampaign) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-500">
+        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-brand/10 p-5 rounded-full mb-6">
+            <Rocket className="w-8 h-8 text-brand" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
+            Belum ada campaign
+          </h3>
+          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+            Anda belum memiliki draft campaign untuk di-launch. Silakan buat campaign dari tahap awal terlebih dahulu.
+          </p>
+          <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+            Mulai Recon
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (

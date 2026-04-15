@@ -17,7 +17,7 @@ type ProductInput = Omit<ProductCatalogItem, "id" | "createdAt" | "updatedAt">
 interface ProductFormModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (data: ProductInput) => void
+  onSave: (data: ProductInput) => Promise<void> | void
   editingProduct?: ProductCatalogItem | null
 }
 
@@ -34,6 +34,7 @@ export function ProductFormModal({ isOpen, onClose, onSave, editingProduct }: Pr
 
   const [uspInput, setUspInput] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     if (editingProduct) {
@@ -64,21 +65,29 @@ export function ProductFormModal({ isOpen, onClose, onSave, editingProduct }: Pr
     return e
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate()
     if (Object.keys(e).length > 0) { setErrors(e); return }
 
     const usp = uspInput.split("\n").map(f => f.trim()).filter(Boolean)
-    onSave({
-      name:           formData.name!.trim(),
-      tagline:        formData.tagline?.trim()     || "",
-      description:    formData.description!.trim(),
-      usp,
-      price:          formData.price               || "",
-      painCategories: formData.painCategories      || [],
-      source:         formData.source              || "manual",
-    })
-    onClose()
+    
+    setIsSaving(true)
+    try {
+      await onSave({
+        name:           formData.name!.trim(),
+        tagline:        formData.tagline?.trim()     || "",
+        description:    formData.description!.trim(),
+        usp,
+        price:          formData.price               || "",
+        painCategories: formData.painCategories      || [],
+        source:         formData.source              || "manual",
+      })
+      onClose()
+    } catch (err) {
+      console.error("[ProductFormModal] save error:", err)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -172,9 +181,9 @@ export function ProductFormModal({ isOpen, onClose, onSave, editingProduct }: Pr
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSave}>
-            {editingProduct ? "Simpan Perubahan" : "Simpan Produk"}
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>Batal</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Menyimpan..." : (editingProduct ? "Simpan Perubahan" : "Simpan Produk")}
           </Button>
         </DialogFooter>
       </DialogContent>

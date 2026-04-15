@@ -112,7 +112,15 @@ export const session = {
   // Hapus semua data target aktif dari sessionStorage dan beritahu UI
   clearActiveTarget: (): void => {
     if (typeof window === "undefined") return
-    Object.values(KEYS).forEach(k => sessionStorage.removeItem(k))
+    
+    const keysToRemove: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i)
+        if (key && key.startsWith("campfire_")) {
+            keysToRemove.push(key)
+        }
+    }
+    keysToRemove.forEach(k => sessionStorage.removeItem(k))
     window.dispatchEvent(new Event("campfire_session_changed"))
   },
 }

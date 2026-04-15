@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert, Loader2, Activity } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -86,22 +86,58 @@ export default function PulsePage() {
   const router = useRouter()
   const [companyName, setCompanyName] = useState("Perusahaan")
   const [analytics, setAnalytics] = useState<AnalyticsData>(ZERO_ANALYTICS)
+  const [hasCampaign, setHasCampaign] = useState(true)
+  const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const { summary, perEmail, timeline, tokenUsage } = analytics
 
   useEffect(() => {
     setCompanyName(session.getReconProfile()?.name ?? "Perusahaan")
-    markStageDone("pulse")
     const companyId  = session.getCompanyId()
     const campaignId = session.getCampaignId()
-    if (companyId) {
-      updateCompanyProgress(companyId, "pulse").catch(console.error)
-    }
-    if (campaignId) {
+    
+    if (!campaignId) {
+      setHasCampaign(false)
+    } else {
+      markStageDone("pulse")
+      if (companyId) {
+        updateCompanyProgress(companyId, "pulse").catch(console.error)
+      }
       getCampaignAnalytics(campaignId)
         .then(setAnalytics)
         .catch((e) => console.error("[PulsePage] analytics:", e))
     }
+    setIsSessionLoaded(true)
   }, [])
+
+  if (!isSessionLoaded) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
+        <Loader2 className="w-5 h-5 animate-spin text-brand" />
+        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+      </div>
+    )
+  }
+
+  if (!hasCampaign) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-500">
+        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-brand/10 p-5 rounded-full mb-6">
+            <Activity className="w-8 h-8 text-brand" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
+            Belum ada analitik campaign
+          </h3>
+          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+            Anda belum meluncurkan campaign apapun. Dasbor Pulse akan aktif setelah campaign Anda berjalan.
+          </p>
+          <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+            Mulai Recon
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">

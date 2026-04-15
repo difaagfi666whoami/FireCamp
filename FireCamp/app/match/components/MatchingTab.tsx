@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
-import { Play, ArrowRight, CheckCircle2 } from "lucide-react"
+import { Play, ArrowRight, CheckCircle2, Loader2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { ProductMatchCard } from "./ProductMatchCard"
@@ -35,6 +35,7 @@ export function MatchingTab() {
   const [isProceeding, setIsProceeding] = useState(false)
   const [companyProfile, setCompanyProfile] = useState<any>(null)
   const [companyName, setCompanyName]   = useState<string>("")
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false)
 
   // ─── Mount: restore from sessionStorage, with DB hydration fallback ─────
 
@@ -75,6 +76,7 @@ export function MatchingTab() {
       setCompanyProfile(profile)
       setCompanyName(profile.name ?? "")
     }
+    setIsProfileLoaded(true)
   }, [])
 
   const handleSelectProduct = (id: string) => {
@@ -234,12 +236,34 @@ export function MatchingTab() {
     return () => clearInterval(interval)
   }, [isMatching, companyProfile])
 
-  // ─── Render: belum ada profil (masih loading dari sessionStorage) ─────────
+  // ─── Render: belum ada profil (masih loading dari sessionStorage / tidak ada) ─────────
 
-  if (!companyProfile) {
+  if (!isProfileLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
-        <p className="text-[14px] font-medium">Memuat profil perusahaan...</p>
+        <Loader2 className="w-5 h-5 animate-spin text-brand" />
+        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+      </div>
+    )
+  }
+
+  if (isProfileLoaded && !companyProfile) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-500">
+        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-brand/10 p-5 rounded-full mb-6">
+            <Search className="w-8 h-8 text-brand" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
+            Belum ada profil perusahaan
+          </h3>
+          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+            Sistem tidak menemukan profil perusahaan target. Silakan kembali ke Recon untuk memulai riset.
+          </p>
+          <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+            Mulai Recon
+          </Button>
+        </div>
       </div>
     )
   }

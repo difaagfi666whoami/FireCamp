@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Mail, CheckCircle2, AlertCircle, CalendarDays, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,15 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
   const [rows, setRows] = useState<ScheduleItem[]>(
     defaultSchedule.map(s => ({ ...s }))
   )
+  const [minDate, setMinDate] = useState("")
+
+  useEffect(() => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = String(now.getMonth() + 1).padStart(2, '0')
+    const d = String(now.getDate()).padStart(2, '0')
+    setMinDate(`${y}-${m}-${d}`)
+  }, [])
 
   const updateRow = (index: number, field: "date" | "time", value: string) => {
     setRows(prev => prev.map((r, i) => i === index ? { ...r, [field]: value } : r))
@@ -128,6 +137,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
                   id={`schedule-date-${row.emailNumber}`}
                   name={`schedule-date-${row.emailNumber}`}
                   type="date"
+                  min={minDate}
                   value={row.date}
                   onChange={e => updateRow(index, "date", e.target.value)}
                   disabled={isActive}

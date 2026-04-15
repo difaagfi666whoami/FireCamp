@@ -27,9 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex min-h-screen`}
+        suppressHydrationWarning
       >
         <Sidebar />
         <main className="flex-1 min-w-0 overflow-auto bg-background">

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { mockData } from "@/lib/mock/mockdata"
 import { CampaignEmail } from "@/types/craft.types"
 import { toneVariants, ToneType } from "@/lib/mock/toneVariants"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
@@ -26,7 +25,9 @@ function loadSavedEmails(): CampaignEmail[] | null {
   if (typeof window === "undefined") return null
   try {
     const raw = sessionStorage.getItem(POLISH_KEY)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
   } catch {
     return null
   }
@@ -34,22 +35,17 @@ function loadSavedEmails(): CampaignEmail[] | null {
 
 export default function PolishPage() {
   const router = useRouter()
-  // Start with mock data (SSR-safe). useEffect below restores client-side state.
-  const [emails, setEmails] = useState<CampaignEmail[]>(() =>
-    JSON.parse(JSON.stringify(mockData.campaign.emails))
-  )
+  // Client-side state initialization
+  const [emails, setEmails] = useState<CampaignEmail[]>([])
   const [hasStarted, setHasStarted] = useState(false)
   const [restoredFromSession, setRestoredFromSession] = useState(false)
-  const [companyName, setCompanyName] = useState(mockData.company.name)
+  const [companyName, setCompanyName] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
   // Helper: AI payload might not have `id`, fallback to sequenceNumber
   const getEmailId = (e: CampaignEmail) => String(e.id || e.sequenceNumber)
 
-  const [activeTab, setActiveTab] = useState(() => {
-    const defaultEmail = mockData.campaign.emails[0]
-    return defaultEmail ? String(defaultEmail.id || defaultEmail.sequenceNumber) : "1"
-  })
+  const [activeTab, setActiveTab] = useState("1")
 
   // ─── Mount: restore emails (4-level hierarchy) ─────────────────────────
 
@@ -90,8 +86,6 @@ export default function PolishPage() {
             }
           }
         }
-
-        // Level 4: mock data fallback (already set as initial state)
       } catch (err) {
         console.error("[PolishPage] hydration error:", err)
       } finally {
@@ -172,6 +166,7 @@ export default function PolishPage() {
   // Debounced save — wait 400ms after last change before writing to sessionStorage
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
+    if (emails.length === 0) return // CEGAH PENYIMPANAN ARRAY KOSONG
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     saveTimerRef.current = setTimeout(() => {
       sessionStorage.setItem(POLISH_KEY, JSON.stringify(emails))
@@ -235,6 +230,35 @@ export default function PolishPage() {
       <div className="flex flex-col items-center justify-center py-32 animate-in fade-in duration-300">
         <Loader2 className="w-8 h-8 text-brand animate-spin mb-4" />
         <p className="text-[13.5px] text-muted-foreground font-medium">Memuat data email...</p>
+      </div>
+    )
+  }
+
+  if (emails.length === 0) {
+    return (
+      <div className="flex justify-center py-16 animate-in fade-in duration-500">
+        <div className="bg-white flex flex-col items-center justify-center p-8
+                        border border-dashed border-border/80 rounded-2xl
+                        w-[340px] shadow-sm text-center">
+          <div className="bg-brand/10 p-5 rounded-full mb-6">
+            <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
+          </div>
+          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
+            Belum ada draft email
+          </h3>
+          <p className="text-[13px] text-muted-foreground font-medium mb-4">
+            Target: <span className="font-bold text-foreground">{companyName || "Belum dipilih"}</span>
+          </p>
+          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+            Anda belum melakukan generate campaign di tahap Craft. Silakan kembali ke Craft untuk membuat draft email terlebih dahulu.
+          </p>
+          <Button
+            onClick={() => router.push("/craft")}
+            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
+          >
+            Menuju Craft
+          </Button>
+        </div>
       </div>
     )
   }

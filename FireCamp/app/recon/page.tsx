@@ -37,6 +37,7 @@ export default function ReconPage() {
   const [reconUrl, setReconUrl]   = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving]   = useState(false)
+  const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [pendingUrl, setPendingUrl]   = useState<string | null>(null)
   const [showConfirm, setShowConfirm] = useState(false)
@@ -52,7 +53,7 @@ export default function ReconPage() {
   const startGenerate = (url: string) => {
     setReconUrl(url)
     setProfile(null)
-    sessionStorage.removeItem(SESSION_KEY)
+    session.clearActiveTarget()
     setIsLoading(true)
     setCurrentStep(0)
     setPendingUrl(null)
@@ -92,6 +93,7 @@ export default function ReconPage() {
       setIsLoading(false)
       toast.success("Profil berhasil di-generate")
       // Auto-save silently di background — dapatkan UUID asli dari Supabase/mock
+      setIsAutoSaving(true)
       saveCompanyProfile(resolvedProfile)
         .then(uuid => {
           session.setCompanyId(uuid)
@@ -100,6 +102,9 @@ export default function ReconPage() {
         })
         .catch(e => {
           console.error("[ReconPage] auto-save error:", e instanceof Error ? e.message : e)
+        })
+        .finally(() => {
+          setIsAutoSaving(false)
         })
     }
 
@@ -239,9 +244,9 @@ export default function ReconPage() {
           <Button
             className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-11 rounded-xl shadow-sm"
             onClick={handleSave}
-            disabled={!profile || isLoading || isSaving}
+            disabled={!profile || isLoading || isSaving || isAutoSaving}
           >
-            {isSaving
+            {isSaving || isAutoSaving
               ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</>
               : <><Save className="w-4 h-4 mr-2" />Simpan ke Database</>
             }
