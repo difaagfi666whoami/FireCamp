@@ -164,7 +164,16 @@ export function ProductCatalogTab() {
             {!isExtracting && <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5" />}
           </div>
           <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? (extractStep || "Mengekstrak AI...") : "Ekstrak PDF Brosur"}</div>
-          <input type="file" ref={fileInputRef} className="hidden" accept=".pdf" onChange={handlePdfUpload} />
+          <label htmlFor="pdf-catalog-upload" className="sr-only">Upload file PDF katalog</label>
+          <input
+            id="pdf-catalog-upload"
+            name="pdf-catalog-upload"
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept=".pdf"
+            onChange={handlePdfUpload}
+          />
         </div>
 
         <div className="group cursor-not-allowed rounded-2xl border border-border/80 p-4 pb-5 bg-muted/10 opacity-60 flex flex-col justify-between min-h-[140px]">
@@ -217,7 +226,10 @@ export function ProductCatalogTab() {
       <div className="mb-4">
         <div className="relative w-full sm:w-[260px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <label htmlFor="catalog-search" className="sr-only">Cari produk</label>
           <input
+            id="catalog-search"
+            name="catalog-search"
             type="text"
             placeholder="Cari produk..."
             value={searchQuery}

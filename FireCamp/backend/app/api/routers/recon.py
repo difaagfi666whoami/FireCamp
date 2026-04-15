@@ -162,7 +162,7 @@ async def _run_lane_c(
 
 # ─── Main Orchestrator ────────────────────────────────────────────────────────
 
-async def run_recon_pipeline(url: str, mode: ReconMode) -> CompanyProfile:
+async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile, int]:
     """
     Orkestrator utama Two-Lane Recon Pipeline.
 
@@ -231,7 +231,7 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> CompanyProfile:
 
     # ── Step 2: Final Synthesis ───────────────────────────────────────────────
     try:
-        profile = await openai_service.synthesize_profile(
+        profile, tokens_used = await openai_service.synthesize_profile(
             lane_a_summary=lane_a_summary,
             scored_contacts=scored_contacts,
             company_url=canonical_url,
@@ -247,14 +247,15 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> CompanyProfile:
         ) from exc
 
     logger.info(
-        "[pipeline] DONE | company=%r mode=%s contacts=%d painPoints=%d news=%d",
+        "[pipeline] DONE | company=%r mode=%s contacts=%d painPoints=%d news=%d tokens=%d",
         profile.name,
         mode.value,
         len(profile.contacts),
         len(profile.painPoints),
         len(profile.news),
+        tokens_used,
     )
-    return profile
+    return profile, tokens_used
 
 
 # ─── Router endpoint ──────────────────────────────────────────────────────────
@@ -290,8 +291,8 @@ async def generate_recon(payload: ReconRequest) -> ReconResponse:
         )
 
     try:
-        profile = await run_recon_pipeline(url=url, mode=payload.mode)
-        return ReconResponse.model_validate(profile.model_dump())
+        profile, tokens_used = await run_recon_pipeline(url=url, mode=payload.mode)
+        return ReconResponse.model_validate({**profile.model_dump(), "tokens_used": tokens_used})
 
     except RuntimeError as exc:
         # RuntimeError dari pipeline = error operasional yang sudah ter-log

@@ -53,6 +53,10 @@ interface ResendWebhookEvent {
   data: {
     email_id?: string
     tags?: Record<string, string>
+    bounce?: {
+      type?: string
+      message?: string
+    }
   }
 }
 
@@ -97,6 +101,50 @@ export async function POST(req: NextRequest) {
   if (!campaignEmailId) {
     // Not a tracked campaign email — acknowledge silently
     return NextResponse.json({ ok: true, skipped: true })
+  }
+
+  // --- Special handlers: bounced & complained ---
+  if (eventType === "email.bounced") {
+    try {
+      const sb = buildSupabase()
+      const bounceReason = event.data?.bounce?.message ?? null
+      const { error } = await sb.rpc("handle_email_bounced", {
+        p_campaign_email_id: campaignEmailId,
+        p_bounce_reason: bounceReason,
+      })
+      if (error) {
+        console.error("[Webhook/resend] handle_email_bounced error:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      console.warn(`[Webhook/resend] BOUNCE detected for campaign_email_id: ${campaignEmailId}`)
+      return NextResponse.json({ ok: true, event: eventType, action: "bounced" })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
+  }
+
+  if (eventType === "email.complained") {
+    try {
+      const sb = buildSupabase()
+      const { error } = await sb.rpc("handle_email_complained", {
+        p_campaign_email_id: campaignEmailId,
+      })
+      if (error) {
+        console.error("[Webhook/resend] handle_email_complained error:", error)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+      }
+      console.warn(`[Webhook/resend] SPAM COMPLAINT for campaign_email_id: ${campaignEmailId}`)
+      return NextResponse.json({ ok: true, event: eventType, action: "complained" })
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      return NextResponse.json({ error: msg }, { status: 500 })
+    }
+  }
+
+  if (eventType === "email.failed") {
+    console.error(`[Webhook/resend] EMAIL FAILED for campaign_email_id: ${campaignEmailId}`, event.data)
+    return NextResponse.json({ ok: true, event: eventType, action: "logged" })
   }
 
   // Map Resend event types → Supabase RPC function names

@@ -85,6 +85,9 @@ export default function ReconPage() {
       setProfile(resolvedProfile)
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(resolvedProfile))
       session.setReconProfile(resolvedProfile)  // untuk dipakai Match & Craft
+      if (resolvedProfile?.tokens_used && resolvedProfile.tokens_used > 0) {
+        session.setReconTokens(resolvedProfile.tokens_used)
+      }
       if (!IS_LIVE) session.setCompanyId(mockData.company.id)
       setIsLoading(false)
       toast.success("Profil berhasil di-generate")

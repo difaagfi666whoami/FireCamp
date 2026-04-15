@@ -118,10 +118,15 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
             <div className="grid grid-cols-2 gap-4">
               {/* Date Picker */}
               <div className="space-y-1.5">
-                <label className="text-[12px] font-semibold text-muted-foreground block">
+                <label
+                  htmlFor={`schedule-date-${row.emailNumber}`}
+                  className="text-[12px] font-semibold text-muted-foreground block"
+                >
                   Tanggal Kirim
                 </label>
                 <input
+                  id={`schedule-date-${row.emailNumber}`}
+                  name={`schedule-date-${row.emailNumber}`}
                   type="date"
                   value={row.date}
                   onChange={e => updateRow(index, "date", e.target.value)}
@@ -137,10 +142,15 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
 
               {/* Time Picker */}
               <div className="space-y-1.5">
-                <label className="text-[12px] font-semibold text-muted-foreground block">
+                <label
+                  htmlFor={`schedule-time-${row.emailNumber}`}
+                  className="text-[12px] font-semibold text-muted-foreground block"
+                >
                   Jam Kirim
                 </label>
                 <input
+                  id={`schedule-time-${row.emailNumber}`}
+                  name={`schedule-time-${row.emailNumber}`}
                   type="time"
                   value={row.time}
                   onChange={e => updateRow(index, "time", e.target.value)}

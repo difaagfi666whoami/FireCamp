@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException
 
 from app.models.schemas import CraftRequest, CraftResponse, RewriteRequest, RewriteResponse
 from app.services import craft_service
+from app.services.token_writer import write_token
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,9 @@ async def generate_craft(payload: CraftRequest) -> CraftResponse:
     )
 
     try:
-        result = await craft_service.generate_campaign_emails(company_data, product_data)
+        result, craft_tokens = await craft_service.generate_campaign_emails(
+            company_data, product_data
+        )
     except RuntimeError as exc:
         msg = str(exc)
         logger.error("[POST /api/craft] error | %s", msg)
@@ -65,6 +68,19 @@ async def generate_craft(payload: CraftRequest) -> CraftResponse:
             status_code=500,
             detail="Terjadi kesalahan internal saat membuat campaign.",
         ) from exc
+
+    # Tulis token ke Supabase — non-fatal.
+    # Recon & Match sudah selesai sebelum campaign_id ada, jadi nilainya
+    # dibawa via payload dari sessionStorage frontend dan ditulis di sini.
+    if payload.campaign_id:
+        try:
+            if payload.token_recon and payload.token_recon > 0:
+                await write_token(payload.campaign_id, "token_recon", payload.token_recon)
+            if payload.token_match and payload.token_match > 0:
+                await write_token(payload.campaign_id, "token_match", payload.token_match)
+            await write_token(payload.campaign_id, "token_craft", craft_tokens)
+        except Exception as e:
+            logger.warning("[POST /api/craft] token write FAILED (non-fatal): %s", e)
 
     logger.info(
         "[POST /api/craft] DONE | company=%r emails=%d",
@@ -92,7 +108,7 @@ async def regenerate_craft_tone(payload: RewriteRequest) -> RewriteResponse:
     )
 
     try:
-        result = await craft_service.rewrite_email_tone_async(
+        result, polish_tokens = await craft_service.rewrite_email_tone_async(
             target_company=payload.targetCompany,
             original_subject=payload.originalSubject,
             original_body=payload.originalBody,
@@ -111,5 +127,11 @@ async def regenerate_craft_tone(payload: RewriteRequest) -> RewriteResponse:
             detail="Terjadi kesalahan internal saat merombak tone email.",
         ) from exc
 
-    logger.info("[POST /api/craft/rewrite] DONE")
+    if payload.campaign_id:
+        try:
+            await write_token(payload.campaign_id, "token_polish", polish_tokens)
+        except Exception as e:
+            logger.warning("[POST /api/craft/rewrite] token write FAILED (non-fatal): %s", e)
+
+    logger.info("[POST /api/craft/rewrite] DONE | tokens=%d", polish_tokens)
     return RewriteResponse(**result)

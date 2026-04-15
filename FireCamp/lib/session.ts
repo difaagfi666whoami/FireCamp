@@ -8,6 +8,8 @@ const KEYS = {
   RECON_PROFILE:       "campfire_recon_profile",      // Full CompanyProfile dari Recon generate
   CRAFT_CAMPAIGN:      "campfire_craft_campaign",     // Generated Campaign dari Craft
   MATCH_RESULTS:       "campfire_match_results",      // ProductMatch[] hasil AI matching
+  RECON_TOKENS:        "campfire_recon_tokens",       // Total token AI dipakai di tahap Recon
+  MATCH_TOKENS:        "campfire_match_tokens",       // Total token AI dipakai di tahap Match
 } as const
 
 function ss(key: string): string | null {
@@ -34,6 +36,10 @@ export const session = {
       if (oldId && oldId !== id) {
         // Target company is switching. Nuke ALL downstream + recon profile
         // so the new target mounts fresh and re-hydrates from DB.
+        // NOTE: RECON_TOKENS & MATCH_TOKENS intentionally preserved — they track
+        // the most recent Recon/Match AI call and must survive the auto-save
+        // callback that fires a second setCompanyId(newUuid). They get
+        // overwritten on the next Recon/Match anyway.
         sessionStorage.removeItem(KEYS.CAMPAIGN_ID)
         sessionStorage.removeItem(KEYS.SELECTED_PRODUCT_ID)
         sessionStorage.removeItem(KEYS.CRAFT_CAMPAIGN)
@@ -67,6 +73,26 @@ export const session = {
     try { return JSON.parse(raw) } catch { return null }
   },
   setCraftCampaign:       (campaign: any) => set(KEYS.CRAFT_CAMPAIGN, JSON.stringify(campaign)),
+
+  // Token AI dari tahap Recon (dipakai saat request ke /api/craft)
+  setReconTokens: (n: number): void => {
+    if (typeof window === "undefined") return
+    sessionStorage.setItem(KEYS.RECON_TOKENS, String(n))
+  },
+  getReconTokens: (): number => {
+    if (typeof window === "undefined") return 0
+    return parseInt(sessionStorage.getItem(KEYS.RECON_TOKENS) ?? "0", 10)
+  },
+
+  // Token AI dari tahap Match (dipakai saat request ke /api/craft)
+  setMatchTokens: (n: number): void => {
+    if (typeof window === "undefined") return
+    sessionStorage.setItem(KEYS.MATCH_TOKENS, String(n))
+  },
+  getMatchTokens: (): number => {
+    if (typeof window === "undefined") return 0
+    return parseInt(sessionStorage.getItem(KEYS.MATCH_TOKENS) ?? "0", 10)
+  },
 
   // Full ProductMatch[] hasil AI matching (stored di Match tab, dibaca oleh Craft)
   getMatchResults: (): any[] | null => {

@@ -2,6 +2,7 @@ import { CompanyProfile } from "@/types/recon.types"
 import { ProductMatch } from "@/types/match.types"
 import { mockData } from "@/lib/mock/mockdata"
 import { supabase } from "@/lib/supabase/client"
+import { session } from "@/lib/session"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const USE_MOCK = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") === "true"
@@ -20,7 +21,10 @@ export async function runMatching(companyProfile: CompanyProfile): Promise<Produ
   const res = await fetch(`${API_URL}/api/match`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ companyProfile }),
+    body: JSON.stringify({
+      companyProfile,
+      campaign_id: session.getCampaignId() ?? undefined,
+    }),
   })
 
   if (!res.ok) {
@@ -28,7 +32,15 @@ export async function runMatching(companyProfile: CompanyProfile): Promise<Produ
     throw new Error(err.detail || `HTTP ${res.status}`)
   }
 
-  return res.json()
+  const body = await res.json() as { matches: ProductMatch[]; tokens_used: number }
+
+  // Simpan token di sessionStorage agar bisa dibawa ke /api/craft (campaign_id
+  // belum ada saat Match berjalan).
+  if (typeof body?.tokens_used === "number" && body.tokens_used > 0) {
+    session.setMatchTokens(body.tokens_used)
+  }
+
+  return body.matches ?? []
 }
 
 // -----------------------------------------------------------------------------

@@ -9,9 +9,14 @@ interface EmailEditorProps {
   onChangeBody: (val: string) => void;
   disabled?: boolean;
   isRegenerating?: boolean;
+  emailId?: string;
 }
 
-export function EmailEditor({ subject, body, onChangeSubject, onChangeBody, disabled, isRegenerating }: EmailEditorProps) {
+export function EmailEditor({ subject, body, onChangeSubject, onChangeBody, disabled, isRegenerating, emailId }: EmailEditorProps) {
+  const suffix = emailId ?? "default"
+  const subjectId = `email-subject-${suffix}`
+  const bodyId = `email-body-${suffix}`
+
   return (
     <div className="space-y-6 relative">
       {isRegenerating && (
@@ -20,10 +25,12 @@ export function EmailEditor({ subject, body, onChangeSubject, onChangeBody, disa
           <p className="text-[13px] font-bold text-brand animate-pulse tracking-tight">Sedang menyesuaikan gaya bahasa...</p>
         </div>
       )}
-      
+
       <div className="space-y-2.5">
-        <label className="text-[13px] font-bold tracking-tight text-muted-foreground uppercase">Subject Line</label>
-        <Input 
+        <label htmlFor={subjectId} className="text-[13px] font-bold tracking-tight text-muted-foreground uppercase">Subject Line</label>
+        <Input
+          id={subjectId}
+          name={subjectId}
           value={subject}
           onChange={e => onChangeSubject(e.target.value)}
           disabled={disabled}
@@ -33,8 +40,10 @@ export function EmailEditor({ subject, body, onChangeSubject, onChangeBody, disa
       </div>
 
       <div className="space-y-2.5">
-        <label className="text-[13px] font-bold tracking-tight text-muted-foreground uppercase">Body Content</label>
-        <Textarea 
+        <label htmlFor={bodyId} className="text-[13px] font-bold tracking-tight text-muted-foreground uppercase">Body Content</label>
+        <Textarea
+          id={bodyId}
+          name={bodyId}
           value={body}
           onChange={e => onChangeBody(e.target.value)}
           disabled={disabled}

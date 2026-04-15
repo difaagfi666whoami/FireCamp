@@ -150,6 +150,7 @@ export default function PolishPage() {
         campaignReasoning: craftCampaign.reasoning,
         newTone:           tone,
         sequenceNumber:    email.sequenceNumber,
+        campaign_id:       session.getCampaignId() ?? undefined,
       })
 
       updateEmail(emailId, { 
@@ -350,6 +351,7 @@ export default function PolishPage() {
                 <div className="space-y-6">
                   <div className={`relative transition-all duration-300 ${email.isApproved ? 'opacity-85 pointer-events-none' : ''}`}>
                     <EmailEditor
+                      emailId={eId}
                       subject={email.subject}
                       body={email.body}
                       onChangeSubject={(val) => updateEmail(eId, { subject: val })}

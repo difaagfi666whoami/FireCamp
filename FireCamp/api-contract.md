@@ -82,35 +82,40 @@ Mengembalikan representasi penuh dari data profil perusahaan. Seluruh field waji
 ### 📥 Request Body
 ```json
 {
-  "companyProfile": { ... Full Profile Object dari respon Recon ... }
+  "companyProfile": { ... Full Profile Object dari respon Recon ... },
+  "campaign_id": "uuid | undefined"
 }
 ```
+*(Catatan: `campaign_id` opsional — hanya diisi bila user re-run Match pada company yang sudah punya campaign. Jika ada, backend langsung menulis `token_match` ke `campaign_analytics`.)*
 
 ### 📤 Response Body (200 OK)
-Return berbentuk `Array` dari `ProductMatch` (menggabungkan data katalog dengan skor AI).
+Return berbentuk object `{ matches, tokens_used }`. `matches` adalah `Array` dari `ProductMatch` (menggabungkan data katalog dengan skor AI); `tokens_used` adalah total token AI yang dipakai untuk panggilan Match ini — frontend menyimpannya di sessionStorage untuk diteruskan ke `/api/craft` (karena campaign_id biasanya belum ada saat Match).
 
 ```json
-[
-  {
-    "id": "uuid-product-id",
-    "name": "CampaignAI Pro",
-    "tagline": "Automasi Email Marketing",
-    "description": "Deskripsi produk...",
-    "price": "Rp 5.000.000/bln",
-    "painCategories": ["Marketing", "Operations"],
-    "usp": ["USP 1", "USP 2"],
-    "source": "manual",
-    "createdAt": "...",
-    "updatedAt": "...",
-    
-    "matchScore": 95,
-    "addressedPainIndices": [0, 2],
-    "reasoning": "Produk ini sangat relevan karena mengatasi pain point pertama dan ketiga perusahaan terkait lambatnya setup campaign...",
-    "isRecommended": true
-  }
-]
+{
+  "matches": [
+    {
+      "id": "uuid-product-id",
+      "name": "CampaignAI Pro",
+      "tagline": "Automasi Email Marketing",
+      "description": "Deskripsi produk...",
+      "price": "Rp 5.000.000/bln",
+      "painCategories": ["Marketing", "Operations"],
+      "usp": ["USP 1", "USP 2"],
+      "source": "manual",
+      "createdAt": "...",
+      "updatedAt": "...",
+
+      "matchScore": 95,
+      "addressedPainIndices": [0, 2],
+      "reasoning": "Produk ini sangat relevan karena mengatasi pain point pertama dan ketiga perusahaan terkait lambatnya setup campaign...",
+      "isRecommended": true
+    }
+  ],
+  "tokens_used": 1398
+}
 ```
-*(Catatan: Array idealnya berisi top 3-5 produk yang paling cocok, urut dari `matchScore` tertinggi).*
+*(Catatan: `matches` idealnya berisi top 3-5 produk yang paling cocok, urut dari `matchScore` tertinggi).*
 
 ---
 
@@ -119,11 +124,14 @@ Return berbentuk `Array` dari `ProductMatch` (menggabungkan data katalog dengan 
 **Tujuan**: Backend meracik satu buah *campaign reasoning* dan 3 *sequence email* mematikan (*outbound*) berdasarkan company target dan produk yang dipilih.
 
 ### 📥 Request Body
-Frontend mengirimkan profil perusahaan beserta detil produk konkrit yang dipilih oleh *user* pada tahap Match.
+Frontend mengirimkan profil perusahaan beserta detil produk konkrit yang dipilih oleh *user* pada tahap Match. Payload juga membawa token usage dari tahap Recon & Match (ditarik dari sessionStorage) agar backend bisa menulis ketiga field token sekaligus ke `campaign_analytics` — campaign_id baru tersedia sejak user klik "Lanjutkan ke Craft" di Match.
 ```json
 {
   "companyProfile": { ... Full Profile Object ... },
-  "selectedProduct": { ... Full Product Object ... }
+  "selectedProduct": { ... Full Product Object ... },
+  "token_recon": 9327,
+  "token_match": 1398,
+  "campaign_id": "uuid"
 }
 ```
 

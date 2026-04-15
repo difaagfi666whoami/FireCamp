@@ -170,7 +170,7 @@ class ReconResponse(CompanyProfile):
     POST /api/recon — response body.
     Identik dengan CompanyProfile; alias ini memperjelas kontrak di router.
     """
-    pass
+    tokens_used: Optional[int] = None
 
 
 # ── Match ──────────────────────────────────────────────────────────────────────
@@ -200,9 +200,19 @@ class ProductMatch(ProductCatalogItem):
 class MatchRequest(BaseModel):
     """POST /api/match — request body dari Frontend."""
     companyProfile: CompanyProfile
+    campaign_id:    Optional[str] = None
 
 
-MatchResponse = list[ProductMatch]   # alias untuk type hint di router
+class MatchResponse(BaseModel):
+    """
+    POST /api/match — response body.
+
+    Wrapping matches di dalam object agar bisa membawa `tokens_used` untuk
+    frontend (campaign_id belum ada saat Match, jadi backend belum bisa
+    menulis langsung ke campaign_analytics).
+    """
+    matches:     list[ProductMatch]
+    tokens_used: int = 0
 
 
 # ── Craft ──────────────────────────────────────────────────────────────────────
@@ -231,6 +241,9 @@ class CraftRequest(BaseModel):
     """POST /api/craft — request body dari Frontend."""
     companyProfile:  CompanyProfile
     selectedProduct: ProductMatch
+    token_recon:     Optional[int] = 0
+    token_match:     Optional[int] = 0
+    campaign_id:     Optional[str] = None
 
 
 class CraftResponse(Campaign):
@@ -249,6 +262,7 @@ class RewriteRequest(BaseModel):
     campaignReasoning: str
     newTone:           str
     sequenceNumber:    int
+    campaign_id:       Optional[str] = None
 
 
 class RewriteResponse(BaseModel):

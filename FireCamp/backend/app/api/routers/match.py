@@ -22,6 +22,7 @@ from app.models.schemas import (
 )
 from app.services import openai_service
 from app.services.supabase_client import fetch_table
+from app.services.token_writer import write_token
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ async def run_match(payload: MatchRequest) -> MatchResponse:
     )
 
     try:
-        matches = await openai_service.run_matching(profile, catalog)
+        matches, match_tokens = await openai_service.run_matching(profile, catalog)
     except RuntimeError as exc:
         msg = str(exc)
         logger.error("[POST /api/match] run_matching error | company=%r: %s", profile.name, msg)
@@ -115,7 +116,14 @@ async def run_match(payload: MatchRequest) -> MatchResponse:
         ) from exc
 
     logger.info(
-        "[POST /api/match] DONE | company=%r matches=%d",
-        profile.name, len(matches),
+        "[POST /api/match] DONE | company=%r matches=%d tokens=%d",
+        profile.name, len(matches), match_tokens,
     )
-    return matches
+
+    if payload.campaign_id:
+        try:
+            await write_token(payload.campaign_id, "token_match", match_tokens)
+        except Exception as e:
+            logger.warning("[POST /api/match] token write FAILED (non-fatal): %s", e)
+
+    return MatchResponse(matches=matches, tokens_used=match_tokens)

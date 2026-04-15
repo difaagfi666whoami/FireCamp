@@ -250,7 +250,7 @@ async def synthesize_profile(
     extracted_news: list[dict[str, Any]] | None = None,
     evidence_list: list[dict[str, str]] | None = None,
     pain_signals_from_news: list[dict[str, Any]] | None = None,
-) -> CompanyProfile:
+) -> tuple[CompanyProfile, int]:
     """
     Final synthesis: gabungkan Lane A + Lane B → CompanyProfile JSON
     ter-validasi Pydantic menggunakan OpenAI Structured Output.
@@ -449,13 +449,14 @@ async def synthesize_profile(
                     len(injected_news),
                 )
 
+        tokens_used = response.usage.total_tokens if response.usage else 0
         logger.info(
             "[openai] synthesize_profile OK | company=%r tokens=%d news=%d",
             profile.name,
-            response.usage.total_tokens if response.usage else 0,
+            tokens_used,
             len(profile.news),
         )
-        return profile
+        return profile, tokens_used
 
     except Exception as exc:
         logger.error("[openai] synthesize_profile FAILED | error=%s", exc)
@@ -469,7 +470,7 @@ async def synthesize_profile(
 async def run_matching(
     profile: CompanyProfile,
     catalog: list[ProductCatalogItem],
-) -> list[ProductMatch]:
+) -> tuple[list[ProductMatch], int]:
     """
     Hitung relevance score setiap produk terhadap pain points perusahaan.
 
@@ -556,8 +557,9 @@ async def run_matching(
                 logger.warning("[openai] run_matching ProductMatch validation error: %s", ve)
 
         result.sort(key=lambda x: x.matchScore, reverse=True)
-        logger.info("[openai] run_matching OK | matches=%d", len(result))
-        return result
+        tokens_used = response.usage.total_tokens if response.usage else 0
+        logger.info("[openai] run_matching OK | matches=%d tokens=%d", len(result), tokens_used)
+        return result, tokens_used
 
     except Exception as exc:
         logger.error("[openai] run_matching FAILED | error=%s", exc)

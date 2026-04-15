@@ -1,6 +1,79 @@
 # Updates
 
-## Launch & Pulse Pipeline — Final Sync & Resend Migration (2026-04-13)
+## Pulse — Fix Penggunaan Token AI Menunjukkan 0 untuk Recon & Match (2026-04-15)
+
+### Root Cause
+Log uvicorn membuktikan Recon menghasilkan ~9327 tokens, Match ~1398 tokens, Craft ~3114 tokens, tetapi di Pulse hanya Craft yang tampil. Dua bug terpisah:
+
+1. **`token_recon` hilang sebelum sampai ke Craft**: Di `lib/session.ts`, `setCompanyId()` meng-wipe semua downstream keys ketika `oldCompanyId !== newUuid`, termasuk `RECON_TOKENS`. Di `app/recon/page.tsx:89` tokens ditulis ke sessionStorage, lalu `saveCompanyProfile().then(uuid => session.setCompanyId(uuid))` memicu wipe kalau sessionStorage masih menyimpan company_id dari test sebelumnya. Akibatnya `session.getReconTokens()` → 0 saat Craft → backend skip `write_token(token_recon)`.
+2. **`token_match` tidak pernah ditangkap**: Match berjalan sebelum campaign_id ada, jadi `payload.campaign_id` di `backend/app/api/routers/match.py` selalu `None`. Response `/api/match` juga tidak membawa `tokens_used`, jadi frontend tidak bisa menyimpannya untuk dikirim nanti via payload Craft.
+
+### Fixes
+
+**Frontend**
+- `lib/session.ts` — `setCompanyId()` tidak lagi menghapus `RECON_TOKENS` (dan tidak akan menghapus `MATCH_TOKENS`). Keduanya ditulis ulang oleh Recon/Match berikutnya, dan hanya relevan sebentar untuk dibawa ke panggilan Craft setelahnya.
+- `lib/session.ts` — Tambah `MATCH_TOKENS` key + helper `setMatchTokens` / `getMatchTokens`.
+- `lib/api/match.ts` — Parse response baru `{ matches, tokens_used }`, panggil `session.setMatchTokens(tokens_used)`.
+- `lib/api/craft.ts` — Payload `/api/craft` sekarang membawa `token_match: session.getMatchTokens()` di samping `token_recon`.
+
+**Backend**
+- `backend/app/models/schemas.py` — `MatchResponse` diubah dari `list[ProductMatch]` menjadi BaseModel `{ matches, tokens_used }`. `CraftRequest` menambahkan `token_match: Optional[int] = 0`.
+- `backend/app/api/routers/match.py` — Router mengembalikan `MatchResponse(matches=..., tokens_used=match_tokens)`.
+- `backend/app/api/routers/craft.py` — Router kini menulis `token_match` (bila >0) selain `token_recon` dan `token_craft` lewat shared `token_writer.write_token`.
+
+### Data Flow Baru
+```
+Recon  → tokens_used di response     → session.setReconTokens()   → sessionStorage
+Match  → tokens_used di response     → session.setMatchTokens()   → sessionStorage
+User klik "Lanjut ke Craft"          → saveCampaignAndMatching()  → campaign_id dibuat
+Craft  → payload membawa recon+match → backend write_token() 3x   → campaign_analytics
+Polish → campaign_id sudah ada       → backend write_token() INCR → campaign_analytics.token_polish
+Pulse  → SELECT token_{recon,match,craft,polish} → tampilkan nilai nyata
+```
+
+### Verifikasi
+Uvicorn log sekarang menampilkan 3 baris berurutan setelah Craft:
+```
+[token_writer] OK | field=token_recon tokens=~9000 ...
+[token_writer] OK | field=token_match tokens=~1400 ...
+[token_writer] OK | field=token_craft tokens=~3000 ...
+```
+UI Pulse menampilkan nilai nyata untuk Recon, Match, Craft. `token_polish` tetap 0 sampai user menekan Rewrite di Polish — ini sesuai design karena tokens baru terakumulasi saat user benar-benar memakai fitur Rewrite.
+
+---
+
+## Pulse Webhook Hardening — Phase 2 Infrastructure (2026-04-15)
+
+### Analisis & Perencanaan: Event Types Resend untuk B2B Campaign
+- Dari 11 event type yang tersedia di Resend API, dipilih 3 event kritis untuk Phase 2:
+  - `email.bounced` — paling kritis: melindungi reputasi domain dari hard bounce
+  - `email.complained` — deteksi spam complaint yang dapat men-suspend akun Resend
+  - `email.failed` — visibilitas operasional saat API/domain/quota gagal
+- Phase 1 (sudah live): `email.opened`, `email.clicked`, `email.received`
+
+### Bug Fix: Pulse UI "Status per Email" — `pending` Rendered as `Sent`
+- **Root Cause**: `STATUS_CONFIG` di `app/pulse/page.tsx` tidak memiliki entry untuk `"pending"` dan `"scheduled"`. Karena fallback default adalah `STATUS_CONFIG.sent`, semua email dengan status `pending` di database ditampilkan sebagai badge "Sent" di UI.
+- **Fix `lib/api/analytics.ts`**: Menambahkan `"pending"` ke list kondisi passthrough (tidak di-remap ke engagement_status).
+- **Fix `app/pulse/page.tsx`**: Mendaftarkan `STATUS_CONFIG` resmi untuk `"pending"` (Ikon Jam, Amber) dan `"scheduled"` (Ikon Kalender, Amber).
+
+### Arsitektur Pivot: campaign_emails sebagai Source of Truth untuk perEmail
+- **Root Cause**: Query lama menggunakan `email_analytics` sebagai poros JOIN, yang menyebabkan Email 2 & 3 tidak muncul jika baris analyticsnya belum ter-insert oleh trigger.
+- **Fix `lib/api/analytics.ts`**: Refaktor `getCampaignAnalytics()` dengan 2-query strategy:
+  1. Query 1: Ambil `campaign_analytics` untuk summary, rates, timeline, token (tanpa nested email_analytics).
+  2. Query 2: Ambil `campaign_emails` + nested `email_analytics` sebagai main loop untuk `perEmail`. Menjamin ketiga email selalu terrender.
+- **Status Logic Map**: `draft/scheduled/pending/failed` → ikuti `campaign_emails.status`. `sent` → baca `email_analytics.engagement_status` (fallback: "sent").
+
+### Bug Fix: Tags Format Array vs Flat Object (Resend API)
+- **Root Cause**: Saat pengiriman email, Resend menerima tags dalam format Array `[{name, value}]`. Namun saat mengirim balik via Webhook, Resend mengonversi tags ke flat object `{key: value}`. Kode `getTagValue` menggunakan `.find()` (array method) sehingga crash dengan `TypeError`.
+- **Fix `app/api/webhooks/resend/route.ts`**: Interface `tags` diubah ke `Record<string, string>`, fungsi `getTagValue` diubah ke ekstrak obyek langsung `tags[name]`.
+
+### Next: Rencana Implementasi Phase 2 (Siap Dieksekusi)
+- Prompt lengkap tersedia di `prompt-phase2-webhook-hardening.md`
+- 4 task: Migration SQL baru, Update webhook handler, Update UI badge, Update Resend Dashboard
+
+---
+
+
 
 ### Architectural Pivot: Removing n8n for Resend + Vercel Cron
 - **Root Cause**: n8n orchestration adds significant deployment overhead, race conditions, and requires a separate server instance.

@@ -126,7 +126,7 @@ INSIGHTFUL. Setiap email harus MENANTANG status quo prospek, bukan sekadar pitch
 async def generate_campaign_emails(
     company_data: dict,
     product_data: dict,
-) -> dict:
+) -> tuple[dict, int]:
     """
     Generate 3-email outreach sequence.
 
@@ -287,14 +287,15 @@ async def generate_campaign_emails(
         for email in emails:
             email["isApproved"] = False
 
+        tokens_used = response.usage.total_tokens if response.usage else 0
         logger.info(
             "[craft_service] OK | company=%r emails=%d tokens=%d finish=%s",
             company_name,
             len(emails),
-            response.usage.total_tokens if response.usage else 0,
+            tokens_used,
             finish,
         )
-        return result
+        return result, tokens_used
 
     except json.JSONDecodeError as exc:
         logger.error("[craft_service] JSON parse error: %s", exc)
@@ -353,7 +354,7 @@ async def rewrite_email_tone_async(
     campaign_reasoning: str,
     new_tone: str,
     sequence_number: int,
-) -> dict[str, str]:
+) -> tuple[dict[str, str], int]:
     if not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY belum diset di .env.local")
 
@@ -403,7 +404,12 @@ Ingat: Subject wajib 100% huruf kecil dan panjang 3-7 kata.
             raise RuntimeError("Respons AI kosong.")
 
         result = json.loads(content)
-        return result
+        tokens_used = response.usage.total_tokens if response.usage else 0
+        logger.info(
+            "[craft_service] rewrite OK | tone=%r seq=%d tokens=%d",
+            new_tone, sequence_number, tokens_used,
+        )
+        return result, tokens_used
 
     except json.JSONDecodeError as exc:
         logger.error("[craft_service] JSON parse error: %s", exc)

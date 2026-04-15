@@ -2,6 +2,7 @@ import { CompanyProfile } from "@/types/recon.types"
 import { ProductMatch } from "@/types/match.types"
 import { Campaign } from "@/types/craft.types"
 import { supabase } from "@/lib/supabase/client"
+import { session } from "@/lib/session"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const API_URL  = sq(process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000")
@@ -14,7 +15,13 @@ export async function generateCampaign(
   companyProfile: CompanyProfile,
   selectedProduct: ProductMatch
 ): Promise<Campaign> {
-  const body = { companyProfile, selectedProduct }
+  const body = {
+    companyProfile,
+    selectedProduct,
+    token_recon: session.getReconTokens(),
+    token_match: session.getMatchTokens(),
+    campaign_id: session.getCampaignId() ?? undefined,
+  }
   const res = await fetch(`${API_URL}/api/craft`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -188,6 +195,7 @@ export interface RewriteRequestPayload {
   campaignReasoning: string
   newTone: string
   sequenceNumber: number
+  campaign_id?: string
 }
 
 export interface RewriteResponsePayload {

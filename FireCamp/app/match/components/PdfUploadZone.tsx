@@ -91,9 +91,14 @@ export function PdfUploadZone({ onExtracted }: PdfUploadZoneProps) {
             </p>
           </div>
           <div className="relative">
-            <input 
-              type="file" 
-              accept=".pdf" 
+            <label htmlFor="pdf-upload-brochure" className="sr-only">
+              Upload file PDF brosur
+            </label>
+            <input
+              id="pdf-upload-brochure"
+              name="pdf-upload-brochure"
+              type="file"
+              accept=".pdf"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               onChange={handleFileInput}
             />

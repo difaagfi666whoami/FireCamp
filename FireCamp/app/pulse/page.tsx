@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -21,6 +21,12 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     bg: "bg-emerald-100 border-emerald-200",
     icon: <MessageSquareReply className="w-3 h-3" />,
   },
+  clicked: {
+    label: "Clicked",
+    color: "text-indigo-700",
+    bg: "bg-indigo-100 border-indigo-200",
+    icon: <MousePointerClick className="w-3 h-3" />,
+  },
   opened: {
     label: "Opened",
     color: "text-blue-700",
@@ -33,6 +39,36 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     bg: "bg-zinc-100 border-zinc-200",
     icon: <CheckCircle2 className="w-3 h-3" />,
   },
+  pending: {
+    label: "Pending",
+    color: "text-amber-700",
+    bg: "bg-amber-100 border-amber-200",
+    icon: <Clock className="w-3 h-3" />,
+  },
+  scheduled: {
+    label: "Scheduled",
+    color: "text-amber-700",
+    bg: "bg-amber-100 border-amber-200",
+    icon: <Calendar className="w-3 h-3" />,
+  },
+  bounced: {
+    label: "Bounced",
+    color: "text-red-700",
+    bg: "bg-red-100 border-red-200",
+    icon: <AlertTriangle className="w-3 h-3" />,
+  },
+  complained: {
+    label: "Spam Complained",
+    color: "text-rose-800",
+    bg: "bg-rose-100 border-rose-200",
+    icon: <ShieldAlert className="w-3 h-3" />,
+  },
+  failed: {
+    label: "Failed",
+    color: "text-red-700",
+    bg: "bg-red-100 border-red-200",
+    icon: <XCircle className="w-3 h-3" />,
+  },
 }
 
 const ZERO_ANALYTICS: AnalyticsData = {
@@ -43,7 +79,7 @@ const ZERO_ANALYTICS: AnalyticsData = {
     { emailNumber: 3, name: "Email 3", opens: 0, clicks: 0, replies: 0, status: "scheduled" },
   ],
   timeline: [],
-  tokenUsage: { recon: 0, match: 0, craft: 0, total: 0, estimatedCostIDR: 0 },
+  tokenUsage: { recon: 0, match: 0, craft: 0, polish: 0, total: 0, estimatedCostIDR: 0 },
 }
 
 export default function PulsePage() {
@@ -109,7 +145,7 @@ export default function PulsePage() {
           </div>
           <div className="space-y-3">
             {perEmail.map((email: any) => {
-              const cfg = STATUS_CONFIG[email.status] ?? STATUS_CONFIG.sent
+              const cfg = STATUS_CONFIG[email.status] ?? STATUS_CONFIG.pending
               return (
                 <div
                   key={email.emailNumber}
