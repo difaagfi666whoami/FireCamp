@@ -60,6 +60,10 @@ export default function PolishPage() {
       setEmails(list)
       setActiveTab(String(list[0]?.id || list[0]?.sequenceNumber || 1))
       if (restored) setRestoredFromSession(true)
+      
+      // Auto-start editor jika ada draf email yang berhasil dilempar
+      setHasStarted(true)
+      sessionStorage.setItem("campfire_polish_started", "1")
     }
 
     ;(async () => {

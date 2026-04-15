@@ -29,6 +29,31 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
         setProfile(data)
         // Simpan profile ke session agar Match & Craft bisa gunakan tanpa fetch ulang
         session.setReconProfile(data)
+
+        // --- SILENT HYDRATION ---
+        // Jika sudah melewati Match, langsung pasang CampaignId ke sesi 
+        // sehingga user bisa meloncat ke Pulse atau Launch tanpa pesan "Belum ada campaign".
+        if (data.campaignProgress?.match || data.campaignProgress?.craft) {
+          import("@/lib/api/match").then(mod => {
+            mod.getCampaignWithMatchResult(params.id).then(dbData => {
+              if (dbData?.campaignId) {
+                session.setCampaignId(dbData.campaignId)
+                if (dbData.selectedProductId) session.setSelectedProductId(dbData.selectedProductId)
+              }
+            }).catch(e => console.error("[ReconPreview] Silent match hydration err:", e))
+          })
+
+          if (data.campaignProgress?.craft) {
+            import("@/lib/api/craft").then(mod => {
+              mod.getCraftedEmailsByCompany(params.id).then(craftDb => {
+                if (craftDb) {
+                  session.setCraftCampaign(craftDb)
+                  sessionStorage.setItem("campfire_craft_done", "1")
+                }
+              }).catch(e => console.error("[ReconPreview] Silent craft hydration err:", e))
+            })
+          }
+        }
       })
       .catch(e => setError(e instanceof Error ? e.message : "Gagal memuat profil"))
       .finally(() => setIsLoading(false))
