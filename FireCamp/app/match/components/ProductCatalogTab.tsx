@@ -186,25 +186,37 @@ export function ProductCatalogTab() {
 
       {/* Recently Added */}
       <h2 className="text-[17px] font-bold tracking-tight mb-4">Baru ditambahkan</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-        {recentProducts.map(p => (
-          <div key={p.id} className="flex items-center justify-between p-4 border border-border/70 rounded-[14px] hover:shadow-sm transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="bg-muted/50 p-2.5 rounded-xl border border-border/40"><FileText className="w-5 h-5 text-muted-foreground" /></div>
-              <div>
-                <div className="font-semibold text-[14px] leading-tight mb-1">{p.name || "Untitled"}</div>
-                <div className="text-[13px] text-muted-foreground flex gap-2">
-                  <span>{p.painCategories?.length || 0} Target Pains</span>
-                  <span className="capitalize">{p.source}</span>
+      {recentProducts.length === 0 ? (
+        <div className="flex items-center gap-4 p-5 border border-dashed border-border/60 rounded-2xl mb-10 text-muted-foreground">
+          <div className="bg-muted/50 p-3 rounded-xl border border-border/40 shrink-0">
+            <FileText className="w-5 h-5 text-muted-foreground/50" />
+          </div>
+          <div>
+            <p className="text-[13.5px] font-semibold text-foreground/70">Belum ada produk ditambahkan</p>
+            <p className="text-[12.5px] text-muted-foreground mt-0.5">Tambah produk pertama kamu via form manual atau ekstrak dari PDF brosur.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+          {recentProducts.map(p => (
+            <div key={p.id} className="flex items-center justify-between p-4 border border-border/70 rounded-[14px] hover:shadow-sm transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="bg-muted/50 p-2.5 rounded-xl border border-border/40"><FileText className="w-5 h-5 text-muted-foreground" /></div>
+                <div>
+                  <div className="font-semibold text-[14px] leading-tight mb-1">{p.name || "Untitled"}</div>
+                  <div className="text-[13px] text-muted-foreground flex gap-2">
+                    <span>{p.painCategories?.length || 0} Target Pains</span>
+                    <span className="capitalize">{p.source}</span>
+                  </div>
                 </div>
               </div>
+              <button onClick={() => handleEditClick(p)} className="p-1 hover:bg-muted rounded-md text-muted-foreground flex items-center gap-1 -mr-2">
+                <MoreVertical className="w-5 h-5" />
+              </button>
             </div>
-            <button onClick={() => handleEditClick(p)} className="p-1 hover:bg-muted rounded-md text-muted-foreground flex items-center gap-1 -mr-2">
-              <MoreVertical className="w-5 h-5" />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* All Products header */}
       <div className="flex items-center justify-between mb-4">

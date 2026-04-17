@@ -286,7 +286,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
         source:         n.source,
         summary:        n.summary,
         url:            n.url,
-        signal_type:    (n as any).signal_type ?? null,
+        signal_type:    n.signalType ?? null,
       }))
     )
     if (error) throw new Error(error.message)

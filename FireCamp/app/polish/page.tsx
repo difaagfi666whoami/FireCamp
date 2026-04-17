@@ -9,7 +9,7 @@ import { ToneSelector } from "./components/ToneSelector"
 import { EmailEditor } from "./components/EmailEditor"
 import { ApproveButton } from "./components/ApproveButton"
 import { Button } from "@/components/ui/button"
-import { Check, ArrowRight, ArrowLeft, RotateCcw, FileEdit, Loader2 } from "lucide-react"
+import { Check, ArrowRight, ArrowLeft, RotateCcw, FileEdit, Loader2, ChevronRight } from "lucide-react"
 import { markStageDone } from "@/lib/progress"
 import { session } from "@/lib/session"
 import { syncPolishedEmails, regenerateEmailTone, getCraftedEmailsByCompany } from "@/lib/api/craft"
@@ -229,39 +229,57 @@ export default function PolishPage() {
     router.push("/launch")
   }
 
+  const breadcrumb = (
+    <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="text-foreground font-semibold">Polish</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span>Launch</span>
+    </div>
+  )
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 4 dari 6</span>
+
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 animate-in fade-in duration-300">
-        <Loader2 className="w-8 h-8 text-brand animate-spin mb-4" />
-        <p className="text-[13.5px] text-muted-foreground font-medium">Memuat data email...</p>
+      <div className="p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
+          <Loader2 className="w-8 h-8 text-brand animate-spin" />
+          <p className="text-[13.5px] font-medium">Memuat data email...</p>
+        </div>
       </div>
     )
   }
 
   if (emails.length === 0) {
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8
-                        border border-dashed border-border/80 rounded-2xl
-                        w-[340px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada draft email</h3>
+            <p className="text-[13px] text-muted-foreground font-medium mb-4">
+              Target: <span className="font-bold text-foreground">{companyName || "Belum dipilih"}</span>
+            </p>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              Anda belum melakukan generate campaign di tahap Craft. Silakan kembali ke Craft untuk membuat draft email terlebih dahulu.
+            </p>
+            <Button onClick={() => router.push("/craft")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+              Menuju Craft
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Belum ada draft email
-          </h3>
-          <p className="text-[13px] text-muted-foreground font-medium mb-4">
-            Target: <span className="font-bold text-foreground">{companyName || "Belum dipilih"}</span>
-          </p>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Anda belum melakukan generate campaign di tahap Craft. Silakan kembali ke Craft untuk membuat draft email terlebih dahulu.
-          </p>
-          <Button
-            onClick={() => router.push("/craft")}
-            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
-          >
-            Menuju Craft
-          </Button>
         </div>
       </div>
     )
@@ -269,29 +287,25 @@ export default function PolishPage() {
 
   if (!hasStarted) {
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8
-                        border border-dashed border-border/80 rounded-2xl
-                        w-[320px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[320px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Mulai Polish</h3>
+            <p className="text-[13px] text-muted-foreground font-medium mb-1">
+              Target: <span className="font-bold text-foreground">{companyName}</span>
+            </p>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              Review dan edit 3 draft email yang sudah digenerate. Approve setiap email sebelum melanjutkan ke Launch.
+            </p>
+            <Button onClick={handleStartPolish} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+              Mulai Polish
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Mulai Polish
-          </h3>
-          <p className="text-[13px] text-muted-foreground font-medium mb-1">
-            Target: <span className="font-bold text-foreground">{companyName}</span>
-          </p>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Review dan edit 3 draft email yang sudah digenerate.
-            Approve setiap email sebelum melanjutkan ke Launch.
-          </p>
-          <Button
-            onClick={handleStartPolish}
-            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
-          >
-            Mulai Polish
-          </Button>
         </div>
       </div>
     )
@@ -299,9 +313,28 @@ export default function PolishPage() {
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-24">
+
+      {/* Pipeline breadcrumb */}
+      <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
+        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="text-foreground font-semibold">Polish</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>Launch</span>
+      </div>
+
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Review & Editor (Polish)</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 4 dari 6</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">Review & Editor (Polish)</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
             Review dan finalisasi draft email. Seluruh email wajib di-approve sebelum campaign bisa diaktifkan di tahap selanjutnya.
           </p>

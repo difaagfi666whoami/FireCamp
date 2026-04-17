@@ -10,6 +10,9 @@ const KEYS = {
   MATCH_RESULTS:       "campfire_match_results",      // ProductMatch[] hasil AI matching
   RECON_TOKENS:        "campfire_recon_tokens",       // Total token AI dipakai di tahap Recon
   MATCH_TOKENS:        "campfire_match_tokens",       // Total token AI dipakai di tahap Match
+  MATCH_DONE:          "campfire_match_done",         // Flag: Match tahap selesai
+  CRAFT_DONE:          "campfire_craft_done",         // Flag: Craft tahap selesai
+  POLISH_STARTED:      "campfire_polish_started",     // Flag: Polish sudah dibuka
 } as const
 
 function ss(key: string): string | null {
@@ -44,9 +47,10 @@ export const session = {
         sessionStorage.removeItem(KEYS.SELECTED_PRODUCT_ID)
         sessionStorage.removeItem(KEYS.CRAFT_CAMPAIGN)
         sessionStorage.removeItem(KEYS.RECON_PROFILE)
-        sessionStorage.removeItem("campfire_match_results")
-        sessionStorage.removeItem("campfire_match_done")
-        sessionStorage.removeItem("campfire_craft_done")
+        sessionStorage.removeItem(KEYS.MATCH_RESULTS)
+        sessionStorage.removeItem(KEYS.MATCH_DONE)
+        sessionStorage.removeItem(KEYS.CRAFT_DONE)
+        sessionStorage.removeItem(KEYS.POLISH_STARTED)
       }
     }
     set(KEYS.COMPANY_ID, id)

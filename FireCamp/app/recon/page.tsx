@@ -2,19 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Save, ArrowRight, Search, AlertTriangle, X, Loader2 } from "lucide-react"
+import { ArrowLeft, Search, AlertTriangle, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { generateReconProfile, saveCompanyProfile } from "@/lib/api/recon"
 import { session } from "@/lib/session"
 import { mockData } from "@/lib/mock/mockdata"
 import { ReconForm } from "./components/ReconForm"
-import { CompanyHeader } from "./components/CompanyHeader"
-import { StrategicMainContent } from "./components/StrategicMainContent"
-import { StrategicSidebar } from "./components/StrategicSidebar"
-import { PainPointList } from "./components/PainPointList"
-import { NewsSection } from "./components/NewsSection"
-import { KeyContacts } from "./components/KeyContacts"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { cn } from "@/lib/utils"
 
@@ -36,7 +30,6 @@ export default function ReconPage() {
   const [profile, setProfile] = useState<any>(null)  // null = SSR-safe
   const [reconUrl, setReconUrl]   = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving]   = useState(false)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [pendingUrl, setPendingUrl]   = useState<string | null>(null)
@@ -98,10 +91,12 @@ export default function ReconPage() {
         .then(uuid => {
           session.setCompanyId(uuid)
           session.setReconProfile({ ...resolvedProfile, id: uuid })
-          setProfile((prev: any) => prev ? { ...prev, id: uuid } : prev)
+          router.push(`/recon/${uuid}`)
         })
         .catch(e => {
           console.error("[ReconPage] auto-save error:", e instanceof Error ? e.message : e)
+          // Auto-save failed — keep inline view so user can retry manually
+          setProfile((prev: any) => prev ? { ...prev } : prev)
         })
         .finally(() => {
           setIsAutoSaving(false)
@@ -133,35 +128,6 @@ export default function ReconPage() {
 
     return () => clearInterval(interval)
   }, [isLoading, reconUrl])
-
-  const handleSave = async () => {
-    if (!profile || isSaving) return
-
-    // Jika auto-save background sudah berhasil (profile.id sudah UUID asli),
-    // jangan simpan ulang — cukup arahkan ke library untuk mencegah baris ganda di Supabase
-    if (profile.id && session.isValidUuid(profile.id)) {
-      session.setCompanyId(profile.id)
-      session.setReconProfile(profile)
-      toast.success("Profil disimpan ke Research Library")
-      router.push("/research-library")
-      return
-    }
-
-    setIsSaving(true)
-    try {
-      const companyId = await saveCompanyProfile(profile)
-      session.setCompanyId(companyId)
-      session.setReconProfile({ ...profile, id: companyId })
-      toast.success("Profil disimpan ke Research Library")
-      router.push("/research-library")
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Unknown error"
-      console.error("[ReconPage] handleSave error:", msg)
-      toast.error("Gagal menyimpan profil.", { description: msg })
-    } finally {
-      setIsSaving(false)
-    }
-  }
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
@@ -235,60 +201,29 @@ export default function ReconPage() {
           )}
         </div>
 
-        {/* Action Buttons */}
+        {/* Status Panel */}
         <div className={cn(
           "bg-white border border-border/60 rounded-2xl p-6 shadow-sm flex flex-col gap-3 justify-center transition-opacity duration-300",
-          !profile && !isLoading ? "opacity-40 pointer-events-none" : "opacity-100"
+          !isLoading ? "opacity-40 pointer-events-none" : "opacity-100"
         )}>
-          <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Aksi</p>
-          <Button
-            className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-11 rounded-xl shadow-sm"
-            onClick={handleSave}
-            disabled={!profile || isLoading || isSaving || isAutoSaving}
-          >
-            {isSaving || isAutoSaving
-              ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menyimpan...</>
-              : <><Save className="w-4 h-4 mr-2" />Simpan ke Database</>
-            }
-          </Button>
-          <Button
-            variant="outline"
-            className="w-full font-semibold h-11 rounded-xl"
-            onClick={() => router.push("/match")}
-            disabled={!profile || isLoading}
-          >
-            Lanjut ke Match
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
-          <p className="text-[11px] text-center text-muted-foreground leading-relaxed mt-1">
-            {profile ? "Profil siap. Simpan atau lanjutkan ke Match." : "Generate profil terlebih dahulu."}
-          </p>
+          <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Status</p>
+          <div className="flex flex-col items-center justify-center gap-3 py-4 text-center">
+            {isAutoSaving ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin text-brand" />
+                <p className="text-[13px] font-semibold text-foreground">Menyimpan profil...</p>
+                <p className="text-[12px] text-muted-foreground">Kamu akan diarahkan otomatis ke halaman review.</p>
+              </>
+            ) : (
+              <>
+                <Search className="w-6 h-6 text-muted-foreground" />
+                <p className="text-[13px] text-muted-foreground">Generate profil untuk memulai.</p>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Results — Strategic Intelligence Report */}
-      {profile && !isLoading && (
-        <div className="space-y-6 animate-in slide-in-from-bottom-4 fade-in duration-700">
-          {/* HEADER: Full-width strategic title + executive insight */}
-          <CompanyHeader company={profile} />
-
-          {/* SPLIT-VIEW: 8/12 main narrative + 4/12 sidebar */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            {/* Main column: strategic narrative + pain points */}
-            <div className="md:col-span-8 space-y-5">
-              <StrategicMainContent report={profile.strategicReport} />
-              <PainPointList painPoints={profile.painPoints} />
-            </div>
-
-            {/* Sidebar: metrics + contacts + news */}
-            <div className="md:col-span-4 space-y-4">
-              <StrategicSidebar company={profile} />
-              <KeyContacts contacts={profile.contacts} />
-              <NewsSection news={profile.news} />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

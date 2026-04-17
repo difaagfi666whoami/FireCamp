@@ -1,10 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   BookOpen, Search, Crosshair, Wand2, CheckSquare,
-  Rocket, BarChart2, Flame, Building2,
+  Rocket, BarChart2, Flame, Building2, X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { session } from "@/lib/session"
@@ -21,23 +21,31 @@ const PIPELINE_STEPS = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [activeCompany, setActiveCompany] = useState<string | null>(null)
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null)
 
-  useEffect(() => {
+  const syncSession = () => {
     const profile = session.getReconProfile()
     setActiveCompany(profile?.name ?? null)
-  }, [pathname])
+    setActiveCompanyId(session.getCompanyId() ?? null)
+  }
+
+  useEffect(() => { syncSession() }, [pathname])
 
   useEffect(() => {
-    const handleSessionChange = () => {
-      setActiveCompany(session.getReconProfile()?.name ?? null)
-    }
-    window.addEventListener("campfire_session_changed", handleSessionChange)
-    return () => window.removeEventListener("campfire_session_changed", handleSessionChange)
+    window.addEventListener("campfire_session_changed", syncSession)
+    return () => window.removeEventListener("campfire_session_changed", syncSession)
   }, [])
 
+  const reconHref = activeCompanyId ? `/recon/${activeCompanyId}` : "/recon"
+
+  const resolvedSteps = PIPELINE_STEPS.map(s =>
+    s.href === "/recon" ? { ...s, href: reconHref } : s
+  )
+
   const isActive = (href: string) =>
-    href === "/recon"
+    href.startsWith("/recon")
       ? pathname.startsWith("/recon")
       : pathname === href
 
@@ -57,14 +65,26 @@ export function Sidebar() {
 
       {/* Target Aktif */}
       {activeCompany && (
-        <div className="mx-1 mb-2 px-3 py-2 rounded-xl bg-brand/5 border border-brand/20">
-          <p className="text-[10px] font-bold text-brand/70 uppercase tracking-widest mb-0.5">
-            Target Aktif
-          </p>
-          <div className="flex items-center gap-1.5">
-            <Building2 className="w-3 h-3 text-brand shrink-0" />
-            <p className="text-[12px] font-semibold text-brand truncate">{activeCompany}</p>
-          </div>
+        <div className="mx-1 mb-2 rounded-xl bg-brand/5 border border-brand/20 overflow-hidden">
+          <button
+            onClick={() => activeCompanyId && router.push(`/recon/${activeCompanyId}`)}
+            className="px-3 pt-2 pb-1.5 text-left w-full hover:bg-brand/10 transition-colors cursor-pointer"
+          >
+            <p className="text-[10px] font-bold text-brand/70 uppercase tracking-widest mb-0.5">
+              Target Aktif
+            </p>
+            <div className="flex items-center gap-1.5">
+              <Building2 className="w-3 h-3 text-brand shrink-0" />
+              <p className="text-[12px] font-semibold text-brand truncate">{activeCompany}</p>
+            </div>
+          </button>
+          <button
+            onClick={() => { session.clearActiveTarget(); router.push("/recon") }}
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-brand/60 hover:text-brand hover:bg-brand/10 transition-colors border-t border-brand/10"
+          >
+            <X className="w-3 h-3" />
+            Ganti Target
+          </button>
         </div>
       )}
 
@@ -93,7 +113,7 @@ export function Sidebar() {
         Pipeline
       </p>
 
-      {PIPELINE_STEPS.map(({ href, label, icon: Icon, step }) => {
+      {resolvedSteps.map(({ href, label, icon: Icon, step }) => {
         const active = isActive(href)
         return (
           <Link
@@ -123,7 +143,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-3 pt-3 border-t border-border/50 mx-1">
-        <p className="text-[10px] text-muted-foreground/60">v0.1.0 · Demo · Mock Data</p>
+        <p className="text-[10px] text-muted-foreground/60">v0.1.0 · Live</p>
       </div>
     </aside>
   )

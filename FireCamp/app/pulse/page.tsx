@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert, Loader2, Activity } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert, Loader2, Activity, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -109,31 +109,56 @@ export default function PulsePage() {
     setIsSessionLoaded(true)
   }, [])
 
+  const breadcrumb = (
+    <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/polish")}>Polish</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/launch")}>Launch</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="text-foreground font-semibold">Pulse</span>
+    </div>
+  )
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 6 dari 6</span>
+
   if (!isSessionLoaded) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
-        <Loader2 className="w-5 h-5 animate-spin text-brand" />
-        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+      <div className="p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          <p className="text-[14px] font-medium">Memuat data sesi...</p>
+        </div>
       </div>
     )
   }
 
   if (!hasCampaign) {
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <Activity className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <Activity className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada analitik campaign</h3>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              Anda belum meluncurkan campaign apapun. Dasbor Pulse akan aktif setelah campaign Anda berjalan.
+            </p>
+            <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+              Mulai Recon
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Belum ada analitik campaign
-          </h3>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Anda belum meluncurkan campaign apapun. Dasbor Pulse akan aktif setelah campaign Anda berjalan.
-          </p>
-          <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-            Mulai Recon
-          </Button>
         </div>
       </div>
     )
@@ -141,10 +166,15 @@ export default function PulsePage() {
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500 pb-16">
-      {/* Header */}
+
+      {breadcrumb}
+
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pulse — Campaign Analytics</h1>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 6 dari 6</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">Pulse — Campaign Analytics</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
             Pantau performa real-time campaign untuk{" "}
             <span className="font-bold text-foreground">{companyName}</span>.

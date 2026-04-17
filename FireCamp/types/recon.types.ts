@@ -63,6 +63,7 @@ export interface NewsItem {
   source: string
   summary: string
   url: string
+  signalType?: string
 }
 
 export interface CampaignProgress {

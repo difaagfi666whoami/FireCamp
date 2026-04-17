@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Bot, ArrowRight, ArrowLeft, Loader2 } from "lucide-react"
+import { Bot, ArrowRight, ArrowLeft, Loader2, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { mockData } from "@/lib/mock/mockdata"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
@@ -274,6 +274,9 @@ export default function CraftPage() {
         }
 
         const campaign = await generateCampaign(companyProfile, fullProductMatch)
+        if (!campaign.targetCompany || campaign.targetCompany === "N/A") {
+          campaign.targetCompany = companyProfile.name ?? ""
+        }
         resolvedCampaign = campaign
         settle()
       } catch (e) {
@@ -303,33 +306,59 @@ export default function CraftPage() {
     setIsCrafting(true)
   }
 
+  // ─── Shared layout pieces ─────────────────────────────────────────────────
+
+  const breadcrumb = (
+    <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span className="text-foreground font-semibold">Craft</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span>Polish</span>
+      <ChevronRight className="w-3.5 h-3.5" />
+      <span>Launch</span>
+    </div>
+  )
+
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 3 dari 6</span>
+
   // ─── Render: belum ada profil (masih loading dari sessionStorage / tidak ada) ─────────
 
   if (!isProfileLoaded) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
-        <Loader2 className="w-5 h-5 animate-spin text-brand" />
-        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
+          <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          <p className="text-[14px] font-medium">Memuat data sesi...</p>
+        </div>
       </div>
     )
   }
 
   if (isProfileLoaded && !companyProfile) {
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada profil perusahaan</h3>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              Sistem tidak menemukan profil perusahaan target. Silakan kembali ke Recon untuk memulai riset.
+            </p>
+            <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+              Mulai Recon
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Belum ada profil perusahaan
-          </h3>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Sistem tidak menemukan profil perusahaan target. Silakan kembali ke Recon untuk memulai riset.
-          </p>
-          <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-            Mulai Recon
-          </Button>
         </div>
       </div>
     )
@@ -338,32 +367,26 @@ export default function CraftPage() {
   // ─── Render: idle ─────────────────────────────────────────────────────────
 
   if (!hasStarted && !isCrafting) {
-    const companyName = companyProfile.name
-
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8
-                        border border-dashed border-border/80 rounded-2xl
-                        w-[320px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[320px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Generate Email Campaign</h3>
+            <p className="text-[13px] text-muted-foreground font-medium mb-1">
+              Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
+            </p>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              AI akan menyusun 3 email sequence yang dipersonalisasi berdasarkan pain points dan produk yang telah dipilih.
+            </p>
+            <Button onClick={handleStartCrafting} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
+              Mulai Generate Campaign
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Generate Email Campaign
-          </h3>
-          <p className="text-[13px] text-muted-foreground font-medium mb-1">
-            Target: <span className="font-bold text-foreground">{companyName}</span>
-          </p>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            AI akan menyusun 3 email sequence yang dipersonalisasi berdasarkan
-            pain points dan produk yang telah dipilih.
-          </p>
-          <Button
-            onClick={handleStartCrafting}
-            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
-          >
-            Mulai Generate Campaign
-          </Button>
         </div>
       </div>
     )
@@ -373,19 +396,23 @@ export default function CraftPage() {
 
   if (isCrafting) {
     return (
-      <div className="p-8 max-w-2xl mx-auto py-20 animate-in fade-in duration-500">
-        <div className="flex flex-col items-center mb-10">
-          <div className="bg-brand/10 p-5 rounded-full mb-5 relative shadow-sm border border-brand/20">
-            <Bot className="w-9 h-9 text-brand" strokeWidth={1.5} />
-            <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full animate-ping opacity-75"></div>
-            <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full border-2 border-white"></div>
+      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="max-w-2xl mx-auto py-10">
+          <div className="flex flex-col items-center mb-10">
+            <div className="bg-brand/10 p-5 rounded-full mb-5 relative shadow-sm border border-brand/20">
+              <Bot className="w-9 h-9 text-brand" strokeWidth={1.5} />
+              <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full animate-ping opacity-75"></div>
+              <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full border-2 border-white"></div>
+            </div>
+            <h2 className="text-[22px] font-bold tracking-tight mb-2">AI Campaign Crafter</h2>
+            <p className="text-muted-foreground text-center text-[14.5px] max-w-sm">
+              Menyusun sekuens email yang highly-personalized berdasarkan hasil analisis dan matching.
+            </p>
           </div>
-          <h2 className="text-[22px] font-bold tracking-tight mb-2">AI Campaign Crafter</h2>
-          <p className="text-muted-foreground text-center text-[14.5px] max-w-sm">
-            Menyusun sekuens email yang highly-personalized berdasarkan hasil analisis dan matching.
-          </p>
+          <LoadingSteps steps={CRAFTING_STEPS} currentStep={currentStep} />
         </div>
-        <LoadingSteps steps={CRAFTING_STEPS} currentStep={currentStep} />
       </div>
     )
   }
@@ -400,38 +427,30 @@ export default function CraftPage() {
     typeof liveCandidate.reasoning === "string" &&
     liveCandidate.reasoning.trim().length > 0
 
-  // LIVE mode: kalau belum ada campaign valid, JANGAN jatuh ke mockData —
-  // kembalikan user ke idle agar bisa generate ulang dengan data bersih.
   if (IS_LIVE && !liveValid) {
     return (
-      <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8
-                        border border-dashed border-border/80 rounded-2xl
-                        w-[340px] shadow-sm text-center">
-          <div className="bg-brand/10 p-5 rounded-full mb-6">
-            <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+        {breadcrumb}
+        <div className="flex items-center">{stepBadge}</div>
+        <div className="flex justify-center py-10">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+            <div className="bg-brand/10 p-5 rounded-full mb-6">
+              <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada campaign valid</h3>
+            <p className="text-[13px] text-muted-foreground font-medium mb-4">
+              Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
+            </p>
+            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
+              Generate sebelumnya gagal atau kosong. Coba generate ulang sekarang.
+            </p>
+            <Button
+              onClick={() => { sessionStorage.removeItem(SESSION_KEY); setRealCampaign(null); setHasStarted(true); setIsCrafting(true); setCurrentStep(0) }}
+              className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
+            >
+              Generate Ulang Campaign
+            </Button>
           </div>
-          <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Belum ada campaign valid
-          </h3>
-          <p className="text-[13px] text-muted-foreground font-medium mb-4">
-            Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
-          </p>
-          <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Generate sebelumnya gagal atau kosong. Coba generate ulang sekarang.
-          </p>
-          <Button
-            onClick={() => {
-              sessionStorage.removeItem(SESSION_KEY)
-              setRealCampaign(null)
-              setHasStarted(true)
-              setIsCrafting(true)
-              setCurrentStep(0)
-            }}
-            className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
-          >
-            Generate Ulang Campaign
-          </Button>
         </div>
       </div>
     )
@@ -441,12 +460,22 @@ export default function CraftPage() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-10 animate-in fade-in duration-500">
+
+      {breadcrumb}
+
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Campaign Plan Draft</h1>
+          <div className="flex items-center gap-2 mb-1">
+            {stepBadge}
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">Campaign Plan Draft</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
             Draft email yang digenerate khusus untuk{" "}
-            <span className="font-bold text-foreground">{campaign.targetCompany}</span>.
+            <span className="font-bold text-foreground">
+              {(!campaign.targetCompany || campaign.targetCompany === "N/A")
+                ? (companyProfile?.name ?? "perusahaan target")
+                : campaign.targetCompany}
+            </span>.
           </p>
         </div>
         <div className="flex gap-3">

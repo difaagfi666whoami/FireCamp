@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MatchingTab } from "./components/MatchingTab"
@@ -13,19 +13,53 @@ export default function MatchPage() {
   const router = useRouter()
 
   const [companyName, setCompanyName] = useState<string>("")
+  const [companyId, setCompanyId] = useState<string>("")
 
   useEffect(() => {
     const profile = session.getReconProfile()
     if (profile?.name) setCompanyName(profile.name)
+    const id = session.getCompanyId()
+    if (id) setCompanyId(id)
   }, [])
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">
+
+      {/* Pipeline breadcrumb */}
+      <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
+        <span
+          className="hover:text-foreground cursor-pointer transition-colors"
+          onClick={() => router.push("/research-library")}
+        >
+          Research Library
+        </span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span
+          className="hover:text-foreground cursor-pointer transition-colors"
+          onClick={() => companyId && router.push(`/recon/${companyId}`)}
+        >
+          Review Profil
+        </span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span className="text-foreground font-semibold">Match</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>Craft</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>Polish</span>
+        <ChevronRight className="w-3.5 h-3.5" />
+        <span>Launch</span>
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Product Matching</h1>
-          <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">
+              Langkah 2 dari 6
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">Product Matching</h1>
+          <p className="text-muted-foreground mt-1 text-[14.5px] font-medium">
             Cocokkan produk terbaik dengan pain points{" "}
             {companyName && (
               <span className="font-bold text-foreground">{companyName}</span>
@@ -35,11 +69,11 @@ export default function MatchPage() {
         </div>
         <Button
           variant="outline"
-          onClick={() => router.push("/recon")}
-          className="shadow-sm font-semibold text-[13.5px]"
+          onClick={() => companyId ? router.push(`/recon/${companyId}`) : router.push("/research-library")}
+          className="shadow-sm font-semibold text-[13.5px] rounded-xl"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Kembali ke Recon
+          Review Profil
         </Button>
       </div>
 

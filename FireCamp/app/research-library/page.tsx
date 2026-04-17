@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Plus, BookOpen, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ProfileCard } from "@/components/research-library/ProfileCard"
@@ -10,9 +10,15 @@ import { session } from "@/lib/session"
 import { toast } from "sonner"
 
 export default function ResearchLibraryPage() {
+  const router = useRouter()
   const [profiles, setProfiles]   = useState<LibraryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState<string | null>(null)
+
+  const handleReconBaru = () => {
+    session.clearActiveTarget()
+    router.push("/recon")
+  }
 
   useEffect(() => {
     getResearchLibrary()
@@ -59,12 +65,10 @@ export default function ResearchLibraryPage() {
             Semua riset perusahaan tersimpan di satu tempat.
           </p>
         </div>
-        <Link href="/recon">
-          <Button className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
-            <Plus className="w-4 h-4 mr-2" />
-            Recon Baru
-          </Button>
-        </Link>
+        <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
+          <Plus className="w-4 h-4 mr-2" />
+          Recon Baru
+        </Button>
       </div>
 
       {/* Loading */}
@@ -83,7 +87,18 @@ export default function ResearchLibraryPage() {
             <p className="font-bold text-[15px] text-red-800">Gagal memuat data</p>
             <p className="text-[13px] text-red-700">{error}</p>
             <Button
-              onClick={() => { setError(null); setIsLoading(true); getResearchLibrary().then(setProfiles).catch(() => null).finally(() => setIsLoading(false)) }}
+              onClick={() => {
+                setError(null)
+                setIsLoading(true)
+                getResearchLibrary()
+                  .then(setProfiles)
+                  .catch(e => {
+                    const msg = e instanceof Error ? e.message : "Unknown error"
+                    setError(msg)
+                    toast.error("Gagal memuat Research Library.", { description: msg })
+                  })
+                  .finally(() => setIsLoading(false))
+              }}
               variant="outline" size="sm" className="mt-1 rounded-xl"
             >
               Coba Lagi
@@ -109,12 +124,10 @@ export default function ResearchLibraryPage() {
             <p className="text-muted-foreground text-[14px] max-w-xs mb-6">
               Mulai dengan melakukan Recon terhadap target perusahaan pertama kamu.
             </p>
-            <Link href="/recon">
-              <Button className="bg-brand hover:bg-brand/90 text-white font-semibold">
-                <Plus className="w-4 h-4 mr-2" />
-                Recon Baru
-              </Button>
-            </Link>
+            <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white font-semibold">
+              <Plus className="w-4 h-4 mr-2" />
+              Recon Baru
+            </Button>
           </div>
         )
       )}

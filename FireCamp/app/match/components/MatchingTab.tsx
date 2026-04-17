@@ -173,8 +173,11 @@ export function MatchingTab() {
       )
       session.setCampaignId(campaignId)
     } catch (e) {
+      const msg = e instanceof Error ? e.message : "Koneksi ke database gagal."
       console.error("[MatchingTab] saveCampaignAndMatching error:", e)
-      // Non-blocking — tetap lanjut ke Craft meski gagal simpan ke Supabase
+      toast.error("Gagal menyimpan campaign.", { description: msg })
+      setIsProceeding(false)
+      return
     }
     router.push("/craft")
   }
