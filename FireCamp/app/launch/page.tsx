@@ -175,20 +175,7 @@ export default function LaunchPage() {
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-8 animate-in fade-in duration-500">
 
-      {/* Pipeline breadcrumb */}
-      <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/polish")}>Polish</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-foreground font-semibold">Launch</span>
-      </div>
+      {breadcrumb}
 
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>

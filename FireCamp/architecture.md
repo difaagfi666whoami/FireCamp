@@ -115,25 +115,14 @@ campfire/
 ├── components/
 │   ├── ui/
 │   ├── layout/
-│   │   ├── Sidebar.tsx
-│   │   ├── MilestoneProgress.tsx
-│   │   └── PageHeader.tsx
+│   │   └── Sidebar.tsx
 │   └── shared/
 │       ├── Badge.tsx
 │       ├── LoadingSteps.tsx
-│       ├── EmptyState.tsx
-│       ├── ConfirmDialog.tsx
 │       └── CitationLink.tsx
 │
 ├── hooks/
-│   ├── use-recon.ts
-│   ├── use-match.ts
-│   ├── use-catalog.ts
-│   ├── use-pdf-upload.ts
-│   ├── use-craft.ts
-│   ├── use-polish.ts
-│   ├── use-launch.ts
-│   └── use-pulse.ts
+│   └── use-catalog.ts              # Only active hook — used by ProductCatalogTab
 │
 ├── lib/
 │   ├── mock/
@@ -175,7 +164,10 @@ campfire/
 ├── CLAUDE.md
 ├── specs.md
 ├── architecture.md
-└── mockdata.md
+├── gemini.md
+├── api-contract.md
+├── backend_prompts.md
+└── updates.md
 ```
 
 ---

@@ -314,25 +314,12 @@ export default function PolishPage() {
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500 pb-24">
 
-      {/* Pipeline breadcrumb */}
-      <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-foreground font-semibold">Polish</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span>Launch</span>
-      </div>
+      {breadcrumb}
 
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 4 dari 6</span>
+            {stepBadge}
           </div>
           <h1 className="text-2xl font-bold tracking-tight mt-2">Review & Editor (Polish)</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">

@@ -160,10 +160,9 @@ Dua tab: "Matching" dan "Katalog Produk". CRUD + PDF drag & drop di tab kedua.
 
 ```
 1. Login → /research-library (halaman utama)
-2. "Recon Baru" → /recon → input URL → Generate
-3. Lihat profil: contacts PIC, pain points, news dengan link citation
-4. "Simpan ke Database" → redirect ke /research-library
-5. Klik profil → "Mulai Campaign" → /match
+2. "Recon Baru" → session.clearActiveTarget() → /recon → input URL → Generate
+3. Auto-redirect ke /recon/[id] (Review Profil): contacts PIC, pain points, news dengan link citation
+4. Klik "Lanjutkan ke Match" → /match
 6. Tab "Matching": run matching → lihat produk + reasoning
 7. Tab "Katalog Produk": tambah/edit/hapus produk, upload PDF
 8. → /craft → generate email sequence
@@ -189,6 +188,6 @@ Dua tab: "Matching" dan "Katalog Produk". CRUD + PDF drag & drop di tab kedua.
 ---
 
 ## 8. Soft Cap
-Aturan Anti-Monolith: Pertahankan ukuran file di bawah ~200-250 baris. Jika sebuah komponen (misal: page.tsx) mulai membesar, ekstrak UI statis atau bagian yang bisa diulang ke dalam folder /components, dan ekstrak logika/state ke dalam folder /hooks. Namun, jangan memecah komponen secara tidak logis hanya demi memenuhi batas baris ini.
+Aturan Anti-Monolith: Pertahankan ukuran file di bawah ~200-250 baris. Jika sebuah komponen (misal: page.tsx) mulai membesar, ekstrak UI ke dalam folder `/components`. State/logika tetap di page file — jangan buat hook baru kecuali logikanya benar-benar reusable lintas halaman. Satu-satunya hook aktif saat ini adalah `use-catalog.ts` (dipakai oleh ProductCatalogTab). Jangan memecah komponen secara tidak logis hanya demi memenuhi batas baris ini.
 
 

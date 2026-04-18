@@ -1,5 +1,23 @@
 # Updates
 
+## Dead Code Cleanup (2026-04-18)
+
+Removed 11 files (484+ lines) that were no longer used:
+
+**Hooks deleted** (logic lives directly in page files):
+`use-recon.ts`, `use-match.ts`, `use-craft.ts`, `use-polish.ts`, `use-launch.ts`, `use-pulse.ts`, `use-pdf-upload.ts`
+
+**Components deleted** (defined in early architecture, never integrated):
+`components/shared/EmptyState.tsx`, `components/shared/ConfirmDialog.tsx`,
+`components/layout/PageHeader.tsx`, `components/layout/MilestoneProgress.tsx`
+
+**Docs deleted** (stale / historical):
+`implementation_plan.md`, `project_audit.md`, `mockdata.md`, `prompt-*.md` (7 files)
+
+`npx tsc --noEmit` passes with zero errors after cleanup.
+
+---
+
 ## Pulse — Fix Penggunaan Token AI Menunjukkan 0 untuk Recon & Match (2026-04-15)
 
 ### Root Cause

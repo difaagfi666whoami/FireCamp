@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Campfire** — B2B outreach automation tool ("Research. Match. Send.") built for digital marketers/sales teams. Currently Phase 1 (full UI with mock data) with Phase 2 (FastAPI + Supabase backend) in progress.
+**Campfire** — B2B outreach automation tool ("Research. Match. Send.") built for digital marketers/sales teams. Live mode active (`NEXT_PUBLIC_USE_MOCK=false`). Backend: FastAPI + Supabase. Email dispatch via Resend SDK + Vercel Cron.
 
 ## Commands
 
@@ -21,7 +21,7 @@ npx tsc --noEmit     # Type check only
 ### Six milestones in order:
 `Recon → Match → Craft → Polish → Launch → Pulse`
 
-Each milestone has a dedicated route (`/recon`, `/match`, etc.), a hook in `hooks/`, an API module in `lib/api/`, and components in `components/`.
+Each milestone has a dedicated route (`/recon`, `/match`, etc.), an API module in `lib/api/`, and components in `components/`. State/logic lives directly in page files; only `hooks/use-catalog.ts` remains as a standalone hook.
 
 ### Key patterns:
 
@@ -50,10 +50,11 @@ try {
 **Loading states** — always step-by-step messages (max 6 steps, ~500ms delay each), never a spinner.
 
 ### Data flow:
-`data/mockdata.json` → `lib/mock/mockdata.ts` (typed wrapper) → `lib/api/*.ts` → `hooks/use-*.ts` → page components
+Live mode: `lib/api/*.ts` → page components (direct)
+Mock mode: `data/mockdata.json` → `lib/mock/mockdata.ts` → `lib/api/*.ts` → page components
 
 ### State across pages:
-Cross-page state uses `sessionStorage` via `lib/session.ts`. Known issue: mock mode can break session state (see `implementation_plan.md` for 6 documented bugs).
+Cross-page state uses `sessionStorage` via `lib/session.ts`. Call `session.clearActiveTarget()` to nuke all `campfire_*` keys when starting a new target.
 
 ## UI Rules
 
@@ -81,7 +82,8 @@ Cross-page state uses `sessionStorage` via `lib/session.ts`. Known issue: mock m
 - Do **not** create: landing/marketing pages, user registration flow, or components outside `specs.md`
 - Never hardcode API keys — always use `.env.local`
 - The `/match` page has two tabs ("Matching" + "Katalog Produk") — do not split into separate routes
-- After saving a Recon profile, navigate to `/research-library`, not just show a toast
+- After Recon generates a profile, auto-redirect to `/recon/[id]` (Review Profil), not `/research-library`
+- "Recon Baru" and "Ganti Target" must call `session.clearActiveTarget()` before navigating to `/recon`
 
 ## Pre-commit Checklist (from `gemini.md`)
 
