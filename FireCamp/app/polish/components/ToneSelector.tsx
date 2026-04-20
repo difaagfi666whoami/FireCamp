@@ -30,7 +30,7 @@ export function ToneSelector({ currentTone, onChange, disabled, isRegenerating }
             disabled={disabled || isRegenerating}
             className={`${isActive ? 'bg-black text-white hover:bg-black/90' : 'bg-white hover:bg-slate-50'} h-8 rounded-full px-4 text-[12px] font-bold shadow-sm transition-all`}
           >
-            {isActive && isRegenerating && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
+            {isActive && isRegenerating && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin"  strokeWidth={1.5} />}
             {tone.label}
           </Button>
         )

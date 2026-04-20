@@ -35,7 +35,7 @@ function BenchmarkBadge({ current, benchmark }: { current: number; benchmark: nu
   if (diff > 0) {
     return (
       <div className="flex items-center gap-1 text-[11.5px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">
-        <TrendingUp className="w-3 h-3" />
+        <TrendingUp className="w-3 h-3"  strokeWidth={1.5} />
         +{pct}% vs benchmark
       </div>
     )
@@ -43,14 +43,14 @@ function BenchmarkBadge({ current, benchmark }: { current: number; benchmark: nu
   if (diff < 0) {
     return (
       <div className="flex items-center gap-1 text-[11.5px] font-bold text-red-700 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full">
-        <TrendingDown className="w-3 h-3" />
+        <TrendingDown className="w-3 h-3"  strokeWidth={1.5} />
         -{pct}% vs benchmark
       </div>
     )
   }
   return (
     <div className="flex items-center gap-1 text-[11.5px] font-bold text-muted-foreground bg-muted border border-border/60 px-2 py-0.5 rounded-full">
-      <Minus className="w-3 h-3" />
+      <Minus className="w-3 h-3"  strokeWidth={1.5} />
       Sesuai benchmark
     </div>
   )
@@ -61,7 +61,7 @@ export function StatCards({ summary }: StatCardsProps) {
     {
       label: "Email Dikirim",
       value: summary.emailsSent,
-      icon: <Mail className="w-5 h-5" />,
+      icon: <Mail className="w-5 h-5"  strokeWidth={1.5} />,
       description: "Total email dalam sekuens campaign",
     },
     {
@@ -69,7 +69,7 @@ export function StatCards({ summary }: StatCardsProps) {
       value: summary.openRate,
       unit: "%",
       benchmark: summary.industryBenchmarks.openRate,
-      icon: <Eye className="w-5 h-5" />,
+      icon: <Eye className="w-5 h-5"  strokeWidth={1.5} />,
       description: `Benchmark industri: ${summary.industryBenchmarks.openRate}%`,
     },
     {
@@ -77,7 +77,7 @@ export function StatCards({ summary }: StatCardsProps) {
       value: summary.clickRate,
       unit: "%",
       benchmark: summary.industryBenchmarks.clickRate,
-      icon: <MousePointerClick className="w-5 h-5" />,
+      icon: <MousePointerClick className="w-5 h-5"  strokeWidth={1.5} />,
       description: `Benchmark industri: ${summary.industryBenchmarks.clickRate}%`,
     },
     {
@@ -85,7 +85,7 @@ export function StatCards({ summary }: StatCardsProps) {
       value: summary.replyRate,
       unit: "%",
       benchmark: summary.industryBenchmarks.replyRate,
-      icon: <MessageSquareReply className="w-5 h-5" />,
+      icon: <MessageSquareReply className="w-5 h-5"  strokeWidth={1.5} />,
       description: `Benchmark industri: ${summary.industryBenchmarks.replyRate}%`,
     },
   ]

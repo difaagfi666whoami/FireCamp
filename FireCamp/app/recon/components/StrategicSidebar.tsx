@@ -19,9 +19,9 @@ export function StrategicSidebar({ company }: Props) {
   const hasLinkedIn  = hasFollowers || hasEmployees || hasGrowth
 
   const identityItems = [
-    { icon: <Building2 className="w-3 h-3" />, label: "Industri", value: company.industry },
-    { icon: <MapPin className="w-3 h-3" />, label: "Kantor Pusat", value: company.hq },
-    { icon: <Globe className="w-3 h-3" />, label: "Ukuran", value: company.size },
+    { icon: <Building2 className="w-3 h-3"  strokeWidth={1.5} />, label: "Industri", value: company.industry },
+    { icon: <MapPin className="w-3 h-3"  strokeWidth={1.5} />, label: "Kantor Pusat", value: company.hq },
+    { icon: <Globe className="w-3 h-3"  strokeWidth={1.5} />, label: "Ukuran", value: company.size },
     { icon: null, label: "Berdiri", value: company.founded ? `Est. ${company.founded}` : "" },
   ].filter(i => i.value)
 
@@ -37,7 +37,7 @@ export function StrategicSidebar({ company }: Props) {
             {hasFollowers && (
               <div className="flex items-center justify-between">
                 <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                  <Users className="w-3 h-3 text-brand" />
+                  <Users className="w-3 h-3 text-brand"  strokeWidth={1.5} />
                   Followers LinkedIn
                 </span>
                 <span className="text-[13px] font-black text-foreground">{li.followers}</span>
@@ -46,7 +46,7 @@ export function StrategicSidebar({ company }: Props) {
             {hasEmployees && (
               <div className="flex items-center justify-between">
                 <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                  <Users className="w-3 h-3 text-brand" />
+                  <Users className="w-3 h-3 text-brand"  strokeWidth={1.5} />
                   Jumlah Karyawan
                 </span>
                 <span className="text-[13px] font-black text-foreground">{li.employees}</span>
@@ -55,7 +55,7 @@ export function StrategicSidebar({ company }: Props) {
             {hasGrowth && (
               <div className="flex items-center justify-between">
                 <span className="text-[12px] text-muted-foreground flex items-center gap-1.5">
-                  <TrendingUp className="w-3 h-3 text-success" />
+                  <TrendingUp className="w-3 h-3 text-success"  strokeWidth={1.5} />
                   YoY Growth
                 </span>
                 <span className="text-[13px] font-black text-emerald-600">{li.growth}</span>
@@ -86,6 +86,7 @@ export function StrategicSidebar({ company }: Props) {
           </div>
         </div>
       )}
+
     </div>
   )
 }

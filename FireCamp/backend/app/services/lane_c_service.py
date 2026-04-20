@@ -22,7 +22,7 @@ import logging
 import re
 from typing import Any
 
-from app.services.external_apis import search_serper, fetch_jina_reader
+from app.services.external_apis import search_serper, fetch_jina_reader, fetch_and_extract_urls
 
 logger = logging.getLogger(__name__)
 
@@ -300,41 +300,61 @@ async def _extract_news_signals(
 ) -> list[dict[str, Any]]:
     """
     Jalankan GPT-4o-mini per artikel untuk mengekstrak pain signal terstruktur.
+    Pass 2: fetch full content untuk artikel yang masih snippet pendek.
     Return list NewsSignal-compatible dicts.
     """
     from openai import AsyncOpenAI
     from app.core.config import settings
-    
+
     if not news_items:
         return []
-    
+
+    # ── Pass 2: deep read untuk konten yang masih pendek (snippet) ───────────
+    short_content_urls = [
+        item.get("link", "") for i, item in enumerate(news_items)
+        if i < len(jina_contents) and len(jina_contents[i]) < 500 and item.get("link")
+    ]
+    if short_content_urls:
+        deep_pages = await fetch_and_extract_urls(short_content_urls, max_urls=3)
+        deep_lookup = {p["url"]: p["content"] for p in deep_pages}
+        for i, item in enumerate(news_items):
+            url = item.get("link", "")
+            if url in deep_lookup and i < len(jina_contents):
+                jina_contents[i] = deep_lookup[url]
+
     client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    
+
+    system_content = (
+        "Kamu adalah fact-extractor B2B. "
+        "ATURAN KERAS: ekstrak HANYA fakta yang BENAR-BENAR ada di dalam artikel. "
+        "DILARANG: inference, tambah konteks, atau generalisasi industri. "
+        "Jika artikel tidak menyebut angka spesifik → jangan tulis angka. "
+        "Jika tanggal tidak disebutkan eksplisit → isi verified_date dengan null. "
+        "Balas JSON: {\n"
+        "  \"event_summary\": \"1 kalimat, hanya fakta dari artikel\",\n"
+        "  \"implied_challenge\": \"1 kalimat implikasi bisnis bagi perusahaan\",\n"
+        "  \"pain_category\": \"Marketing|Operations|Technology|Growth\",\n"
+        "  \"signal_type\": \"direct|regulatory|competitive|technology|intent\",\n"
+        "  \"verified_amount\": \"angka exact dari artikel atau null\",\n"
+        "  \"verified_date\": \"tanggal exact dari artikel atau null\"\n"
+        "}"
+    )
+
     async def _extract_one(item: dict, jina_text: str) -> dict | None:
         title = item.get("title", "")
         snippet = item.get("snippet", item.get("description", ""))
         url = item.get("link", "")
         signal_type = item.get("_signal_type", "direct")
-        
+
         content_for_prompt = jina_text[:1200] if jina_text else snippet
-        
+
         try:
             response = await client.chat.completions.create(
                 model="gpt-4o-mini",
                 max_tokens=300,
                 response_format={"type": "json_object"},
                 messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "Kamu adalah analis B2B. Dari artikel berita ini, ekstrak sinyal bisnis "
-                            "yang relevan untuk tim sales yang menargetkan perusahaan tersebut. "
-                            "Balas JSON: {event_summary, implied_challenge, pain_category, signal_type} "
-                            "pain_category harus salah satu dari: Marketing, Operations, Technology, Growth. "
-                            "signal_type harus salah satu dari: direct, regulatory, competitive, technology, intent. "
-                            "Jika ada penanda [LOWONGAN PEKERJAAN], simpulkan implikasi bisnis dari mengapa mereka butuh posisi tersebut (misal: perlu ekspansi besar, transisi teknologi, dll)."
-                        ),
-                    },
+                    {"role": "system", "content": system_content},
                     {
                         "role": "user",
                         "content": (
@@ -353,17 +373,19 @@ async def _extract_news_signals(
                 "pain_category": parsed.get("pain_category", "Operations"),
                 "source_url": url,
                 "signal_type": parsed.get("signal_type", signal_type),
+                "verified_amount": parsed.get("verified_amount"),
+                "verified_date": parsed.get("verified_date"),
             }
         except Exception as exc:
             logger.warning("[lane_c] _extract_one FAILED: %s", exc)
             return None
-    
+
     signals = await asyncio.gather(
-        *[_extract_one(item, jina_contents[i] if i < len(jina_contents) else "") 
-          for i, item in enumerate(news_items[:3])],  # Maksimal 3 artikel untuk NewsSignal
+        *[_extract_one(item, jina_contents[i] if i < len(jina_contents) else "")
+          for i, item in enumerate(news_items[:3])],
         return_exceptions=True,
     )
-    
+
     return [s for s in signals if s is not None and not isinstance(s, Exception)]
 
 async def _try_contextual_signals(
@@ -481,29 +503,29 @@ async def run_lane_c_news(
         )
         raw_articles = [a for a in raw_articles if _is_relevant_article(a, company_name, domain)]
 
-    # ── Strategy 5: CONTEXTUAL SIGNALS ─────────────────────────────────────────
-    if not raw_articles and industry_hint:
+    # ── Strategy 5: CONTEXTUAL SIGNALS (regulatory/competitive yang relevan) ──
+    # Hanya tambahkan jika kita punya named_entities atau industry_hint yang jelas.
+    # JANGAN gunakan generic industry news — lebih baik news kosong daripada off-topic.
+    if not raw_articles and industry_hint and (named_entities or _detect_industry(industry_hint)):
         logger.info("[lane_c] strategy5_contextual")
         raw_articles = await _try_contextual_signals(
             company_name, domain, named_entities or [], industry_hint
         )
         if raw_articles:
             is_industry_news = True
+            # Batasi maksimal 2 item supaya tidak mendominasi
+            raw_articles = raw_articles[:2]
 
-    # ── Strategy 6: Fallback generik industri ─────────────────────────────────
-    if not raw_articles:
-        industry = _detect_industry(industry_hint) if industry_hint else None
-        if industry:
-            fallback_query = f"{industry} Indonesia tren teknologi 2025"
-        else:
-            fallback_query = "bisnis Indonesia tren inovasi transformasi digital 2025"
-        logger.info("[lane_c] strategy6_industry_fallback | query=%r", fallback_query)
-        raw_articles = await _try_serper_news(fallback_query, "strategy6_industry_fallback")
-        if raw_articles:
-            is_industry_news = True
+    # NOTE: Strategy 6 (generic industry fallback) DIHAPUS pada audit 2026-04-18.
+    # Berita generik seperti "ZTE Day", "Techpreneur 2025" tidak memberikan
+    # value ke sales rep dan justru membuat report terasa off-topic.
+    # Lebih baik news kosong → UI menampilkan empty state yang informatif.
 
     if not raw_articles and not saved_intents:
-        logger.warning("[lane_c] SEMUA strategy gagal untuk %r — 0 berita", company_name)
+        logger.warning(
+            "[lane_c] Tidak ada berita relevan untuk %r — return empty (anti-pollution)",
+            company_name,
+        )
         return [], []
 
     raw_articles = saved_intents + raw_articles

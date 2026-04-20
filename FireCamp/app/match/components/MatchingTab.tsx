@@ -244,7 +244,7 @@ export function MatchingTab() {
   if (!isProfileLoaded) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
-        <Loader2 className="w-5 h-5 animate-spin text-brand" />
+        <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
         <p className="text-[14px] font-medium">Memuat data sesi...</p>
       </div>
     )
@@ -253,7 +253,7 @@ export function MatchingTab() {
   if (isProfileLoaded && !companyProfile) {
     return (
       <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
           <div className="bg-brand/10 p-5 rounded-full mb-6">
             <Search className="w-8 h-8 text-brand" strokeWidth={1.5} />
           </div>
@@ -276,7 +276,7 @@ export function MatchingTab() {
   if (!isMatching && !hasMatched) {
     return (
       <div className="flex justify-center py-16 animate-in fade-in duration-500">
-        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[280px] shadow-sm">
+        <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm">
           <div className="bg-brand/10 p-5 rounded-full mb-6">
             <Play className="w-8 h-8 text-brand ml-1" strokeWidth={1.5} />
           </div>
@@ -377,7 +377,7 @@ export function MatchingTab() {
           return (
             <div className="flex items-center gap-3 min-w-0 animate-in fade-in slide-in-from-left-2 duration-300">
               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 shrink-0">
-                <CheckCircle2 className="w-[18px] h-[18px] text-emerald-600" />
+                <CheckCircle2 className="w-[18px] h-[18px] text-emerald-600"  strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
                 <p className="text-[11.5px] text-emerald-600 font-bold tracking-wide uppercase">Produk Dipilih</p>
@@ -401,7 +401,7 @@ export function MatchingTab() {
           className="bg-brand hover:bg-brand/90 text-white font-bold rounded-xl px-6 h-11 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
           {isProceeding ? "Menyimpan..." : "Lanjutkan ke Craft"}
-          <ArrowRight className="w-4 h-4 ml-2" />
+          <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
         </Button>
       </div>
     </div>

@@ -75,14 +75,14 @@ export function PdfUploadZone({ onExtracted }: PdfUploadZoneProps) {
     >
       {isExtracting ? (
         <div className="flex flex-col items-center justify-center space-y-4">
-          <Loader2 className="w-8 h-8 animate-spin text-brand" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand"  strokeWidth={1.5} />
           <div className="text-sm font-medium">Mengekstrak produk dari PDF menggunakan AI...</div>
           <div className="text-xs text-muted-foreground">Proses ini akan menghabiskan sekitar ~1.2K tokens</div>
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="p-4 bg-muted rounded-full">
-            <UploadCloud className="w-8 h-8 text-muted-foreground" />
+            <UploadCloud className="w-8 h-8 text-muted-foreground"  strokeWidth={1.5} />
           </div>
           <div>
             <h3 className="font-semibold text-base mb-1">Upload Brosur / Company Profile</h3>

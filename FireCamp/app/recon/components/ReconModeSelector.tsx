@@ -24,7 +24,7 @@ export function ReconModeSelector({ value, onChange }: ReconModeSelectorProps) {
               : "bg-white border-border/80 text-muted-foreground hover:bg-muted/50 hover:text-foreground"
           )}
         >
-          <Zap className="w-4 h-4" />
+          <Zap className="w-4 h-4"  strokeWidth={1.5} />
           <span>Free</span>
         </button>
 
@@ -37,8 +37,8 @@ export function ReconModeSelector({ value, onChange }: ReconModeSelectorProps) {
               : "bg-muted border-border/80 text-muted-foreground opacity-60 cursor-not-allowed"
           )}
         >
-          <Sparkles className="w-4 h-4" />
-          <span>Pro ✦</span>
+          <Sparkles className="w-4 h-4"  strokeWidth={1.5} />
+          <span>Pro</span>
           {/* Demo Mode badge */}
           <span className="absolute -top-2.5 -right-2.5 bg-pro-accent text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
             Terkunci

@@ -74,7 +74,7 @@ export function Sidebar() {
               Target Aktif
             </p>
             <div className="flex items-center gap-1.5">
-              <Building2 className="w-3 h-3 text-brand shrink-0" />
+              <Building2 className="w-3 h-3 text-brand shrink-0"  strokeWidth={1.5} />
               <p className="text-[12px] font-semibold text-brand truncate">{activeCompany}</p>
             </div>
           </button>
@@ -82,7 +82,7 @@ export function Sidebar() {
             onClick={() => { session.clearActiveTarget(); router.push("/recon") }}
             className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-brand/60 hover:text-brand hover:bg-brand/10 transition-colors border-t border-brand/10"
           >
-            <X className="w-3 h-3" />
+            <X className="w-3 h-3"  strokeWidth={1.5} />
             Ganti Target
           </button>
         </div>
@@ -101,7 +101,7 @@ export function Sidebar() {
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
         )}
       >
-        <BookOpen className="w-4 h-4 shrink-0" />
+        <BookOpen className="w-4 h-4 shrink-0"  strokeWidth={1.5} />
         Research Library
       </Link>
 

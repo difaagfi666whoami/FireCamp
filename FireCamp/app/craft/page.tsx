@@ -311,15 +311,15 @@ export default function CraftPage() {
   const breadcrumb = (
     <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="text-foreground font-semibold">Craft</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span>Polish</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span>Launch</span>
     </div>
   )
@@ -334,7 +334,7 @@ export default function CraftPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
           <p className="text-[14px] font-medium">Memuat data sesi...</p>
         </div>
       </div>
@@ -347,7 +347,7 @@ export default function CraftPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -372,7 +372,7 @@ export default function CraftPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[320px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -433,7 +433,7 @@ export default function CraftPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -480,12 +480,12 @@ export default function CraftPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => router.push("/match")} className="shadow-sm font-semibold text-[13.5px]">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
             Kembali
           </Button>
           <Button onClick={() => router.push("/polish")} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
             Lanjut ke Polish
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
           </Button>
         </div>
       </div>
@@ -510,7 +510,7 @@ export default function CraftPage() {
           className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-white shadow-md font-bold text-[15px] h-12 px-8 rounded-xl"
         >
           Lanjutkan ke Editor (Polish)
-          <ArrowRight className="w-5 h-5 ml-2" />
+          <ArrowRight className="w-5 h-5 ml-2"  strokeWidth={1.5} />
         </Button>
       </div>
     </div>

@@ -9,12 +9,12 @@ export function CompanyHeader({ company }: { company: CompanyProfile }) {
       {/* Company identity bar */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-8 h-8 rounded-lg bg-muted border border-border/60 flex items-center justify-center shrink-0">
-          <Building2 className="w-4 h-4 text-muted-foreground" />
+          <Building2 className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
         </div>
         <p className="text-[13px] font-semibold text-muted-foreground flex items-center gap-1.5">
           {company.name}
           <span className="text-border">·</span>
-          <Globe className="w-3 h-3" />
+          <Globe className="w-3 h-3"  strokeWidth={1.5} />
           {company.url}
         </p>
       </div>
@@ -33,6 +33,18 @@ export function CompanyHeader({ company }: { company: CompanyProfile }) {
                 {sr.executiveInsight}
               </p>
             </blockquote>
+          )}
+
+          {/* Situational brief for DM */}
+          {sr?.situationalSummary && (
+            <div className="mt-4 bg-muted/50 border border-border/50 rounded-xl px-4 py-3">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Situational Brief untuk DM
+              </p>
+              <p className="text-[13px] text-foreground/80 leading-relaxed">
+                {sr.situationalSummary}
+              </p>
+            </div>
           )}
         </>
       ) : (

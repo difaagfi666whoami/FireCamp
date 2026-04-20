@@ -19,55 +19,55 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     label: "Replied",
     color: "text-emerald-700",
     bg: "bg-emerald-100 border-emerald-200",
-    icon: <MessageSquareReply className="w-3 h-3" />,
+    icon: <MessageSquareReply className="w-3 h-3"  strokeWidth={1.5} />,
   },
   clicked: {
     label: "Clicked",
     color: "text-indigo-700",
     bg: "bg-indigo-100 border-indigo-200",
-    icon: <MousePointerClick className="w-3 h-3" />,
+    icon: <MousePointerClick className="w-3 h-3"  strokeWidth={1.5} />,
   },
   opened: {
     label: "Opened",
     color: "text-blue-700",
     bg: "bg-blue-100 border-blue-200",
-    icon: <Eye className="w-3 h-3" />,
+    icon: <Eye className="w-3 h-3"  strokeWidth={1.5} />,
   },
   sent: {
     label: "Sent",
     color: "text-zinc-600",
     bg: "bg-zinc-100 border-zinc-200",
-    icon: <CheckCircle2 className="w-3 h-3" />,
+    icon: <CheckCircle2 className="w-3 h-3"  strokeWidth={1.5} />,
   },
   pending: {
     label: "Pending",
     color: "text-amber-700",
     bg: "bg-amber-100 border-amber-200",
-    icon: <Clock className="w-3 h-3" />,
+    icon: <Clock className="w-3 h-3"  strokeWidth={1.5} />,
   },
   scheduled: {
     label: "Scheduled",
     color: "text-amber-700",
     bg: "bg-amber-100 border-amber-200",
-    icon: <Calendar className="w-3 h-3" />,
+    icon: <Calendar className="w-3 h-3"  strokeWidth={1.5} />,
   },
   bounced: {
     label: "Bounced",
     color: "text-red-700",
     bg: "bg-red-100 border-red-200",
-    icon: <AlertTriangle className="w-3 h-3" />,
+    icon: <AlertTriangle className="w-3 h-3"  strokeWidth={1.5} />,
   },
   complained: {
     label: "Spam Complained",
     color: "text-rose-800",
     bg: "bg-rose-100 border-rose-200",
-    icon: <ShieldAlert className="w-3 h-3" />,
+    icon: <ShieldAlert className="w-3 h-3"  strokeWidth={1.5} />,
   },
   failed: {
     label: "Failed",
     color: "text-red-700",
     bg: "bg-red-100 border-red-200",
-    icon: <XCircle className="w-3 h-3" />,
+    icon: <XCircle className="w-3 h-3"  strokeWidth={1.5} />,
   },
 }
 
@@ -112,17 +112,17 @@ export default function PulsePage() {
   const breadcrumb = (
     <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/polish")}>Polish</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/launch")}>Launch</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="text-foreground font-semibold">Pulse</span>
     </div>
   )
@@ -134,7 +134,7 @@ export default function PulsePage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
           <p className="text-[14px] font-medium">Memuat data sesi...</p>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function PulsePage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Activity className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -185,7 +185,7 @@ export default function PulsePage() {
           onClick={() => router.push("/launch")}
           className="shadow-sm font-semibold text-[13.5px]"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
           Kembali ke Launch
         </Button>
       </div>
@@ -218,7 +218,7 @@ export default function PulsePage() {
                   className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-slate-50/50"
                 >
                   <div className="p-2 bg-muted rounded-lg shrink-0 text-muted-foreground">
-                    <Mail className="w-4 h-4" />
+                    <Mail className="w-4 h-4"  strokeWidth={1.5} />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-[14px] text-foreground">{email.name}</p>

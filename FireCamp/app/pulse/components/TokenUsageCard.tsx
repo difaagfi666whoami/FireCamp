@@ -28,28 +28,28 @@ const STAGES: StageRow[] = [
   {
     key: "recon",
     label: "Recon",
-    icon: <Search className="w-3.5 h-3.5" />,
+    icon: <Search className="w-3.5 h-3.5"  strokeWidth={1.5} />,
     color: "text-blue-600",
     bgColor: "bg-blue-100",
   },
   {
     key: "match",
     label: "Match",
-    icon: <Tag className="w-3.5 h-3.5" />,
+    icon: <Tag className="w-3.5 h-3.5"  strokeWidth={1.5} />,
     color: "text-violet-600",
     bgColor: "bg-violet-100",
   },
   {
     key: "craft",
     label: "Craft",
-    icon: <PenLine className="w-3.5 h-3.5" />,
+    icon: <PenLine className="w-3.5 h-3.5"  strokeWidth={1.5} />,
     color: "text-emerald-600",
     bgColor: "bg-emerald-100",
   },
   {
     key: "polish",
     label: "Polish",
-    icon: <Sparkles className="w-3.5 h-3.5" />,
+    icon: <Sparkles className="w-3.5 h-3.5"  strokeWidth={1.5} />,
     color: "text-amber-600",
     bgColor: "bg-amber-100",
   },
@@ -60,8 +60,8 @@ export function TokenUsageCard({ tokenUsage }: TokenUsageCardProps) {
     <div className="bg-white border border-border/60 rounded-xl p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-start gap-3 mb-5">
-        <div className="p-2.5 bg-muted rounded-lg shrink-0">
-          <Cpu className="w-4 h-4 text-muted-foreground" />
+        <div className="p-2 border border-border/50 shadow-sm rounded-lg text-muted-foreground/80 shrink-0">
+          <Cpu className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
         </div>
         <div>
           <h3 className="font-bold text-[15px] text-foreground">Penggunaan Token AI</h3>
@@ -111,7 +111,7 @@ export function TokenUsageCard({ tokenUsage }: TokenUsageCardProps) {
         {/* Estimated cost */}
         <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-amber-600 shrink-0" />
+            <DollarSign className="w-4 h-4 text-amber-600 shrink-0"  strokeWidth={1.5} />
             <span className="text-[13px] font-bold text-amber-800">Estimasi Biaya</span>
           </div>
           <span className="text-[15px] font-black text-amber-900">
@@ -137,7 +137,7 @@ export function TokenUsageCard({ tokenUsage }: TokenUsageCardProps) {
               <span className={cn("text-[12px] font-semibold", api.color)}>
                 {api.name}
               </span>
-              <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors" />
+              <ExternalLink className="w-3 h-3 text-muted-foreground group-hover:text-foreground transition-colors"  strokeWidth={1.5} />
             </a>
           ))}
         </div>

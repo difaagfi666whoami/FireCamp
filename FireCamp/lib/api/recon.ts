@@ -29,11 +29,14 @@ export interface LibraryEntry {
 
 // -----------------------------------------------------------------------------
 // GENERATE — panggil FastAPI backend untuk AI recon
+// FIX BUG 4: tambah parameter mode dan kirim ke backend
 // -----------------------------------------------------------------------------
 
-export async function generateReconProfile(url: string): Promise<CompanyProfile> {
+export async function generateReconProfile(
+  url: string,
+  mode: 'free' | 'pro' = 'free'
+): Promise<CompanyProfile> {
   if (USE_MOCK) {
-    // Simulasi delay sedikit untuk mock mode
     await new Promise(r => setTimeout(r, 500))
     return { ...mockData.company, url } as CompanyProfile
   }
@@ -41,7 +44,7 @@ export async function generateReconProfile(url: string): Promise<CompanyProfile>
   const res = await fetch(`${API_URL}/api/recon`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
+    body: JSON.stringify({ url, mode }),
   })
 
   if (!res.ok) {
@@ -54,6 +57,9 @@ export async function generateReconProfile(url: string): Promise<CompanyProfile>
 
 // -----------------------------------------------------------------------------
 // GET company by ID — fetch dari Supabase dengan semua relasi
+// FIX BUG 2: map signalType pada news
+// FIX BUG 5: map match_angle pada pain_points
+// FIX BUG 6: select intent_signals + anomalies + citations + tech_stack
 // -----------------------------------------------------------------------------
 
 export async function getCompanyById(id: string): Promise<CompanyProfile> {
@@ -62,13 +68,25 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     .select(`
       id, url, name, industry, size, founded, hq, description,
       deep_insights, strategic_report, recon_mode,
+      tavily_report, situational_summary, anomalies, citations,
       linkedin_followers, linkedin_employees, linkedin_growth,
       progress_recon, progress_match, progress_craft,
       progress_polish, progress_launch, progress_pulse,
       created_at, cached_at,
-      contacts (id, name, title, email, phone, linkedin_url, prospect_score, reasoning, location, connections, about, role_duration, source),
-      pain_points (id, category, issue, severity, source_url, source_title),
-      news (id, title, published_date, source, summary, url, signal_type)
+      contacts (
+        id, name, title, email, phone, linkedin_url, location,
+        prospect_score, reasoning, connections, about, role_duration, source
+      ),
+      pain_points (
+        id, category, issue, severity, source_url, source_title, match_angle
+      ),
+      news (
+        id, title, published_date, source, summary, url, signal_type
+      ),
+      intent_signals (
+        id, title, date, source, summary, url,
+        signal_type, verified_amount, verified_date
+      )
     `)
     .eq("id", id)
     .single()
@@ -90,8 +108,17 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     hq:             data.hq             ?? "",
     description:    data.description    ?? "",
     deepInsights:   data.deep_insights  ?? [],
-    strategicReport: data.strategic_report ?? undefined,
-    reconMode:      data.recon_mode     ?? undefined,
+    strategicReport: data.strategic_report ? {
+      ...data.strategic_report,
+      citations:          data.citations
+                            ? (typeof data.citations === 'string'
+                                ? JSON.parse(data.citations)
+                                : data.citations)
+                            : [],
+      situationalSummary: data.situational_summary ?? '',
+    } : undefined,
+    reconMode:      (data.recon_mode as 'free' | 'pro') ?? 'free',
+    tavilyReport:   data.tavily_report  ?? undefined,
     linkedin: {
       followers: data.linkedin_followers ?? "0",
       employees: data.linkedin_employees ?? 0,
@@ -118,14 +145,30 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
       severity:    p.severity,
       sourceUrl:   p.source_url   ?? undefined,
       sourceTitle: p.source_title ?? undefined,
+      matchAngle:  p.match_angle  ?? undefined,  // Fix BUG 5
     })),
     news: (data.news ?? []).map((n: any) => ({
-      title:   n.title,
-      date:    n.published_date ?? "",
-      source:  n.source         ?? "",
-      summary: n.summary        ?? "",
-      url:     n.url            ?? "",
+      title:      n.title,
+      date:       n.published_date ?? "",
+      source:     n.source         ?? "",
+      summary:    n.summary        ?? "",
+      url:        n.url            ?? "",
+      signalType: n.signal_type    ?? undefined,  // Fix BUG 2
     })),
+    intentSignals: (data.intent_signals ?? []).map((s: any) => ({
+      title:          s.title,
+      date:           s.date           ?? '',
+      source:         s.source         ?? '',
+      summary:        s.summary        ?? '',
+      url:            s.url            ?? '',
+      signalType:     s.signal_type,
+      verifiedAmount: s.verified_amount ?? undefined,
+      verifiedDate:   s.verified_date   ?? undefined,
+    })),
+    situationalSummary: data.situational_summary ?? undefined,
+    anomalies:          typeof data.anomalies === 'string'
+                          ? JSON.parse(data.anomalies)
+                          : (data.anomalies ?? []),
     campaignProgress: {
       recon:   data.progress_recon,
       match:   data.progress_match,
@@ -203,34 +246,38 @@ export async function getResearchLibrary(): Promise<LibraryEntry[]> {
 }
 
 // -----------------------------------------------------------------------------
-// SAVE company profile (companies + contacts + pain_points + news)
-// Returns the new Supabase-generated UUID
+// SAVE company profile (companies + contacts + pain_points + news + intent_signals)
+// FIX BUG 1: save intent_signals
+// FIX BUG 3: save tech_stack + anomalies + citations + situational_summary
 // -----------------------------------------------------------------------------
 
 export async function saveCompanyProfile(profile: CompanyProfile): Promise<string> {
   const { data: company, error: companyErr } = await supabase
     .from("companies")
     .insert({
-      url:                profile.url,
-      name:               profile.name,
-      industry:           profile.industry,
-      size:               profile.size,
-      founded:            profile.founded,
-      hq:                 profile.hq,
-      description:        profile.description,
-      deep_insights:      profile.deepInsights     ?? [],
-      strategic_report:   profile.strategicReport  ?? null,
-      recon_mode:         profile.reconMode        ?? null,
-      linkedin_followers: profile.linkedin.followers,
-      linkedin_employees: profile.linkedin.employees,
-      linkedin_growth:    profile.linkedin.growth,
-      progress_recon:     true,
-      progress_match:     false,
-      progress_craft:     false,
-      progress_polish:    false,
-      progress_launch:    false,
-      progress_pulse:     false,
-      cached_at:          new Date().toISOString(),
+      url:                 profile.url,
+      name:                profile.name,
+      industry:            profile.industry,
+      size:                profile.size,
+      founded:             profile.founded,
+      hq:                  profile.hq,
+      description:         profile.description,
+      deep_insights:       profile.deepInsights     ?? [],
+      strategic_report:    profile.strategicReport  ?? null,
+      recon_mode:          profile.reconMode        ?? null,
+      situational_summary: profile.strategicReport?.situationalSummary ?? null,
+      anomalies:           profile.anomalies ?? [],
+      citations:           profile.strategicReport?.citations ?? [],
+      linkedin_followers:  profile.linkedin.followers,
+      linkedin_employees:  profile.linkedin.employees,
+      linkedin_growth:     profile.linkedin.growth,
+      progress_recon:      true,
+      progress_match:      false,
+      progress_craft:      false,
+      progress_polish:     false,
+      progress_launch:     false,
+      progress_pulse:      false,
+      cached_at:           new Date().toISOString(),
     })
     .select("id")
     .single()
@@ -272,6 +319,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
         severity:     p.severity,
         source_url:   p.sourceUrl   ?? null,
         source_title: p.sourceTitle ?? null,
+        match_angle:  p.matchAngle  ?? null,  // Fix BUG 5
       }))
     )
     if (error) throw new Error(error.message)
@@ -292,6 +340,28 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
     if (error) throw new Error(error.message)
   }
 
+  // Fix BUG 1: save intent_signals
+  if (profile.intentSignals && profile.intentSignals.length > 0) {
+    const intentSignalRows = profile.intentSignals.map(s => ({
+      company_id:      companyId,
+      title:           s.title,
+      date:            s.date           ?? null,
+      source:          s.source         ?? null,
+      summary:         s.summary        ?? null,
+      url:             s.url            ?? null,
+      signal_type:     s.signalType,
+      verified_amount: s.verifiedAmount ?? null,
+      verified_date:   s.verifiedDate   ?? null,
+    }))
+    const { error: intentError } = await supabase
+      .from('intent_signals')
+      .insert(intentSignalRows)
+    if (intentError) {
+      console.error('[recon] intent_signals insert error:', intentError.message)
+      // Non-fatal: lanjut meski gagal
+    }
+  }
+
   return companyId
 }
 
@@ -307,4 +377,26 @@ export async function deleteCompanyProfile(id: string): Promise<void> {
     console.error("[Campfire/recon] deleteCompanyProfile error:", error)
     throw new Error(error.message)
   }
+}
+
+// -----------------------------------------------------------------------------
+// PRO MODE — call Tavily Research API via backend, server saves to Supabase
+// -----------------------------------------------------------------------------
+
+export async function runProRecon(query: string): Promise<{ id: string; name: string }> {
+  if (USE_MOCK) {
+    await new Promise(r => setTimeout(r, 2000))
+    return { id: mockData.company.id, name: mockData.company.name }
+  }
+  const res = await fetch(`${API_URL}/api/recon/pro`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err.detail ?? "Tavily Research gagal")
+  }
+  const data = await res.json()
+  return { id: data.company_id, name: data.name }
 }

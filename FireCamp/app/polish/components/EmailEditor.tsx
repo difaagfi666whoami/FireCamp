@@ -21,7 +21,7 @@ export function EmailEditor({ subject, body, onChangeSubject, onChangeBody, disa
     <div className="space-y-6 relative">
       {isRegenerating && (
         <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center rounded-xl border border-brand/20">
-          <Loader2 className="w-8 h-8 text-brand animate-spin mb-3" />
+          <Loader2 className="w-8 h-8 text-brand animate-spin mb-3"  strokeWidth={1.5} />
           <p className="text-[13px] font-bold text-brand animate-pulse tracking-tight">Sedang menyesuaikan gaya bahasa...</p>
         </div>
       )}

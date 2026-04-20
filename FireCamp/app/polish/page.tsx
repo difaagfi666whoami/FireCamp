@@ -232,15 +232,15 @@ export default function PolishPage() {
   const breadcrumb = (
     <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="text-foreground font-semibold">Polish</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span>Launch</span>
     </div>
   )
@@ -252,7 +252,7 @@ export default function PolishPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
-          <Loader2 className="w-8 h-8 text-brand animate-spin" />
+          <Loader2 className="w-8 h-8 text-brand animate-spin"  strokeWidth={1.5} />
           <p className="text-[13.5px] font-medium">Memuat data email...</p>
         </div>
       </div>
@@ -265,7 +265,7 @@ export default function PolishPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -291,7 +291,7 @@ export default function PolishPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[320px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -328,14 +328,14 @@ export default function PolishPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => router.push("/craft")} className="shadow-sm font-semibold text-[13.5px]">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
             Kembali
           </Button>
           {allApproved ? (
             <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
-              {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : null}
               {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
-              {!isSyncing && <ArrowRight className="w-4 h-4 ml-2" />}
+              {!isSyncing && <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />}
             </Button>
           ) : (
             <Button disabled className="bg-muted text-muted-foreground font-semibold text-[13.5px]">
@@ -350,7 +350,7 @@ export default function PolishPage() {
         <div className="flex items-center justify-between gap-4 bg-emerald-50 border border-emerald-200 rounded-xl px-5 py-3.5">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
-              <Check className="w-4 h-4 stroke-[2.5]" />
+              <Check className="w-4 h-4 stroke-[2.5]"  strokeWidth={1.5} />
             </div>
             <div>
               <p className="font-bold text-[13.5px] text-emerald-800">
@@ -366,7 +366,7 @@ export default function PolishPage() {
             }}
             className="text-[12px] font-semibold text-emerald-700 hover:text-emerald-900 flex items-center gap-1.5 shrink-0"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-3.5 h-3.5"  strokeWidth={1.5} />
             Reset
           </button>
         </div>
@@ -446,7 +446,7 @@ export default function PolishPage() {
         <div className="mt-8 bg-emerald-50/50 border border-emerald-200 shadow-sm p-5 pr-6 rounded-2xl flex items-center justify-between z-10 animate-in fade-in duration-500">
           <div className="flex items-center gap-5">
             <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0 shadow-sm">
-              <Check className="w-6 h-6 stroke-[3]" />
+              <Check className="w-6 h-6 stroke-[3]"  strokeWidth={1.5} />
             </div>
             <div>
               <p className="font-bold text-[16px] text-emerald-900 tracking-tight">Semua draft diapprove!</p>
@@ -454,9 +454,9 @@ export default function PolishPage() {
             </div>
           </div>
           <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]">
-            {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : null}
             {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
-            {!isSyncing && <ArrowRight className="w-4 h-4 ml-2" />}
+            {!isSyncing && <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />}
           </Button>
         </div>
       )}

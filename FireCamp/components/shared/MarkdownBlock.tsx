@@ -71,6 +71,7 @@ type Block =
   | { type: "ol"; items: string[] }
   | { type: "p"; text: string }
   | { type: "blank" }
+  | { type: "table"; headers: string[]; rows: string[][] }
 
 function parseBlocks(markdown: string): Block[] {
   const lines = markdown.split("\n")
@@ -120,6 +121,25 @@ function parseBlocks(markdown: string): Block[] {
         i++
       }
       blocks.push({ type: "ol", items })
+      continue
+    }
+
+    // Markdown table — detect by | at start
+    if (trimmed.startsWith("|")) {
+      const tableLines: string[] = []
+      while (i < lines.length && lines[i].trim().startsWith("|")) {
+        tableLines.push(lines[i].trim())
+        i++
+      }
+      const parseRow = (line: string) =>
+        line.split("|").map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1)
+
+      const headers  = tableLines[0] ? parseRow(tableLines[0]) : []
+      const dataRows = tableLines.slice(2).map(parseRow).filter(r => r.length > 0)
+
+      if (headers.length > 0) {
+        blocks.push({ type: "table", headers, rows: dataRows })
+      }
       continue
     }
 
@@ -187,6 +207,34 @@ export function MarkdownBlock({ content, className }: MarkdownBlockProps) {
                   </li>
                 ))}
               </ol>
+            )
+
+          case "table":
+            return (
+              <div key={idx} className="overflow-x-auto rounded-xl border border-border/60 mt-2 mb-1">
+                <table className="w-full text-[12.5px]">
+                  <thead>
+                    <tr className="bg-muted border-b border-border/60">
+                      {block.headers.map((h, j) => (
+                        <th key={j} className="px-3 py-2 text-left font-bold text-foreground/80 whitespace-nowrap">
+                          {renderInline(h)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map((row, j) => (
+                      <tr key={j} className={j % 2 === 0 ? "bg-white" : "bg-muted/30"}>
+                        {row.map((cell, k) => (
+                          <td key={k} className="px-3 py-2 text-foreground/75 align-top leading-snug border-t border-border/40">
+                            {renderInline(cell)}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )
 
           case "p":

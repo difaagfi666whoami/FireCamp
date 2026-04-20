@@ -23,11 +23,11 @@ export function LoadingSteps({ steps, currentStep }: LoadingStepsProps) {
           >
             <div className="flex-shrink-0">
               {isDone ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4"  strokeWidth={1.5} />
               ) : isActive ? (
-                <Loader2 className="w-4 h-4 animate-spin text-brand" />
+                <Loader2 className="w-4 h-4 animate-spin text-brand"  strokeWidth={1.5} />
               ) : (
-                <CircleDashed className="w-4 h-4" />
+                <CircleDashed className="w-4 h-4"  strokeWidth={1.5} />
               )}
             </div>
             <span>{step}</span>

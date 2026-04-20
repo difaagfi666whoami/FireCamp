@@ -54,13 +54,29 @@ class ProductSource(str, Enum):
 
 # ── Sub-models ─────────────────────────────────────────────────────────────────
 
+class Citation(BaseModel):
+    url:    str = ""
+    title:  str = ""
+    source: str = ""
+    date:   str = ""
+
+
+class Anomaly(BaseModel):
+    title:        str = ""
+    observation:  str = ""
+    implication:  str = ""
+    evidenceUrl:  str = ""
+
+
 class StrategicReport(BaseModel):
     """Laporan intelijen strategis bergaya konsultan BCG/McKinsey."""
-    strategicTitle:        str       = ""
-    executiveInsight:      str       = ""
-    internalCapabilities:  str       = ""
-    marketDynamics:        str       = ""
-    strategicRoadmap:      list[str] = []
+    strategicTitle:        str            = ""
+    executiveInsight:      str            = ""
+    internalCapabilities:  str            = ""
+    marketDynamics:        str            = ""
+    strategicRoadmap:      list[str]      = []
+    citations:             list[Citation] = []
+    situationalSummary:    str            = ""
 
 
 class LinkedInInfo(BaseModel):
@@ -93,8 +109,9 @@ class PainPoint(BaseModel):
     category:    PainCategory
     issue:       str
     severity:    PainSeverity
-    sourceUrl:   str = ""       # URL sumber untuk validasi klaim
-    sourceTitle: str = ""       # Judul artikel/sumber
+    sourceUrl:   str = ""
+    sourceTitle: str = ""
+    matchAngle:  str = ""
 
 
 class NewsSignal(BaseModel):
@@ -113,6 +130,18 @@ class NewsItem(BaseModel):
     summary: str
     url:     str
     signal_type: Optional[str] = None
+
+
+class IntentSignal(BaseModel):
+    """Sinyal actionable yang sangat spesifik (e.g. lowongan kerja, pendanaan)."""
+    title:          str
+    date:           str
+    source:         str
+    summary:        str
+    url:            str
+    signal_type:    str  # "hiring", "money", dll.
+    verifiedAmount: Optional[str] = None
+    verifiedDate:   Optional[str] = None
 
 
 class CampaignProgress(BaseModel):
@@ -152,6 +181,9 @@ class CompanyProfile(BaseModel):
     contacts:    list[PicContact]  = []
     painPoints:  list[PainPoint]   = []
     news:        list[NewsItem]    = []
+    intentSignals: list[IntentSignal] = []
+    anomalies:          list[Anomaly] = []
+    situationalSummary: str           = ""
     campaignProgress: CampaignProgress = Field(default_factory=CampaignProgress)
     createdAt:   str = ""
     cachedAt:    str = ""

@@ -26,7 +26,7 @@ export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
           "p-2.5 rounded-lg shrink-0 mt-0.5",
           mode === "ai" ? "bg-brand text-white" : "bg-muted text-muted-foreground"
         )}>
-          <Zap className="w-4 h-4" />
+          <Zap className="w-4 h-4"  strokeWidth={1.5} />
         </div>
         <div>
           <p className={cn("font-bold text-[14.5px]", mode === "ai" ? "text-brand" : "text-foreground")}>
@@ -51,7 +51,7 @@ export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
           "p-2.5 rounded-lg shrink-0 mt-0.5",
           mode === "manual" ? "bg-brand text-white" : "bg-muted text-muted-foreground"
         )}>
-          <CalendarDays className="w-4 h-4" />
+          <CalendarDays className="w-4 h-4"  strokeWidth={1.5} />
         </div>
         <div>
           <p className={cn("font-bold text-[14.5px]", mode === "manual" ? "text-brand" : "text-foreground")}>

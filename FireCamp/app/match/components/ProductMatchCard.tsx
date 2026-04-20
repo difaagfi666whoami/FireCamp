@@ -28,10 +28,10 @@ export function ProductMatchCard({ match }: { match: ProductMatch & { painPointT
           <h3 className="font-bold text-base">{match.name}</h3>
           <div className="flex items-center gap-3">
             <button className="text-muted-foreground hover:text-foreground">
-              <Edit2 className="w-4 h-4" />
+              <Edit2 className="w-4 h-4"  strokeWidth={1.5} />
             </button>
             <button className="text-destructive/80 hover:text-destructive">
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4"  strokeWidth={1.5} />
             </button>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function ProductMatchCard({ match }: { match: ProductMatch & { painPointT
               {/* AI Reasoning */}
               <div className="space-y-3">
                 <h4 className="flex items-center gap-2 font-bold text-foreground">
-                  <Lightbulb className="w-5 h-5 text-brand" />
+                  <Lightbulb className="w-5 h-5 text-brand"  strokeWidth={1.5} />
                   Analisis AI (Reasoning)
                 </h4>
                 <div className="bg-muted/40 border border-border/60 rounded-xl p-4 text-[14px] leading-relaxed text-muted-foreground">
@@ -109,13 +109,13 @@ export function ProductMatchCard({ match }: { match: ProductMatch & { painPointT
                 {/* Pain Points Targeted */}
                 <div className="space-y-3">
                   <h4 className="flex items-center gap-2 font-bold text-foreground">
-                    <Target className="w-4 h-4 text-destructive" />
+                    <Target className="w-4 h-4 text-destructive"  strokeWidth={1.5} />
                     Targeted Pain Points
                   </h4>
                   <div className="space-y-2">
                     {(match.painPointTargeted ? match.painPointTargeted.split(' & ') : []).map((point, idx) => (
                       <div key={idx} className="flex gap-2 text-[13px] text-muted-foreground bg-destructive/5 rounded-lg p-3 border border-destructive/10">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-destructive/70 mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-destructive/70 mt-0.5"  strokeWidth={1.5} />
                         <span>{point}</span>
                       </div>
                     ))}
@@ -128,13 +128,13 @@ export function ProductMatchCard({ match }: { match: ProductMatch & { painPointT
                 {/* USPs */}
                 <div className="space-y-3">
                   <h4 className="flex items-center gap-2 font-bold text-foreground">
-                    <CheckCircle2 className="w-4 h-4 text-success" />
+                    <CheckCircle2 className="w-4 h-4 text-success"  strokeWidth={1.5} />
                     Unique Selling Propositions
                   </h4>
                   <div className="space-y-2">
                     {(match.usp && match.usp.length > 0 ? match.usp : ["-"]).map((usp, idx) => (
                       <div key={idx} className="flex gap-2 text-[13px] text-foreground font-medium bg-success/5 rounded-lg p-3 border border-success/10">
-                        <CheckCircle2 className="w-4 h-4 shrink-0 text-success mt-0.5" />
+                        <CheckCircle2 className="w-4 h-4 shrink-0 text-success mt-0.5"  strokeWidth={1.5} />
                         <span>{usp}</span>
                       </div>
                     ))}

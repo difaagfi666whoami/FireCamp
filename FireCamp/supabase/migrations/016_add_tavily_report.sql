@@ -1,0 +1,2 @@
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS tavily_report TEXT;
+ALTER TABLE companies ADD COLUMN IF NOT EXISTS recon_mode TEXT NOT NULL DEFAULT 'free';

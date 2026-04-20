@@ -1,11 +1,27 @@
 export type ReconMode = 'free' | 'pro'
 
+export interface Citation {
+  url: string
+  title: string
+  source: string
+  date: string
+}
+
+export interface Anomaly {
+  title: string
+  observation: string
+  implication: string
+  evidenceUrl?: string
+}
+
 export interface StrategicReport {
   strategicTitle: string
   executiveInsight: string
   internalCapabilities: string
   marketDynamics: string
   strategicRoadmap: string[]
+  citations?: Citation[]
+  situationalSummary?: string
 }
 
 export interface CompanyProfile {
@@ -27,6 +43,10 @@ export interface CompanyProfile {
   contacts: PicContact[]
   painPoints: PainPoint[]
   news: NewsItem[]
+  intentSignals?: IntentSignal[]
+  tavilyReport?: string
+  anomalies?: Anomaly[]
+  situationalSummary?: string
   campaignProgress: CampaignProgress
   reconMode?: ReconMode
   createdAt: string
@@ -55,6 +75,7 @@ export interface PainPoint {
   severity: 'high' | 'medium' | 'low'
   sourceUrl?: string
   sourceTitle?: string
+  matchAngle?: string
 }
 
 export interface NewsItem {
@@ -64,6 +85,17 @@ export interface NewsItem {
   summary: string
   url: string
   signalType?: string
+}
+
+export interface IntentSignal {
+  title: string
+  date: string
+  source: string
+  summary: string
+  url: string
+  signalType: string
+  verifiedAmount?: string
+  verifiedDate?: string
 }
 
 export interface CampaignProgress {

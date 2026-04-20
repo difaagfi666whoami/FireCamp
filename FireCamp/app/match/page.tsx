@@ -33,20 +33,20 @@ export default function MatchPage() {
         >
           Research Library
         </span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span
           className="hover:text-foreground cursor-pointer transition-colors"
           onClick={() => companyId && router.push(`/recon/${companyId}`)}
         >
           Review Profil
         </span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span className="text-foreground font-semibold">Match</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Craft</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Polish</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Launch</span>
       </div>
 
@@ -72,7 +72,7 @@ export default function MatchPage() {
           onClick={() => companyId ? router.push(`/recon/${companyId}`) : router.push("/research-library")}
           className="shadow-sm font-semibold text-[13.5px] rounded-xl"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
           Review Profil
         </Button>
       </div>

@@ -66,7 +66,7 @@ export default function ResearchLibraryPage() {
           </p>
         </div>
         <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-2"  strokeWidth={1.5} />
           Recon Baru
         </Button>
       </div>
@@ -74,7 +74,7 @@ export default function ResearchLibraryPage() {
       {/* Loading */}
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground animate-in fade-in">
-          <Loader2 className="w-7 h-7 animate-spin" />
+          <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
           <p className="text-[14px] font-medium">Memuat research library...</p>
         </div>
       )}
@@ -83,7 +83,7 @@ export default function ResearchLibraryPage() {
       {!isLoading && error && (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
-            <AlertCircle className="w-8 h-8 text-red-500" />
+            <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
             <p className="font-bold text-[15px] text-red-800">Gagal memuat data</p>
             <p className="text-[13px] text-red-700">{error}</p>
             <Button
@@ -118,14 +118,14 @@ export default function ResearchLibraryPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="p-5 bg-muted rounded-full mb-5">
-              <BookOpen className="w-8 h-8 text-muted-foreground" />
+              <BookOpen className="w-8 h-8 text-muted-foreground"  strokeWidth={1.5} />
             </div>
             <h3 className="font-bold text-[17px] text-foreground mb-2">Belum ada riset tersimpan</h3>
             <p className="text-muted-foreground text-[14px] max-w-xs mb-6">
               Mulai dengan melakukan Recon terhadap target perusahaan pertama kamu.
             </p>
             <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white font-semibold">
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 mr-2"  strokeWidth={1.5} />
               Recon Baru
             </Button>
           </div>

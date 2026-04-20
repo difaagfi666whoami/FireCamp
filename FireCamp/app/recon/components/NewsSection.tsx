@@ -6,13 +6,13 @@ export function NewsSection({ news }: { news: NewsItem[] }) {
   return (
     <div className="bg-white border border-border/60 rounded-2xl p-6 shadow-sm">
       <h3 className="font-bold text-[15px] text-foreground mb-5 flex items-center gap-2">
-        <Newspaper className="w-4 h-4 text-muted-foreground" />
+        <Newspaper className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
         Recent News & Sinyal Bisnis
       </h3>
 
       {!news?.length ? (
         <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
-          <Newspaper className="w-7 h-7 text-muted-foreground/40" />
+          <Newspaper className="w-7 h-7 text-muted-foreground/40"  strokeWidth={1.5} />
           <p className="text-[13px] text-muted-foreground font-medium">Belum ada berita tersedia</p>
           <p className="text-[12px] text-muted-foreground/60">Sinyal bisnis akan muncul setelah Recon dijalankan.</p>
         </div>

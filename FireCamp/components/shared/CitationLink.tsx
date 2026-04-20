@@ -15,7 +15,7 @@ export function CitationLink({ href, label = "Baca artikel" }: CitationLinkProps
       title="Buka artikel di tab baru"
     >
       <span>{label}</span>
-      <ExternalLink className="w-3 h-3" />
+      <ExternalLink className="w-3 h-3"  strokeWidth={1.5} />
     </a>
   )
 }

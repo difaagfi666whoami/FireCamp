@@ -1,24 +1,27 @@
 """
-recon.py — Router POST /api/recon + Three-Lane Orchestrator.
+recon.py — Router POST /api/recon + Seven-Lane Orchestrator.
 
-Pipeline flow (3-Lane Architecture — Zero Apollo/Apify):
+Pipeline flow (7-Lane Architecture — Zero Apollo/Apify):
 
   Input: url + mode
        │
        ▼
   Step 0: Tavily /extract → ground truth (nama, domain)
        │
-  ┌────┴──────────┐
-  │       │       │  ← asyncio.gather() — PARALEL
-LANE A  LANE B  LANE C
-Profiler Contact  News
-(Tavily) (Serper) (Serper+Jina)
-  │       │       │
-  └───┬───┘       │
-      └─────┬─────┘
-            ▼
-  OpenAI: synthesize_profile()
-  Lane A + contacts + news → CompanyProfile JSON
+  ┌────┬────┬────┬────┬────┬────┐  ← asyncio.gather() — PARALEL
+  │    │    │    │    │    │    │
+LANE  LANE  LANE LANE LANE LANE LANE
+  A     B    C    D    E    F    G
+Profil Cont. News Hire Money Site Hunter
+       │    └─┬──┘    └─┬──┘   │   GroundTruth
+       │      ▼         ▼      │
+       │   merged news[]       │
+       └──────┬─────────────┬──┘
+              ▼             ▼
+        OpenAI synthesize_profile()
+        Lane A + contacts + news (C+D+E)
+        + deep_site_pages (F) + company_enrichment (G)
+        → CompanyProfile JSON
 """
 
 from __future__ import annotations
@@ -26,10 +29,15 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
+import uuid
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from typing import Any
 
+import httpx
+
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 from app.models.schemas import CompanyProfile, ReconMode, ReconRequest, ReconResponse
 from app.services import (
@@ -38,7 +46,13 @@ from app.services import (
     lane_a_service,
     lane_b_service,
     lane_c_service,
+    lane_d_service,
+    lane_e_service,
+    lane_f_service,
+    lane_g_service,
 )
+from app.core.config import settings
+from app.services.tavily_research_service import run_tavily_research
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +89,10 @@ def _extract_company_name(extract_results: list[dict[str, Any]], domain: str) ->
         # Fallback: baris pertama non-kosong dari raw_content
         for line in content.splitlines():
             line = line.strip()
+            # Buang markdown heading prefix
+            line = line.lstrip("#").strip()
+            # Buang suffix setelah | atau —
+            line = re.split(r"\s*[\|–—]\s*", line)[0].strip()
             if len(line) > 3 and not line.startswith("<"):
                 return line[:80]
 
@@ -160,6 +178,67 @@ async def _run_lane_c(
         return [], []
 
 
+# ─── Lane D: Hiring Signals (Job Board Dorking) ──────────────────────────────
+
+async def _run_lane_d(company_name: str, domain: str) -> list[dict[str, Any]]:
+    """Lane D Hiring Signals — sinyal investasi tim dari lowongan kerja."""
+    logger.info("[lane_d] START | company=%r", company_name)
+    try:
+        items = await lane_d_service.fetch_hiring_signals(company_name, domain)
+        logger.info("[lane_d] OK | hiring=%d", len(items))
+        return items
+    except Exception as exc:
+        logger.warning("[lane_d] FAILED: %s", exc)
+        return []
+
+
+# ─── Lane E: Money & Leadership Signals (Serper News) ───────────────────────
+
+async def _run_lane_e(company_name: str) -> list[dict[str, Any]]:
+    """Lane E Money/Leadership/M&A/Partnership signals — 'why now' triggers."""
+    logger.info("[lane_e] START | company=%r", company_name)
+    try:
+        items = await lane_e_service.fetch_money_signals(company_name)
+        logger.info("[lane_e] OK | money_signals=%d", len(items))
+        return items
+    except Exception as exc:
+        logger.warning("[lane_e] FAILED: %s", exc)
+        return []
+
+
+# ─── Lane F: Deep Site Crawl (Multi-URL Tavily Extract) ─────────────────────
+
+async def _run_lane_f(canonical_url: str) -> dict[str, Any]:
+    """Lane F Deep Site Crawl — about/products/clients/careers/team pages."""
+    logger.info("[lane_f] START | url=%r", canonical_url)
+    try:
+        pages = await lane_f_service.deep_site_crawl(canonical_url)
+        logger.info(
+            "[lane_f] OK | about=%s products=%s clients=%s careers=%s team=%s",
+            bool(pages.get("about")), bool(pages.get("products")),
+            bool(pages.get("clients")), bool(pages.get("careers")),
+            bool(pages.get("team")),
+        )
+        return pages
+    except Exception as exc:
+        logger.warning("[lane_f] FAILED: %s", exc)
+        return {"about": "", "products": "", "clients": "", "careers": "", "team": "", "raw_pages": []}
+
+
+# ─── Lane G: Hunter Company Ground Truth ────────────────────────────────────
+
+async def _run_lane_g(domain: str) -> dict[str, Any]:
+    """Lane G Hunter companies/find — ground truth metadata 1 API call."""
+    logger.info("[lane_g] START | domain=%r", domain)
+    try:
+        enrichment = await lane_g_service.fetch_company_enrichment(domain)
+        logger.info("[lane_g] OK | name=%r employees=%d", enrichment.get("name", "")[:40], enrichment.get("employees", 0))
+        return enrichment
+    except Exception as exc:
+        logger.warning("[lane_g] FAILED: %s", exc)
+        return {}
+
+
 # ─── Main Orchestrator ────────────────────────────────────────────────────────
 
 async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile, int]:
@@ -207,26 +286,65 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
 
     company_context = f"{company_name} ({domain})"
 
-    # ── Step 1: Lane A, B, C paralel ──────────────────────────────────────────
+    # ── Step 1: Lane A–G paralel ──────────────────────────────────────────────
     try:
-        lane_a_result, scored_contacts, lane_c_result = await asyncio.gather(
+        (
+            lane_a_result,
+            scored_contacts,
+            lane_c_result,
+            hiring_news,
+            money_news,
+            deep_site_pages,
+            company_enrichment,
+        ) = await asyncio.gather(
             _run_lane_a(canonical_url, company_name, domain, mode),
             _run_lane_b(domain, company_name, company_context),
             _run_lane_c(company_name, domain, industry_hint),
+            _run_lane_d(company_name, domain),
+            _run_lane_e(company_name),
+            _run_lane_f(canonical_url),
+            _run_lane_g(domain),
         )
         lane_a_summary, lane_a_evidence = lane_a_result
-        parsed_news, pain_signals_from_news = lane_c_result
+        news_c, pain_signals_from_news = lane_c_result
     except Exception as exc:
-        logger.error("[pipeline] gather Lane A+B+C FAILED | error=%s", exc)
+        logger.error("[pipeline] gather Lane A–G FAILED | error=%s", exc)
         raise RuntimeError(
             f"Pipeline riset gagal pada tahap pencarian data: {exc}"
         ) from exc
 
+    # ── Merge news C + D + E (deduplicate by URL) ────────────────────────────
+    # Lane C -> regular news
+    # Lane D + E -> intent signals
+    news_c_unique: list[dict[str, Any]] = []
+    intent_signals: list[dict[str, Any]] = []
+    seen_urls: set[str] = set()
+
+    for item in news_c:
+        url_key = (item.get("url") or "").strip()
+        if url_key and url_key in seen_urls:
+            continue
+        if url_key:
+            seen_urls.add(url_key)
+        news_c_unique.append(item)
+
+    for source in (hiring_news, money_news):
+        for item in source:
+            url_key = (item.get("url") or "").strip()
+            if url_key and url_key in seen_urls:
+                continue
+            if url_key:
+                seen_urls.add(url_key)
+            intent_signals.append(item)
+
     logger.info(
-        "[pipeline] gather OK | lane_a_chars=%d lane_b_contacts=%d lane_c_news=%d",
-        len(lane_a_summary),
-        len(scored_contacts),
-        len(parsed_news),
+        "[pipeline] gather OK | lane_a=%d contacts=%d news_c=%d news_d=%d news_e=%d "
+        "intent_signals=%d site_pages=%d enrichment=%s",
+        len(lane_a_summary), len(scored_contacts),
+        len(news_c), len(hiring_news), len(money_news),
+        len(intent_signals),
+        sum(1 for k in ("about", "products", "clients", "careers", "team") if deep_site_pages.get(k)),
+        bool(company_enrichment.get("name")),
     )
 
     # ── Step 2: Final Synthesis ───────────────────────────────────────────────
@@ -236,9 +354,12 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
             scored_contacts=scored_contacts,
             company_url=canonical_url,
             mode=mode,
-            extracted_news=parsed_news,
+            extracted_news=news_c_unique,
             evidence_list=lane_a_evidence,
             pain_signals_from_news=pain_signals_from_news,
+            deep_site_pages=deep_site_pages,
+            company_enrichment=company_enrichment,
+            intent_signals=intent_signals,
         )
     except Exception as exc:
         logger.error("[pipeline] synthesize_profile FAILED | error=%s", exc)
@@ -307,3 +428,87 @@ async def generate_recon(payload: ReconRequest) -> ReconResponse:
             status_code=500,
             detail="Terjadi kesalahan internal pada server. Silakan coba lagi.",
         ) from exc
+
+
+# ─── Pro Mode endpoint ────────────────────────────────────────────────────────
+
+class ProReconRequest(BaseModel):
+    query: str  # free-form: URL only, or URL + research directives
+
+
+@router.post("/recon/pro")
+async def recon_pro(req: ProReconRequest):
+    """
+    Pro Mode: call Tavily Research API directly, save markdown report to Supabase.
+    Returns company_id for redirect to /recon/[id].
+    """
+    query = req.query.strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Query tidak boleh kosong")
+
+    try:
+        result = await run_tavily_research(query)
+    except Exception as exc:
+        logger.error("[recon_pro] Tavily research failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Tavily Research gagal: {exc}")
+
+    content: str = result["content"]
+
+    # Extract company name from first substantive line of the markdown report
+    company_name = query.split("/")[2] if "://" in query else query[:60]
+    for line in content.splitlines():
+        stripped = line.lstrip("#").strip()
+        if len(stripped) > 3:
+            company_name = stripped[:80]
+            break
+
+    url_match = re.search(r"https?://[^\s]+", query)
+    company_url = url_match.group(0).rstrip("/") if url_match else query[:120]
+
+    company_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+
+    supabase_base = settings.NEXT_PUBLIC_SUPABASE_URL.rstrip("/")
+    supabase_key  = settings.SUPABASE_SERVICE_ROLE_KEY
+    rest_url = f"{supabase_base}/rest/v1/companies"
+    headers = {
+        "apikey":        supabase_key,
+        "Authorization": f"Bearer {supabase_key}",
+        "Content-Type":  "application/json",
+        "Prefer":        "return=minimal",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(rest_url, headers=headers, json={
+                "id":               company_id,
+                "name":             company_name,
+                "url":              company_url,
+                "recon_mode":       "pro",
+                "tavily_report":    content,
+                "industry":         "",
+                "size":             "",
+                "hq":               "",
+                "description":      "",
+                "deep_insights":    [],
+                "anomalies":        [],
+                "citations":        [],
+                "linkedin_followers": "0",
+                "linkedin_employees": 0,
+                "linkedin_growth":  "0%",
+                "progress_recon":   True,
+                "progress_match":   False,
+                "progress_craft":   False,
+                "progress_polish":  False,
+                "progress_launch":  False,
+                "progress_pulse":   False,
+                "created_at":       now,
+                "cached_at":        now,
+            })
+            resp.raise_for_status()
+    except Exception as exc:
+        logger.error("[recon_pro] Supabase insert failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"Gagal menyimpan laporan: {exc}")
+
+    logger.info("[recon_pro] DONE | company_id=%s name=%r", company_id, company_name[:40])
+    return {"company_id": company_id, "name": company_name}

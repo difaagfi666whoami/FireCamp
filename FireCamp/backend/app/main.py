@@ -103,11 +103,12 @@ async def on_startup() -> None:
     logger.info("  Mock mode    : %s", mock_mode)
     logger.info("  Default mode : %s", settings.NEXT_PUBLIC_DEFAULT_RECON_MODE)
     logger.info(
-        "  API keys     : Tavily=%s  OpenAI=%s  Serper=%s  Jina=%s",
+        "  API keys     : Tavily=%s  OpenAI=%s  Serper=%s  Jina=%s  Hunter=%s",
         "✓" if settings.TAVILY_API_KEY  else "✗ (missing)",
         "✓" if settings.OPENAI_API_KEY  else "✗ (missing)",
         "✓" if settings.SERPER_API_KEY  else "✗ (missing)",
         "✓" if settings.JINA_API_KEY    else "✗ (opsional)",
+        "✓" if settings.HUNTER_API_KEY  else "✗ (missing)",
     )
     logger.info("=" * 60)
 

@@ -1,5 +1,5 @@
 import { PicContact } from "@/types/recon.types"
-import { Mail, Phone, Users, MapPin, Clock, ExternalLink } from "lucide-react"
+import { AlertTriangle, Mail, Phone, Users, MapPin, Clock, ExternalLink } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // ── Score badge config ────────────────────────────────────────────────────────
@@ -71,9 +71,18 @@ export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
   return (
     <div className="bg-white border border-border/60 rounded-2xl p-5 shadow-sm">
       <h3 className="font-bold text-[15px] text-foreground mb-4 flex items-center gap-2">
-        <Users className="w-4 h-4 text-muted-foreground" />
+        <Users className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
         Key Contacts (PIC)
       </h3>
+
+      {/* Disclaimer banner */}
+      <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200/60 rounded-xl px-3 py-2.5">
+        <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"  strokeWidth={1.5} />
+        <p className="text-[11.5px] text-amber-800 leading-snug">
+          Data kontak bersumber dari indeks publik LinkedIn via Google.
+          Verifikasi profil sebelum outreach.
+        </p>
+      </div>
 
       {/* Scrollable contacts list */}
       <div className="space-y-4 max-h-[640px] overflow-y-auto pr-1">
@@ -128,19 +137,19 @@ export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
                 <div className="flex flex-wrap gap-x-3 gap-y-1.5">
                   {contact.location && (
                     <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <MapPin className="w-3 h-3 text-brand shrink-0" />
+                      <MapPin className="w-3 h-3 text-brand shrink-0"  strokeWidth={1.5} />
                       {contact.location}
                     </span>
                   )}
                   {contact.connections && (
                     <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <Users className="w-3 h-3 text-brand shrink-0" />
+                      <Users className="w-3 h-3 text-brand shrink-0"  strokeWidth={1.5} />
                       {contact.connections} koneksi
                     </span>
                   )}
                   {contact.roleDuration && (
                     <span className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                      <Clock className="w-3 h-3 text-brand shrink-0" />
+                      <Clock className="w-3 h-3 text-brand shrink-0"  strokeWidth={1.5} />
                       {contact.roleDuration}
                     </span>
                   )}
@@ -156,7 +165,7 @@ export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-[12px] text-blue-600 hover:underline font-medium"
                   >
-                    <ExternalLink className="w-3 h-3 shrink-0" />
+                    <ExternalLink className="w-3 h-3 shrink-0"  strokeWidth={1.5} />
                     Lihat profil LinkedIn
                   </a>
                 )}
@@ -165,13 +174,13 @@ export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
                     href={`mailto:${contact.email}`}
                     className="flex items-center gap-2 text-[12px] text-blue-600 hover:underline font-medium"
                   >
-                    <Mail className="w-3 h-3 shrink-0" />
+                    <Mail className="w-3 h-3 shrink-0"  strokeWidth={1.5} />
                     {contact.email}
                   </a>
                 )}
                 {contact.phone && contact.phone !== "-" && (
                   <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                    <Phone className="w-3 h-3 shrink-0" />
+                    <Phone className="w-3 h-3 shrink-0"  strokeWidth={1.5} />
                     {contact.phone}
                   </div>
                 )}

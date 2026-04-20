@@ -107,7 +107,7 @@ export function ProductCatalogTab() {
   if (catalog.isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground animate-in fade-in">
-        <Loader2 className="w-7 h-7 animate-spin" />
+        <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
         <p className="text-[14px] font-medium">Memuat katalog produk...</p>
       </div>
     )
@@ -119,7 +119,7 @@ export function ProductCatalogTab() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 animate-in fade-in">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
-          <AlertCircle className="w-8 h-8 text-red-500" />
+          <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
           <p className="font-bold text-[15px] text-red-800">Gagal memuat katalog</p>
           <p className="text-[13px] text-red-700">{catalog.error}</p>
           <Button onClick={catalog.refresh} variant="outline" size="sm" className="mt-1 rounded-xl">
@@ -150,8 +150,8 @@ export function ProductCatalogTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         <div onClick={handleAddClick} className="group cursor-pointer rounded-2xl bg-secondary/30 hover:bg-secondary/50 p-4 pb-5 border border-transparent transition-colors flex flex-col justify-between min-h-[140px]">
           <div className="flex justify-between items-start">
-            <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><FileText className="w-5 h-5" /></div>
-            <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5" />
+            <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><FileText className="w-5 h-5"  strokeWidth={1.5} /></div>
+            <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5"  strokeWidth={1.5} />
           </div>
           <div className="font-semibold text-[15px] mt-4 tracking-tight">Tambah Manual</div>
         </div>
@@ -159,9 +159,9 @@ export function ProductCatalogTab() {
         <div onClick={triggerPdfUpload} className="group cursor-pointer rounded-2xl border border-border/80 p-4 pb-5 hover:border-border hover:bg-muted/20 transition-colors flex flex-col justify-between min-h-[140px]">
           <div className="flex justify-between items-start">
             <div className="bg-foreground text-background p-2.5 rounded-xl self-start">
-              {isExtracting ? <Loader2 className="w-5 h-5 animate-spin" /> : <LayoutGrid className="w-5 h-5" />}
+              {isExtracting ? <Loader2 className="w-5 h-5 animate-spin"  strokeWidth={1.5} /> : <LayoutGrid className="w-5 h-5"  strokeWidth={1.5} />}
             </div>
-            {!isExtracting && <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5" />}
+            {!isExtracting && <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5"  strokeWidth={1.5} />}
           </div>
           <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? (extractStep || "Mengekstrak AI...") : "Ekstrak PDF Brosur"}</div>
           <label htmlFor="pdf-catalog-upload" className="sr-only">Upload file PDF katalog</label>
@@ -178,7 +178,7 @@ export function ProductCatalogTab() {
 
         <div className="group cursor-not-allowed rounded-2xl border border-border/80 p-4 pb-5 bg-muted/10 opacity-60 flex flex-col justify-between min-h-[140px]">
           <div className="flex justify-between items-start">
-            <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><Folder className="w-5 h-5" /></div>
+            <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><Folder className="w-5 h-5"  strokeWidth={1.5} /></div>
           </div>
           <div className="font-semibold text-[15px] mt-4 tracking-tight">Import CSV (Segera)</div>
         </div>
@@ -189,7 +189,7 @@ export function ProductCatalogTab() {
       {recentProducts.length === 0 ? (
         <div className="flex items-center gap-4 p-5 border border-dashed border-border/60 rounded-2xl mb-10 text-muted-foreground">
           <div className="bg-muted/50 p-3 rounded-xl border border-border/40 shrink-0">
-            <FileText className="w-5 h-5 text-muted-foreground/50" />
+            <FileText className="w-5 h-5 text-muted-foreground/50"  strokeWidth={1.5} />
           </div>
           <div>
             <p className="text-[13.5px] font-semibold text-foreground/70">Belum ada produk ditambahkan</p>
@@ -201,7 +201,7 @@ export function ProductCatalogTab() {
           {recentProducts.map(p => (
             <div key={p.id} className="flex items-center justify-between p-4 border border-border/70 rounded-[14px] hover:shadow-sm transition-shadow">
               <div className="flex items-center gap-3">
-                <div className="bg-muted/50 p-2.5 rounded-xl border border-border/40"><FileText className="w-5 h-5 text-muted-foreground" /></div>
+                <div className="bg-muted/50 p-2.5 rounded-xl border border-border/40"><FileText className="w-5 h-5 text-muted-foreground"  strokeWidth={1.5} /></div>
                 <div>
                   <div className="font-semibold text-[14px] leading-tight mb-1">{p.name || "Untitled"}</div>
                   <div className="text-[13px] text-muted-foreground flex gap-2">
@@ -211,7 +211,7 @@ export function ProductCatalogTab() {
                 </div>
               </div>
               <button onClick={() => handleEditClick(p)} className="p-1 hover:bg-muted rounded-md text-muted-foreground flex items-center gap-1 -mr-2">
-                <MoreVertical className="w-5 h-5" />
+                <MoreVertical className="w-5 h-5"  strokeWidth={1.5} />
               </button>
             </div>
           ))}
@@ -228,7 +228,7 @@ export function ProductCatalogTab() {
             onClick={handleDeleteSelected}
             className="rounded-xl font-bold text-[12.5px] h-9 gap-2"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <Trash2 className="w-3.5 h-3.5"  strokeWidth={1.5} />
             Hapus {checkedIds.size} item
           </Button>
         )}
@@ -237,7 +237,7 @@ export function ProductCatalogTab() {
       {/* Search */}
       <div className="mb-4">
         <div className="relative w-full sm:w-[260px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"  strokeWidth={1.5} />
           <label htmlFor="catalog-search" className="sr-only">Cari produk</label>
           <input
             id="catalog-search"
@@ -279,7 +279,7 @@ export function ProductCatalogTab() {
                   <TableCell className="h-16 py-0">
                     <div className="flex items-center gap-3">
                       <div className="bg-secondary/40 p-2 rounded-lg border border-border/20">
-                        <FileText className="w-4 h-4 text-foreground/70" />
+                        <FileText className="w-4 h-4 text-foreground/70"  strokeWidth={1.5} />
                       </div>
                       <div>
                         <div className="font-semibold text-[14px] leading-tight mb-0.5">{p.name}</div>

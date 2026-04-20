@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -43,8 +44,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     SERPER_API_KEY: str = ""
     JINA_API_KEY: str = ""
+    HUNTER_API_KEY: Optional[str] = None
 
-    @field_validator("NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", mode="before")
+    @field_validator(
+        "NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "HUNTER_API_KEY",
+        mode="before",
+    )
     @classmethod
     def strip_quotes(cls, v: object) -> str:
         """Strip surrounding quotes dari value .env.local."""

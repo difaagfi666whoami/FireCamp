@@ -24,9 +24,8 @@ export function ReconForm({ onGenerate, isLoading }: ReconFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 items-end w-full max-w-xl">
-      <div className="flex-1 space-y-2 w-full">
-        <Label htmlFor="company-url">Target Company URL</Label>
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 w-full">
+      <div className="flex-1 w-full">
         <Input
           id="company-url"
           placeholder="https://company.com"
@@ -37,7 +36,7 @@ export function ReconForm({ onGenerate, isLoading }: ReconFormProps) {
           className="rounded-xl h-11"
         />
       </div>
-      <Button type="submit" disabled={isLoading || !url} className="w-full sm:w-auto rounded-xl font-bold bg-brand hover:bg-brand/90 text-white">
+      <Button type="submit" disabled={isLoading || !url} className="w-full sm:w-auto h-11 px-8 rounded-xl font-bold bg-brand hover:bg-brand/90 text-white">
         Generate Profil
       </Button>
     </form>

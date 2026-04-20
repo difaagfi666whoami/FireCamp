@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 const SEVERITY_CONFIG = {
   high: {
     label: "HIGH",
-    icon: <Flame className="w-3 h-3" />,
+    icon: <Flame className="w-3 h-3"  strokeWidth={1.5} />,
     badge: "bg-red-100 text-red-700 border-red-200",
     dot: "bg-red-500",
     bar: "bg-red-500",
@@ -13,7 +13,7 @@ const SEVERITY_CONFIG = {
   },
   medium: {
     label: "MEDIUM",
-    icon: <AlertCircle className="w-3 h-3" />,
+    icon: <AlertCircle className="w-3 h-3"  strokeWidth={1.5} />,
     badge: "bg-amber-100 text-amber-700 border-amber-200",
     dot: "bg-amber-500",
     bar: "bg-amber-400",
@@ -21,7 +21,7 @@ const SEVERITY_CONFIG = {
   },
   low: {
     label: "LOW",
-    icon: <Minus className="w-3 h-3" />,
+    icon: <Minus className="w-3 h-3"  strokeWidth={1.5} />,
     badge: "bg-zinc-100 text-zinc-600 border-zinc-200",
     dot: "bg-zinc-400",
     bar: "bg-zinc-300",
@@ -72,11 +72,21 @@ export function PainPointList({ painPoints }: { painPoints: PainPoint[] }) {
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 mt-2 text-[11.5px] text-blue-600 hover:text-blue-800 hover:underline transition-colors"
                   >
-                    <ExternalLink className="w-3 h-3 shrink-0" />
+                    <ExternalLink className="w-3 h-3 shrink-0"  strokeWidth={1.5} />
                     <span className="truncate max-w-[280px]">
                       {pp.sourceTitle || pp.sourceUrl}
                     </span>
                   </a>
+                )}
+
+                {/* Match angle — sales framing */}
+                {pp.matchAngle && (
+                  <div className="mt-3 flex items-start gap-2 bg-brand-light/60 border border-brand/20 rounded-lg px-3 py-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-brand mt-0.5 shrink-0 leading-none">
+                      Approach
+                    </span>
+                    <p className="text-[12px] text-brand/80 leading-snug">{pp.matchAngle}</p>
+                  </div>
                 )}
               </div>
             </div>

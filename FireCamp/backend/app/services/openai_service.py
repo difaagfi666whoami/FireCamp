@@ -76,11 +76,10 @@ async def distill_lane_a(
     Raises:
         RuntimeError jika API call gagal.
     """
+    # [OVERRIDE INFO]: Selalu eksekusi prompt mendalam meskipun mode = free
     depth_instruction = (
         "Sintesis mendalam: sertakan angka spesifik, persentase, dan indikator "
         "finansial jika ditemukan dalam data."
-        if mode == ReconMode.pro
-        else "Sintesis umum: ringkasan solid tanpa perlu detail angka spesifik."
     )
 
     results_text = "\n\n---\n\n".join(
@@ -250,22 +249,27 @@ async def synthesize_profile(
     extracted_news: list[dict[str, Any]] | None = None,
     evidence_list: list[dict[str, str]] | None = None,
     pain_signals_from_news: list[dict[str, Any]] | None = None,
+    deep_site_pages: dict[str, Any] | None = None,
+    company_enrichment: dict[str, Any] | None = None,
+    intent_signals: list[dict[str, Any]] | None = None,
 ) -> tuple[CompanyProfile, int]:
     """
-    Final synthesis: gabungkan Lane A + Lane B → CompanyProfile JSON
+    Final synthesis: gabungkan output 7-Lane → CompanyProfile JSON
     ter-validasi Pydantic menggunakan OpenAI Structured Output.
 
     Model: gpt-4o dengan beta.chat.completions.parse(response_format=CompanyProfile).
     OpenAI menjamin output JSON selalu sesuai schema — tidak perlu regex/try-parse manual.
 
     Args:
-        lane_a_summary:  Output distill_lane_a().
-        scored_contacts: Output score_contacts() dari Lane B.
-        company_url:     URL target (diinjeksikan ke output).
-        mode:            ReconMode — untuk label reconMode di profil.
-        extracted_news:  Output Lane C — array berita siap pakai (opsional).
-        evidence_list:   List bukti fakta dari riset (opsional).
-        pain_signals_from_news: Sinyal pain bisnis dari berita (opsional).
+        lane_a_summary:        Output distill_lane_a() (Lane A).
+        scored_contacts:       Output score_and_enrich_contacts() (Lane B).
+        company_url:           URL target (diinjeksikan ke output).
+        mode:                  ReconMode — untuk label reconMode di profil.
+        extracted_news:        Berita gabungan (Lane C + D + E) siap pakai.
+        evidence_list:         List bukti fakta dari riset (Lane A).
+        pain_signals_from_news:Sinyal pain bisnis dari berita (Lane C).
+        deep_site_pages:       Output Lane F — about/products/clients/careers/team raw text.
+        company_enrichment:    Output Lane G — Hunter ground truth metadata.
 
     Returns:
         CompanyProfile ter-validasi.
@@ -279,119 +283,283 @@ async def synthesize_profile(
     news_json = json.dumps(extracted_news or [], ensure_ascii=False)
     evidence_json = json.dumps(evidence_list or [], ensure_ascii=False)
     news_signals_json = json.dumps(pain_signals_from_news or [], ensure_ascii=False)
+    site_pages_json = json.dumps(deep_site_pages or {}, ensure_ascii=False)
+    enrichment_json = json.dumps(company_enrichment or {}, ensure_ascii=False)
     
-    depth_note = (
-        "Mode Pro: pain points WAJIB mengandung angka/persentase spesifik. "
-        "Sertakan 4-5 pain points. deepInsights harus 5-8 item sangat mendalam."
-        if mode == ReconMode.pro
-        else "Mode Free: 3-4 pain points. deepInsights minimal 5 item terstruktur."
-    )
-
     system_prompt = (
-        "Anda adalah Senior Business Intelligence Analyst & Strategic Consultant. "
-        "Ubah data mentah riset menjadi laporan analitis-subjektif. "
-        "Berikan 'Expert Voice' yang tajam dan berwibawa. "
-        "JANGAN gunakan bahasa deskriptif datar. "
-        "Gunakan format poin singkat, bold kata kunci penting, dan fokus pada efektivitas operasional serta posisi kompetitif. "
-        "Semua teks dalam Bahasa Indonesia. "
-        f"{depth_note} "
-        "\n\n=== ATURAN WAJIB ===\n\n"
+        # ════════════════════════════════════════════════════════════════
+        # IDENTITAS & MISI
+        # ════════════════════════════════════════════════════════════════
+        "Kamu adalah intelligence analyst senior untuk tim sales B2B elite. "
+        "MISI UTAMA: temukan informasi yang memungkinkan DM untuk approach "
+        "perusahaan ini dengan akurasi tinggi — siapa yang dihubungi, "
+        "apa pain-nya, dan kenapa timing-nya sekarang. "
+        "Semua teks output dalam Bahasa Indonesia. "
+        "\n\n"
 
-        "1. STRATEGIC REPORT (field 'strategicReport') — WAJIB DIISI:\n"
-        "   Ini adalah laporan intelijen utama bergaya konsultan. Isi SEMUA sub-field berikut:\n"
-        "   a) 'strategicTitle': Judul tajam 1 baris yang menggambarkan MASALAH INTI + PELUANG perusahaan.\n"
-        "      Format: '[Nama Perusahaan]: [Masalah Inti] di Tengah [Peluang/Konteks]'\n"
-        "      Contoh: 'PT Maju Bersama: Bottleneck Digitalisasi di Tengah Ekspansi Ritel yang Agresif'\n"
-        "      JANGAN gunakan Markdown di field ini — plain text saja.\n"
-        "   b) 'executiveInsight': 2-3 kalimat SINTESIS STRATEGIS dengan expert voice. "
-        "      Ini adalah 'verdict' analis senior — tajam, berwibawa, langsung ke inti permasalahan bisnis. "
-        "      JANGAN gunakan Markdown di field ini — plain text saja.\n"
-        "   c) 'internalCapabilities': WAJIB gunakan format Markdown berikut:\n"
-        "      - Mulai dengan 1 kalimat pembuka singkat (plain text, tanpa heading).\n"
-        "      - Gunakan ## untuk sub-topik utama (contoh: ## Produk & Layanan, ## Infrastruktur Teknologi, ## Skala Operasional).\n"
-        "      - Di bawah setiap ## heading, gunakan bullet points (- item) untuk fakta spesifik.\n"
-        "      - Gunakan **bold** untuk kata kunci penting di dalam bullet.\n"
-        "      - Jika ada URL sumber di evidence_list yang mendukung fakta tersebut, tambahkan sitasi inline di akhir bullet: [Sumber](url).\n"
-        "      - JANGAN tulis sebagai satu paragraf panjang. HARUS ada heading + bullets.\n"
-        "   d) 'marketDynamics': WAJIB gunakan format Markdown berikut:\n"
-        "      - Mulai dengan 1 kalimat pembuka singkat (plain text).\n"
-        "      - Gunakan ## untuk sub-topik (contoh: ## Lanskap Kompetitif, ## Peluang Pasar, ## Tekanan & Risiko).\n"
-        "      - Di bawah setiap ## heading, gunakan bullet points (- item) untuk insight spesifik.\n"
-        "      - Gunakan **bold** untuk nama kompetitor, tren penting, atau angka kunci.\n"
-        "      - Jika ada URL sumber di evidence_list yang mendukung fakta tersebut, tambahkan sitasi inline di akhir bullet: [Sumber](url).\n"
-        "      - JANGAN tulis sebagai satu paragraf panjang. HARUS ada heading + bullets.\n"
-        "   e) 'strategicRoadmap': Array string berisi 3-5 PRIORITAS STRATEGIS actionable (rekomendasi konsultan). "
-        "      Setiap item adalah 1 kalimat singkat berformat: 'Prioritaskan [aksi] untuk [outcome bisnis]'. "
-        "      Ini adalah array — JANGAN gunakan Markdown, cukup plain text per item.\n\n"
+        # ════════════════════════════════════════════════════════════════
+        # ANTI-HALLUCINATION — BACA INI PERTAMA, PATUHI SETIAP SAAT
+        # ════════════════════════════════════════════════════════════════
+        "=== LARANGAN KERAS (TIDAK BOLEH DILANGGAR) ===\n"
+        "1. JANGAN tulis angka statistik (jumlah kompetitor, market share, persentase "
+        "   pertumbuhan, jumlah funding) KECUALI angka tersebut TERSURAT dalam data "
+        "   yang diberikan DAN kamu bisa menyebut URL sumbernya.\n"
+        "2. JANGAN gunakan frasa: 'banyak kompetitor', 'persaingan ketat', "
+        "   'pasar yang berkembang', 'permintaan yang meningkat' — "
+        "   ini adalah kalimat generik yang tidak bernilai bagi sales.\n"
+        "3. JANGAN buat kesimpulan tentang kondisi industri secara umum. "
+        "   Fokus HANYA pada kondisi spesifik perusahaan target.\n"
+        "4. JANGAN inference. Jika tidak ada data → tulis string kosong, "
+        "   jangan karang sesuatu yang terdengar masuk akal.\n"
+        "5. URL di sourceUrl dan citations HARUS berasal dari evidence_list "
+        "   yang disediakan. DILARANG membuat URL baru.\n"
+        "6. JANGAN gunakan angka atau statistik dari Tracxn, Crunchbase, "
+        "   CB Insights, ZoomInfo, atau competitor aggregator database "
+        "   untuk membuat klaim tentang kondisi perusahaan target "
+        "   (mis. jumlah kompetitor, market ranking, competitor count). "
+        "   Data dari sumber ini mendeskripsikan isi database mereka, "
+        "   bukan kondisi aktual pasar atau perusahaan. "
+        "   Gunakan sumber ini HANYA untuk: tahun berdiri, nama founder, "
+        "   atau deskripsi produk yang dikonfirmasi sumber lain juga.\n"
+        "\n\n"
 
-        "2. DESCRIPTION (field 'description'):\n"
-        "   Tulis 5-8 kalimat PANJANG yang mencakup: identitas perusahaan, model bisnis utama, "
-        "   ekosistem klien/partner, positioning strategis, dan konteks kompetitif. "
-        "   BUKAN ringkasan generik — harus ada insight yang membuat sales rep mengerti "
-        "   perusahaan ini secara mendalam tanpa perlu riset tambahan.\n\n"
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 1: STRATEGIC REPORT
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 1: STRATEGIC REPORT ===\n\n"
 
-        "3. DEEP INSIGHTS (field 'deepInsights') — MINI REPORT 5 KATEGORI:\n"
-        "   Isi array string ini dengan PERSIS 5 item terstruktur menggunakan prefix label:\n"
-        "   - Item 1: '[IDENTITAS] ...' — Tahun berdiri, HQ, jumlah karyawan, status legal, "
-        "     group/holding, partnership ecosystem, sertifikasi.\n"
-        "   - Item 2: '[PRODUK] ...' — Daftar lengkap produk/layanan, fitur unggulan, "
-        "     pricing model, target segmen per produk.\n"
-        "   - Item 3: '[DIGITAL] ...' — Kehadiran online (website, LinkedIn, Instagram, dll), "
-        "     kualitas konten digital, hiring signals, tech stack jika terlihat.\n"
-        "   - Item 4: '[POSISI PASAR] ...' — Kompetitor langsung, market share estimasi, "
-        "     keunggulan kompetitif (moat), klien besar yang diketahui, validasi pasar.\n"
-        "   - Item 5: '[VULNERABILITIES] ...' — Kelemahan bisnis yang teridentifikasi, "
-        "     ketergantungan, ancaman kompetitor, gap teknologi, area yang bisa di-approach sales.\n"
-        "   Setiap item HARUS berupa 2-4 kalimat lengkap dengan fakta spesifik. "
-        "   JANGAN hanya 1 kalimat pendek.\n\n"
+        "a) strategicTitle:\n"
+        "   Format WAJIB: '[Nama Perusahaan]: [Kondisi Spesifik] di Tengah [Konteks Aktual]'\n"
+        "   HARUS spesifik ke perusahaan ini — tidak boleh berlaku untuk perusahaan lain.\n"
+        "   Contoh BAGUS: 'Indoinfo CyberQuote: Subsidiary 14-Tahun dalam Mode Stagnan "
+        "   di Tengah Pasar Data Bisnis yang Underserved'\n"
+        "   Contoh BURUK: 'Tekanan Kepatuhan di Tengah Dinamika Kompetitif' "
+        "   (terlalu generic, bisa untuk siapapun)\n"
+        "   Plain text, tanpa Markdown.\n\n"
 
-        "4. PAIN POINTS — B2B BUSINESS CHALLENGES ONLY:\n"
-        "   Setiap pain point HARUS RELEVAN untuk sales approach B2B — masalah bisnis yang bisa di-solve oleh vendor/partner.\n"
-        "   DILARANG KERAS: keluhan karyawan internal, rating Glassdoor, budaya kerja, work-life balance, diversity score.\n"
-        "   WAJIB: tantangan operasional, gap teknologi, tekanan regulasi, kebutuhan pertumbuhan, efisiensi proses.\n"
-        "   Setiap pain point HARUS memiliki:\n"
-        "   - 'issue': kalimat lengkap menjelaskan TANTANGAN BISNIS dengan konteks spesifik\n"
-        "   - 'sourceUrl': HARUS diambil dari 'EVIDENCE DENGAN URL CITATION' atau 'PAIN SIGNALS DARI BERITA'.\n"
-        "   - 'sourceTitle': judul halaman/artikel sumber bukti tersebut\n"
-        "   - Jika tidak ada URL yang relevan → sourceUrl = '' dan severity = 'low'.\n"
-        "   - DILARANG mengisi sourceUrl dengan URL yang tidak ada dalam evidence/pain_signals.\n\n"
+        "b) executiveInsight:\n"
+        "   2-3 kalimat verdict analis senior. HARUS menjawab: "
+        "   'Apa yang paling penting yang perlu diketahui DM tentang perusahaan ini?'\n"
+        "   HARUS ada setidaknya SATU fakta spesifik (angka, nama, tanggal, atau kejadian nyata).\n"
+        "   JANGAN mulai dengan 'Perusahaan ini adalah...' atau 'X merupakan...'\n"
+        "   Plain text, tanpa Markdown.\n\n"
 
-        "5. CONTACTS (field 'contacts'):\n"
-        "   SALIN UTUH 1:1 seluruh data kontak dari input Lane B tanpa filter. "
-        "   Field email, location, connections, roleDuration, about HARUS disalin persis.\n\n"
+        "c) internalCapabilities:\n"
+        "   Format Markdown: heading ## + bullets (-).\n"
+        "   Sub-topik: ## Produk & Layanan, ## Infrastruktur & Skala, ## Klien Terverifikasi.\n"
+        "   Setiap bullet: fakta spesifik + [Sumber](url) jika ada di evidence_list.\n"
+        "   JANGAN paragraf panjang. HARUS heading + bullets.\n\n"
 
-        "6. NEWS: field news akan di-inject secara terpisah. Kosongkan array news = [].\n\n"
+        "d) marketDynamics:\n"
+        "   Format Markdown: heading ## + bullets (-).\n"
+        "   Sub-topik HANYA yang ada datanya: ## Posisi Pasar, ## Tekanan Aktual, "
+        "   ## Peluang yang Teridentifikasi.\n"
+        "   JANGAN tulis sub-topik jika tidak ada data spesifik untuk mengisinya.\n"
+        "   JANGAN tulis 'persaingan ketat' atau 'pasar berkembang' tanpa bukti.\n\n"
 
-        "7. LINKEDIN: ambil dari LINKEDIN_STATS input. Konversi karyawan ke integer murni.\n\n"
+        "e) strategicRoadmap:\n"
+        "   Array 3-5 string. Setiap item dimulai dengan 'Prioritaskan'.\n"
+        "   HARUS berdasarkan gap atau masalah spesifik yang ditemukan dalam data.\n"
+        "   JANGAN sarankan sesuatu yang tidak ada buktinya dalam data (contoh: "
+        "   jangan rekomendasikan 'pengembangan ML' jika tidak ada data tentang ini).\n\n"
 
-        "8. Jika data tidak tersedia, gunakan string kosong (jangan null)."
+        "f) situationalSummary — PALING PENTING:\n"
+        "   3-4 kalimat briefing untuk Sales Manager. "
+        "   HARUS menjawab SEMUA dari:\n"
+        "   - Status mode perusahaan: growth / stable / declining / post-funding / restrukturisasi?\n"
+        "   - Bukti konkret status tersebut (dari data hiring, news, atau anomali yang ditemukan)\n"
+        "   - Siapa entry point terbaik dan mengapa\n"
+        "   - Window: HOT (action dalam 14 hari) / WARM (30-60 hari) / OPEN (kapan saja)\n"
+        "   TEMPLATE: '[Perusahaan] saat ini dalam mode [STATUS] — terbukti dari [BUKTI SPESIFIK]. "
+        "   [Fakta tambahan yang relevan]. Entry point terbaik: [JABATAN] karena [ALASAN]. "
+        "   Window outreach: [HOT/WARM/OPEN] — [ALASAN TIMING].'\n"
+        "   Plain text, tanpa Markdown.\n\n"
+
+        "g) citations:\n"
+        "   Array {url, title, source, date}.\n"
+        "   HANYA URL dari evidence_list yang kamu BENAR-BENAR gunakan untuk mendukung klaim.\n"
+        "   Minimal 2, maksimal 6. Jangan duplikasi URL.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 2: DESCRIPTION
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 2: DESCRIPTION ===\n"
+        "5-7 kalimat. Harus mencakup: identitas perusahaan + parent/group, "
+        "model bisnis, klien utama yang terverifikasi, dan posisi di pasar Indonesia. "
+        "Sales rep harus bisa memahami perusahaan ini dari description tanpa riset tambahan.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 3: DEEP INSIGHTS
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 3: DEEP INSIGHTS ===\n"
+        "Array PERSIS 5 string dengan prefix label:\n"
+        "[IDENTITAS]: tahun berdiri, HQ, parent company/group, jumlah karyawan, status subsidiary.\n"
+        "[PRODUK]: daftar produk/layanan konkret, fitur unggulan, target segmen.\n"
+        "[DIGITAL]: kualitas website, social media presence, hiring signals dari job posting, "
+        "tech stack jika terdeteksi, freshness konten (kapan terakhir update?).\n"
+        "[POSISI PASAR]: klien besar terverifikasi, segmen yang dilayani, "
+        "kelebihan kompetitif yang nyata (bukan klaim sendiri).\n"
+        "[VULNERABILITIES]: kelemahan konkret yang teridentifikasi dari data — "
+        "bukan opini, tapi fakta yang bisa dikutip. "
+        "Ini adalah entry point untuk sales pitch.\n"
+        "Setiap item: 2-4 kalimat dengan fakta spesifik. BUKAN 1 kalimat pendek.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 4: PAIN POINTS
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 4: PAIN POINTS ===\n"
+        "4-5 pain points. SETIAP pain point HARUS:\n"
+        "- Bisa dibuktikan dari data (ada URL sumbernya)\n"
+        "- Relevan untuk sales approach B2B (masalah bisnis yang bisa di-solve vendor)\n"
+        "- Spesifik ke perusahaan ini (tidak bisa copy-paste ke perusahaan lain)\n\n"
+        "Field wajib per pain point:\n"
+        "- issue: kalimat lengkap dengan konteks spesifik (bukan generic)\n"
+        "- severity: high jika ada bukti langsung, medium jika inference dari data, "
+        "  low jika tidak ada URL\n"
+        "- sourceUrl: URL dari evidence_list atau pain_signals. "
+        "  KOSONGKAN ('')  jika tidak ada URL yang relevan — JANGAN karang URL.\n"
+        "- sourceTitle: judul artikel/halaman sumber\n"
+        "- matchAngle: 1 kalimat sales framing. TEMPLATE: "
+        "  'Approach dengan [TIPE SOLUSI SPESIFIK] untuk [OUTCOME YANG MEREKA BUTUHKAN].'\n"
+        "  CONTOH BAGUS: 'Approach dengan audit digital presence untuk membantu mereka "
+        "  mendokumentasikan case study enterprise yang sudah ada.'\n"
+        "  CONTOH BURUK: 'Approach dengan produk baru untuk meningkatkan daya saing.' "
+        "  (terlalu generic)\n\n"
+        "DILARANG: keluhan karyawan, rating Glassdoor, budaya kerja.\n"
+        "DILARANG: pain point yang sama sekali tidak ada buktinya.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 5: ANOMALY DETECTION — KRITIS
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 5: ANOMALY DETECTION (field 'anomalies') ===\n\n"
+        "Ini adalah bagian yang PALING MEMBEDAKAN output kita dari tools lain. "
+        "AI biasa hanya mendeskripsikan — kamu harus menemukan yang tidak normal.\n\n"
+        "WAJIB cek 6 trigger anomali berikut secara aktif:\n\n"
+        "TRIGGER 1 — DATA INCONSISTENCY:\n"
+        "  Apakah ada angka/fakta yang berbeda antara dua sumber berbeda tentang "
+        "  perusahaan yang sama? (contoh: homepage vs parent site, LinkedIn vs Hunter)\n"
+        "  Jika ya → tulis anomali dengan kedua evidence.\n\n"
+        "TRIGGER 2 — HIRING FREEZE SIGNAL:\n"
+        "  Apakah perusahaan punya 50+ karyawan tapi hiring sangat sedikit atau nol? "
+        "  Cek data Lane D (hiring signals). Jika ada mismatch → tulis anomali.\n\n"
+        "TRIGGER 3 — BROKEN DIGITAL PRESENCE:\n"
+        "  Apakah halaman penting website (about, product, services, team) tidak bisa diakses "
+        "  atau kosong? Data ini ada di deep_site_pages (Lane F). "
+        "  Jika halaman kritis kosong/404 → tulis anomali.\n\n"
+        "TRIGGER 4 — CREDIBILITY GAP:\n"
+        "  Apakah perusahaan klaim punya klien besar tapi tidak ada satu pun case study, "
+        "  testimonial, atau dokumentasi publik? "
+        "  Jika klien enterprise ada tapi zero proof → tulis anomali.\n\n"
+        "TRIGGER 5 — CONTENT FRESHNESS GAP:\n"
+        "  Apakah blog, press release, atau konten website terakhir diupdate lebih dari "
+        "  6 bulan lalu? Atau tidak ada sama sekali? "
+        "  Ini sinyal digital presence yang stagnan → tulis anomali.\n\n"
+        "TRIGGER 6 — SCALE VS ACTIVITY MISMATCH:\n"
+        "  Apakah skala yang diklaim (karyawan, klien, tahun berdiri) tidak konsisten "
+        "  dengan aktivitas yang terdeteksi (followers, hiring, news coverage)? "
+        "  Jika mismatch signifikan → tulis anomali.\n\n"
+        "FORMAT per anomali:\n"
+        "- title: nama anomali singkat (max 8 kata)\n"
+        "- observation: apa yang ditemukan, dengan fakta spesifik dari data\n"
+        "- implication: apa artinya untuk sales approach\n"
+        "- evidenceUrl: URL sumber dari evidence_list (kosongkan jika tidak ada)\n\n"
+        "PENTING: Jika setelah cek 6 trigger di atas tidak ada anomali yang bisa dibuktikan "
+        "dari data yang tersedia → isi anomalies dengan array kosong [].\n"
+        "JANGAN karang anomali yang tidak ada buktinya.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
+        # ATURAN 6-11: CONTACTS, NEWS, LINKEDIN, METADATA, SITE PAGES
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 6: CONTACTS ===\n"
+        "Salin UTUH 1:1 seluruh data kontak dari input Lane B tanpa filter atau modifikasi. "
+        "Field email, location, connections, roleDuration, about HARUS disalin persis.\n\n"
+
+        "=== ATURAN 7: NEWS & INTENT SIGNALS ===\n"
+        "Field news = [] dan intentSignals = []. Keduanya akan di-inject secara deterministik.\n\n"
+
+        "=== ATURAN 8: LINKEDIN ===\n"
+        "Ambil dari LINKEDIN_STATS. Konversi karyawan ke integer murni.\n\n"
+
+        "=== ATURAN 9: METADATA (Lane G — Hunter) ===\n"
+        "COMPANY_ENRICHMENT adalah ground truth. Prioritaskan untuk: "
+        "name, industry, size, founded, hq, linkedin. "
+        "Selipkan technologies ke deepInsights [DIGITAL].\n\n"
+
+        "=== ATURAN 10: DEEP SITE PAGES (Lane F) ===\n"
+        "about → description dan [IDENTITAS]. "
+        "products → [PRODUK] dan internalCapabilities. "
+        "clients → [POSISI PASAR] (social proof). "
+        "careers → [DIGITAL] (hiring signals). "
+        "team → [IDENTITAS] (struktur organisasi). "
+        "Jika field kosong ('') → abaikan.\n\n"
+
+        "=== ATURAN 11 ===\n"
+        "Jika data tidak tersedia, gunakan string kosong ''. JANGAN null."
     )
     user_prompt = (
-        f"URL perusahaan: {company_url}\n\n"
-        f"=== RINGKASAN RISET (Lane A) ===\n{lane_a_summary}\n\n"
-        f"=== EVIDENCE DENGAN URL CITATION (Lane A) ===\n"
-        f"Ini adalah fakta DENGAN URL sumber. GUNAKAN URL ini untuk mengisi sourceUrl di painPoints.\n"
+        f"URL perusahaan target: {company_url}\n\n"
+
+        "=== DATA RISET LANE A (Company Profiling) ===\n"
+        f"{lane_a_summary}\n\n"
+
+        "=== EVIDENCE DENGAN URL CITATION ===\n"
+        "PENTING: Ini adalah fakta dengan URL terverifikasi. "
+        "GUNAKAN URL dari sini untuk mengisi sourceUrl di painPoints dan citations. "
+        "JANGAN gunakan URL yang tidak ada di sini.\n"
         f"{evidence_json}\n\n"
-        f"=== KONTAK PIC (Lane B) ===\n{contacts_json}\n\n"
-        f"=== PAIN SIGNALS DARI BERITA (Lane C) ===\n"
-        f"Ini adalah implikasi bisnis yang diekstrak dari berita. Gunakan untuk memperkuat painPoints.\n"
+
+        "=== KONTAK PIC (Lane B) ===\n"
+        "Salin 1:1 ke field contacts tanpa modifikasi.\n"
+        f"{contacts_json}\n\n"
+
+        "=== PAIN SIGNALS DARI BERITA (Lane C) ===\n"
+        "Implikasi bisnis dari berita. Gunakan untuk memperkuat painPoints.\n"
         f"{news_signals_json}\n\n"
-        f"=== [BERITA_LANE_C] (untuk konteks saja — akan di-inject ke news secara terpisah) ===\n{news_json}\n\n"
-        "Sintesis seluruh data di atas menjadi profil perusahaan lengkap.\n\n"
-        "INGAT format deepInsights:\n"
-        "- Item 1 harus dimulai dengan '[IDENTITAS] ...'\n"
-        "- Item 2 harus dimulai dengan '[PRODUK] ...'\n"
-        "- Item 3 harus dimulai dengan '[DIGITAL] ...'\n"
-        "- Item 4 harus dimulai dengan '[POSISI PASAR] ...'\n"
-        "- Item 5 harus dimulai dengan '[VULNERABILITIES] ...'\n\n"
-        "INGAT format strategicReport — WAJIB ISI SEMUA SUB-FIELD:\n"
-        "- strategicTitle: judul 1 baris tajam (masalah inti + peluang)\n"
-        "- executiveInsight: 2-3 kalimat verdict analis senior\n"
-        "- internalCapabilities: narasi kapabilitas internal (produk, SDM, skala)\n"
-        "- marketDynamics: narasi dinamika pasar & posisi kompetitif\n"
-        "- strategicRoadmap: array 3-5 prioritas actionable ('Prioritaskan ...')\n\n"
-        "PENTING untuk field contacts:\n"
-        "Salin SEMUA field dari setiap kontak secara verbatim."
+
+        "=== BERITA GABUNGAN (Lane C+D+E — context only) ===\n"
+        f"{news_json}\n\n"
+
+        "=== DEEP SITE PAGES (Lane F) ===\n"
+        "Konten halaman website: about / products / clients / careers / team.\n"
+        "PERHATIKAN: jika halaman ini kosong atau sangat pendek → ini adalah ANOMALI "
+        "(Trigger 3: Broken Digital Presence). Catat dan masukkan ke anomalies.\n"
+        f"{site_pages_json}\n\n"
+
+        "=== COMPANY ENRICHMENT (Lane G — Hunter) ===\n"
+        "Ground truth metadata. Prioritaskan untuk name/industry/size/founded/hq/linkedin.\n"
+        f"{enrichment_json}\n\n"
+
+        "─────────────────────────────────────────────────────────\n"
+        "SEBELUM MENULIS OUTPUT, lakukan 6 ANOMALY CHECKS ini secara eksplisit:\n\n"
+        "CHECK 1: Apakah ada angka/fakta berbeda antara dua sumber yang berbeda?\n"
+        "CHECK 2: Apakah ukuran perusahaan tidak sesuai dengan aktivitas hiring?\n"
+        "CHECK 3: Apakah halaman website kritis (about/product/team) kosong atau tidak dapat diakses?\n"
+        "CHECK 4: Apakah ada klaim klien besar tanpa case study atau testimonial publik?\n"
+        "CHECK 5: Apakah konten website terakhir diupdate lebih dari 6 bulan lalu?\n"
+        "CHECK 6: Apakah skala perusahaan tidak konsisten dengan aktivitas yang terdeteksi?\n\n"
+        "Untuk setiap check yang hasilnya YA dan ada bukti dari data → "
+        "masukkan ke field anomalies.\n"
+        "─────────────────────────────────────────────────────────\n\n"
+
+        "Sekarang buat LAPORAN INTELIJEN SALES (bukan profil perusahaan) berdasarkan "
+        "seluruh data di atas.\n\n"
+
+        "PANDUAN PENGISIAN FIELD UTAMA:\n"
+        "deepInsights:\n"
+        "- Item 1: '[IDENTITAS] ...'\n"
+        "- Item 2: '[PRODUK] ...'\n"
+        "- Item 3: '[DIGITAL] ...'\n"
+        "- Item 4: '[POSISI PASAR] ...'\n"
+        "- Item 5: '[VULNERABILITIES] ...'\n\n"
+        "strategicReport — ISI SEMUA SUB-FIELD:\n"
+        "- strategicTitle: kondisi spesifik perusahaan ini (bukan generic)\n"
+        "- executiveInsight: verdict 2-3 kalimat dengan minimal 1 fakta spesifik\n"
+        "- internalCapabilities: Markdown heading + bullets + citations inline\n"
+        "- marketDynamics: Markdown heading + bullets (JANGAN angka tanpa bukti)\n"
+        "- strategicRoadmap: array 3-5 item dimulai 'Prioritaskan'\n"
+        "- situationalSummary: [STATUS] + [BUKTI] + [ENTRY POINT] + [WINDOW]\n"
+        "- citations: array URL dari evidence_list yang benar-benar dipakai\n\n"
+        "contacts: salin SEMUA field dari Lane B verbatim."
     )
 
     client = _get_client()
@@ -405,7 +573,7 @@ async def synthesize_profile(
         # response_format dan mengembalikan .parsed yang sudah ter-validasi.
         response = await client.beta.chat.completions.parse(
             model=MODEL_MAIN,
-            max_tokens=6000,
+            max_tokens=8000,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user",   "content": user_prompt},
@@ -439,15 +607,37 @@ async def synthesize_profile(
                         source=n.get("source", ""),
                         summary=n.get("summary", ""),
                         url=n.get("url", ""),
+                        signal_type=n.get("signal_type") or None,
                     ))
                 except Exception:
                     pass  # skip malformed news item
             if injected_news:
                 object.__setattr__(profile, "news", injected_news)
                 logger.info(
-                    "[openai] synthesize_profile | injected %d news from Lane C",
+                    "[openai] synthesize_profile | injected %d news (Lane C+D+E)",
                     len(injected_news),
                 )
+
+        if intent_signals:
+            from app.models.schemas import IntentSignal
+            injected_intent: list[IntentSignal] = []
+            for i_sig in intent_signals:
+                try:
+                    injected_intent.append(IntentSignal(
+                        title=          i_sig.get("title", ""),
+                        date=           i_sig.get("date", ""),
+                        source=         i_sig.get("source", ""),
+                        summary=        i_sig.get("summary", ""),
+                        url=            i_sig.get("url", ""),
+                        signal_type=    i_sig.get("signal_type") or "signal",
+                        verifiedAmount= i_sig.get("verifiedAmount"),
+                        verifiedDate=   i_sig.get("verifiedDate"),
+                    ))
+                except Exception:
+                    pass
+            if injected_intent:
+                object.__setattr__(profile, "intentSignals", injected_intent)
+                logger.info("[openai] synthesize_profile | injected %d intentSignals", len(injected_intent))
 
         tokens_used = response.usage.total_tokens if response.usage else 0
         logger.info(
@@ -463,6 +653,132 @@ async def synthesize_profile(
         raise RuntimeError(
             f"Gagal mensintesis profil perusahaan (OpenAI): {exc}"
         ) from exc
+
+
+# ─── score_and_enrich_contacts (Hybrid: AI scoring + Hunter REST) ────────────
+
+def _normalize_name(name: str) -> str:
+    """Lowercase + strip non-alphanumeric untuk fuzzy match."""
+    import re as _re
+    return _re.sub(r"[^a-z0-9]", "", name.lower())
+
+
+async def score_and_enrich_contacts(
+    contacts_raw: list[dict[str, Any]],
+    company_context: str,
+    domain: str,
+    *,
+    company_name: str = "",
+) -> list[dict[str, Any]]:
+    """
+    Hybrid email enrichment pipeline:
+      Step 1  Score semua kontak via OpenAI (cheap, deterministic).
+      Step 2  Bulk Hunter domain_search (1 credit, ambil semua email domain).
+      Step 3  Match kontak dengan domain results berdasarkan nama (no extra credit).
+      Step 4  Untuk kontak yang belum ada match, fallback Hunter email_finder per kontak.
+
+    Strategy ini lebih reliable & efisien dari MCP karena:
+      - Predictable: kita kontrol setiap call ke Hunter
+      - Cheap: 1 domain_search bisa cover semua kontak relevan
+      - Observable: setiap step di-log
+      - Resilient: graceful fallback per layer
+
+    Args:
+        contacts_raw:    List kontak mentah dari Serper.
+        company_context: Deskripsi singkat perusahaan.
+        domain:          Domain perusahaan (e.g. "indoinfo.co.id").
+        company_name:    Nama perusahaan untuk validasi relevansi.
+
+    Returns:
+        List kontak yang sudah di-score dan email-enriched (semua kontak, score 0-100).
+    """
+    if not contacts_raw:
+        return []
+
+    # ── Step 1: AI Scoring ───────────────────────────────────────────────────
+    scored = await score_contacts(contacts_raw, company_context, company_name=company_name)
+
+    # ── Step 2 & 3 & 4: Hunter enrichment hanya jika ada kunci ──────────────
+    if not settings.HUNTER_API_KEY:
+        logger.warning("[hybrid] HUNTER_API_KEY tidak ada — skip enrichment")
+        return scored
+
+    # Hanya enrich kontak yang lulus filter score (>= 55) supaya hemat credit
+    qualified = [c for c in scored if c.get("prospectScore", 0) >= 55]
+    if not qualified:
+        logger.info("[hybrid] tidak ada kontak qualified (score >= 55) — skip Hunter")
+        return scored
+
+    logger.info(
+        "[hybrid] START enrichment | qualified=%d/%d domain=%s",
+        len(qualified), len(scored), domain,
+    )
+
+    # ── Step 2: Bulk domain_search (1 credit) ────────────────────────────────
+    from app.services.external_apis import hunter_domain_search, find_email_hunter
+    domain_emails = await hunter_domain_search(domain, limit=50)
+
+    # Build lookup map: normalized_full_name → email_record
+    domain_map: dict[str, dict[str, Any]] = {}
+    for rec in domain_emails:
+        first = (rec.get("first_name") or "").strip()
+        last  = (rec.get("last_name") or "").strip()
+        if not first and not last:
+            continue
+        full_norm = _normalize_name(f"{first} {last}")
+        if full_norm:
+            domain_map[full_norm] = rec
+            # Juga simpan first-only sebagai fallback
+            if first:
+                domain_map.setdefault(_normalize_name(first), rec)
+
+    matched_via_domain = 0
+    needs_finder: list[dict[str, Any]] = []
+
+    # ── Step 3: Match by name dari domain_search ─────────────────────────────
+    for c in qualified:
+        contact_norm = _normalize_name(c.get("name", ""))
+        if not contact_norm:
+            continue
+        # Try exact full-name match dulu, lalu first-name
+        rec = domain_map.get(contact_norm)
+        if not rec:
+            first_only = contact_norm[:6]  # heuristic prefix match
+            for key, val in domain_map.items():
+                if key.startswith(first_only) and len(key) >= 4:
+                    rec = val
+                    break
+        if rec and rec.get("value"):
+            c["email"] = rec["value"]
+            matched_via_domain += 1
+        else:
+            needs_finder.append(c)
+
+    logger.info(
+        "[hybrid] domain_search match | matched=%d need_finder=%d",
+        matched_via_domain, len(needs_finder),
+    )
+
+    # ── Step 4: Per-contact email_finder fallback ────────────────────────────
+    if needs_finder:
+        async def _enrich(contact: dict[str, Any]) -> None:
+            parts = contact.get("name", "").split(maxsplit=1)
+            first = parts[0] if parts else ""
+            last  = parts[1] if len(parts) > 1 else ""
+            if first and last:
+                email = await find_email_hunter(first, last, domain)
+                if email:
+                    contact["email"] = email
+
+        import asyncio as _asyncio
+        await _asyncio.gather(*[_enrich(c) for c in needs_finder])
+
+    total_emails = sum(1 for c in scored if c.get("email"))
+    logger.info(
+        "[hybrid] DONE | scored=%d emails_found=%d (domain=%d, finder=%d)",
+        len(scored), total_emails, matched_via_domain, total_emails - matched_via_domain,
+    )
+    return scored
 
 
 # ─── run_matching ─────────────────────────────────────────────────────────────

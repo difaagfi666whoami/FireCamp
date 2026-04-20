@@ -20,7 +20,7 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
         className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
       >
         <CheckIcon
-        />
+         strokeWidth={1.5} />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   )

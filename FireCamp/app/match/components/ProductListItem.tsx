@@ -44,7 +44,7 @@ export function ProductListItem({ product, onEdit, onDelete }: ProductListItemPr
           onClick={() => onEdit(product)}
           title="Edit produk"
         >
-          <Pencil className="w-3.5 h-3.5" />
+          <Pencil className="w-3.5 h-3.5"  strokeWidth={1.5} />
         </Button>
         <Button
           variant="ghost"
@@ -53,7 +53,7 @@ export function ProductListItem({ product, onEdit, onDelete }: ProductListItemPr
           onClick={() => onDelete(product)}
           title="Hapus produk"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Trash2 className="w-3.5 h-3.5"  strokeWidth={1.5} />
         </Button>
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Search, AlertTriangle, X, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { generateReconProfile, saveCompanyProfile } from "@/lib/api/recon"
+import { generateReconProfile, saveCompanyProfile, runProRecon } from "@/lib/api/recon"
 import { session } from "@/lib/session"
 import { mockData } from "@/lib/mock/mockdata"
 import { ReconForm } from "./components/ReconForm"
@@ -13,10 +13,21 @@ import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { cn } from "@/lib/utils"
 
 const LOADING_STEPS = [
-  "Mengambil data profil dari LinkedIn...",
-  "Menganalisis teknologi dan ukuran perusahaan...",
-  "Mencari kontak PIC yang relevan...",
-  "Menyusun pain points & sinyal bisnis..."
+  "Membaca halaman website perusahaan target...",
+  "Mencari berita, lowongan, dan sinyal bisnis...",
+  "Mengidentifikasi kontak PIC dari LinkedIn publik...",
+  "Membaca artikel terpilih secara mendalam...",
+  "Menganalisis Hunter metadata & tech stack...",
+  "Menyusun laporan intelijen sales..."
+]
+
+const PRO_LOADING_STEPS = [
+  "Mengirim permintaan ke Tavily Research...",
+  "Tavily menganalisis target perusahaan...",
+  "Mengumpulkan data dari berbagai sumber...",
+  "Memverifikasi dan menyilangkan informasi...",
+  "Menyusun laporan komprehensif...",
+  "Laporan hampir selesai..."
 ]
 
 const SESSION_KEY = "campfire_recon_profile"
@@ -29,6 +40,8 @@ export default function ReconPage() {
 
   const [profile, setProfile] = useState<any>(null)  // null = SSR-safe
   const [reconUrl, setReconUrl]   = useState("")
+  const [reconMode, setReconMode] = useState<'free' | 'pro'>('free')
+  const [proQuery, setProQuery]   = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -66,26 +79,30 @@ export default function ReconPage() {
   useEffect(() => {
     if (!isLoading || !reconUrl) return
 
+    const activeSteps = reconMode === 'pro' ? PRO_LOADING_STEPS : LOADING_STEPS
+
     // undefined = belum selesai, null = error, object = sukses
     let resolvedProfile: any = undefined
     let animDone = false
 
     const settle = () => {
       if (!animDone || resolvedProfile === undefined) return
-      if (resolvedProfile === null) {
-        setIsLoading(false)
+      if (resolvedProfile === null) { setIsLoading(false); return }
+      setIsLoading(false)
+      toast.success("Profil berhasil di-generate")
+
+      if (reconMode === 'pro') {
+        router.push(`/recon/${resolvedProfile.id}`)
         return
       }
+
       setProfile(resolvedProfile)
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(resolvedProfile))
-      session.setReconProfile(resolvedProfile)  // untuk dipakai Match & Craft
+      session.setReconProfile(resolvedProfile)
       if (resolvedProfile?.tokens_used && resolvedProfile.tokens_used > 0) {
         session.setReconTokens(resolvedProfile.tokens_used)
       }
       if (!IS_LIVE) session.setCompanyId(mockData.company.id)
-      setIsLoading(false)
-      toast.success("Profil berhasil di-generate")
-      // Auto-save silently di background — dapatkan UUID asli dari Supabase/mock
       setIsAutoSaving(true)
       saveCompanyProfile(resolvedProfile)
         .then(uuid => {
@@ -95,36 +112,35 @@ export default function ReconPage() {
         })
         .catch(e => {
           console.error("[ReconPage] auto-save error:", e instanceof Error ? e.message : e)
-          // Auto-save failed — keep inline view so user can retry manually
           setProfile((prev: any) => prev ? { ...prev } : prev)
         })
-        .finally(() => {
-          setIsAutoSaving(false)
-        })
+        .finally(() => setIsAutoSaving(false))
     }
 
-    // Mulai API call bersamaan dengan animasi
-    generateReconProfile(reconUrl).then(data => {
-      resolvedProfile = data
-      settle()
-    }).catch(e => {
-      toast.error("Gagal generate profil.", { description: e instanceof Error ? e.message : "Error" })
-      resolvedProfile = null
-      settle()
-    })
+    if (reconMode === 'pro') {
+      runProRecon(proQuery || reconUrl)
+        .then(({ id }) => { resolvedProfile = { id }; settle() })
+        .catch(e => {
+          toast.error("Tavily Research gagal.", { description: e instanceof Error ? e.message : "Error" })
+          resolvedProfile = null; settle()
+        })
+    } else {
+      generateReconProfile(reconUrl, reconMode).then(data => {
+        resolvedProfile = data; settle()
+      }).catch(e => {
+        toast.error("Gagal generate profil.", { description: e instanceof Error ? e.message : "Error" })
+        resolvedProfile = null; settle()
+      })
+    }
 
-    // Animasi step-by-step
     const interval = setInterval(() => {
       setCurrentStep(prev => {
-        if (prev >= LOADING_STEPS.length - 1) {
-          clearInterval(interval)
-          animDone = true
-          settle()
-          return prev  // stay at last step while waiting for API
+        if (prev >= activeSteps.length - 1) {
+          clearInterval(interval); animDone = true; settle(); return prev
         }
         return prev + 1
       })
-    }, 1200)
+    }, 6000)
 
     return () => clearInterval(interval)
   }, [isLoading, reconUrl])
@@ -137,8 +153,8 @@ export default function ReconPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl border border-border/60 p-6 w-full max-w-sm mx-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-start gap-3 mb-4">
-              <div className="p-2.5 bg-amber-100 rounded-xl shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              <div className="p-2 border border-amber-500/30 bg-amber-50 shadow-sm rounded-lg shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-600"  strokeWidth={1.5} />
               </div>
               <div>
                 <h3 className="font-bold text-[16px] text-foreground">Generate ulang profil?</h3>
@@ -147,7 +163,7 @@ export default function ReconPage() {
                 </p>
               </div>
               <button onClick={() => setShowConfirm(false)} className="ml-auto p-1 rounded-lg hover:bg-muted text-muted-foreground shrink-0">
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4"  strokeWidth={1.5} />
               </button>
             </div>
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5 text-[12.5px] text-amber-800 font-medium">
@@ -174,53 +190,101 @@ export default function ReconPage() {
           </p>
         </div>
         <Button variant="outline" onClick={() => router.push("/research-library")} className="shadow-sm font-semibold text-[13.5px] rounded-xl">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
           Research Library
         </Button>
       </div>
 
-      {/* URL Input + Action Buttons side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-5">
+      {/* URL Input Section */}
+      <div className="max-w-4xl mx-auto w-full">
         {/* URL Input Card */}
         <div className="bg-white border border-border/60 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3 mb-5">
-            <div className="p-2.5 bg-muted rounded-xl">
-              <Search className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div>
-              <h2 className="font-bold text-[14.5px] text-foreground">Target Company URL</h2>
-              <p className="text-[12.5px] text-muted-foreground">Masukkan URL website atau LinkedIn perusahaan target.</p>
-            </div>
+          {/* Mode Tabs */}
+          <div className="flex items-center gap-1 bg-muted rounded-xl p-1 mb-5 w-fit">
+            <button
+              onClick={() => setReconMode('free')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all",
+                reconMode === 'free'
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Free
+            </button>
+            <button
+              onClick={() => setReconMode('pro')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all",
+                reconMode === 'pro'
+                  ? "bg-brand text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Pro
+            </button>
           </div>
-          <ReconForm onGenerate={handleGenerate} isLoading={isLoading} />
 
-          {isLoading && (
+          {reconMode === 'free' ? (
+            <>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 border border-border/50 shadow-sm rounded-lg text-muted-foreground/80">
+                  <Search className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[14.5px] text-foreground">Target Company URL</h2>
+                  <p className="text-[12.5px] text-muted-foreground">Masukkan URL website yang ditarget.</p>
+                </div>
+              </div>
+              <ReconForm onGenerate={handleGenerate} isLoading={isLoading || isAutoSaving} />
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="p-2 border border-brand/30 bg-brand/5 shadow-sm rounded-lg text-brand/90">
+                  <Search className="w-4 h-4 text-brand"  strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[14.5px] text-foreground">Research Query</h2>
+                  <p className="text-[12.5px] text-muted-foreground">Mendukung input URL saja, atau URL dengan arahan riset spesifik.</p>
+                </div>
+              </div>
+              <textarea
+                value={proQuery}
+                onChange={e => setProQuery(e.target.value)}
+                disabled={isLoading || isAutoSaving}
+                rows={5}
+                placeholder={"Contoh input:\nhttps://www.javaplas.com/\n\nAtau dengan arahan riset spesifik:\nhttps://www.javaplas.com/ cari tahu strategi pricing, target audiens, kompetitor utama, dan kontak eksekutif di bidang marketing."}
+                className="w-full resize-y rounded-xl border border-border/60 bg-muted/30 px-4 py-4 text-[13.5px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-50 min-h-[140px] leading-relaxed"
+              />
+              <Button
+                className="mt-4 w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-bold h-11"
+                disabled={isLoading || isAutoSaving || !proQuery.trim()}
+                onClick={() => {
+                  const urlMatch = proQuery.match(/https?:\/\/[^\s]+/)
+                  handleGenerate(urlMatch ? urlMatch[0] : proQuery.trim())
+                }}
+              >
+                {(isLoading || isAutoSaving) ? <Loader2 className="w-4 h-4 animate-spin mr-2"  strokeWidth={1.5} /> : null}
+                {(isLoading || isAutoSaving) ? "Menganalisis..." : "Mulai Pro Research"}
+              </Button>
+            </>
+          )}
+
+          {(isLoading || isAutoSaving) && (
             <div className="mt-8 border-t border-border/40 pt-6">
-              <LoadingSteps steps={LOADING_STEPS} currentStep={currentStep} />
+              <LoadingSteps
+                steps={reconMode === 'pro' ? PRO_LOADING_STEPS : LOADING_STEPS}
+                currentStep={currentStep}
+              />
+              {isAutoSaving && (
+                <div className="mt-6 flex items-center justify-center gap-2 p-3.5 bg-brand/5 border border-brand/20 rounded-xl animate-in slide-in-from-bottom-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand" strokeWidth={1.5} />
+                  <p className="text-[13.5px] font-semibold text-brand">Menyimpan profil & automasi redirect...</p>
+                </div>
+              )}
             </div>
           )}
-        </div>
-
-        {/* Status Panel */}
-        <div className={cn(
-          "bg-white border border-border/60 rounded-2xl p-6 shadow-sm flex flex-col gap-3 justify-center transition-opacity duration-300",
-          !isLoading ? "opacity-40 pointer-events-none" : "opacity-100"
-        )}>
-          <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider mb-1">Status</p>
-          <div className="flex flex-col items-center justify-center gap-3 py-4 text-center">
-            {isAutoSaving ? (
-              <>
-                <Loader2 className="w-6 h-6 animate-spin text-brand" />
-                <p className="text-[13px] font-semibold text-foreground">Menyimpan profil...</p>
-                <p className="text-[12px] text-muted-foreground">Kamu akan diarahkan otomatis ke halaman review.</p>
-              </>
-            ) : (
-              <>
-                <Search className="w-6 h-6 text-muted-foreground" />
-                <p className="text-[13px] text-muted-foreground">Generate profil untuk memulai.</p>
-              </>
-            )}
-          </div>
         </div>
       </div>
 

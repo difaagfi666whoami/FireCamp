@@ -60,10 +60,6 @@ class QuerySet(BaseModel):
                     "JANGAN glassdoor/review karyawan. Contoh: 'site:g2.com \"{company}\"', '\"{company}\" client review'",
         max_length=2,
     )
-    tech_stack_queries: list[str] = Field(
-        description="1-2 query untuk tech stack: job postings, builtwith, stackshare",
-        max_length=2,
-    )
     regulatory_queries: list[str] = Field(
         description="1-2 query regulasi dan compliance yang relevan untuk industri perusahaan",
         max_length=2,
@@ -234,9 +230,8 @@ async def _step2_generate_queries(
         )
         result = response.choices[0].message.parsed
         logger.info(
-            "[lane_a] Step2 OK | rep=%d tech=%d reg=%d comp=%d fin=%d cust=%d",
+            "[lane_a] Step2 OK | rep=%d reg=%d comp=%d fin=%d cust=%d",
             len(result.reputation_queries),
-            len(result.tech_stack_queries),
             len(result.regulatory_queries),
             len(result.competitive_queries),
             len(result.financial_queries),
@@ -247,7 +242,6 @@ async def _step2_generate_queries(
         logger.warning("[lane_a] Step2 generate_queries FAILED | error=%s", exc)
         return QuerySet(
             reputation_queries=[f"'{company_name}' client review testimonial"],
-            tech_stack_queries=[f"'{company_name}' site:linkedin.com/jobs"],
             regulatory_queries=[f"'{company_name}' regulasi compliance"],
             competitive_queries=[f"'{company_name}' vs competitor"],
             financial_queries=[f"'{company_name}' funding revenue"],
@@ -264,7 +258,6 @@ async def _step3_parallel_search(query_set: QuerySet) -> dict[str, list[dict]]:
     """
     angle_queries = {
         "reputation":     query_set.reputation_queries[0] if query_set.reputation_queries else "",
-        "tech_stack":     query_set.tech_stack_queries[0] if query_set.tech_stack_queries else "",
         "regulatory":     query_set.regulatory_queries[0] if query_set.regulatory_queries else "",
         "competitive":    query_set.competitive_queries[0] if query_set.competitive_queries else "",
         "financial":      query_set.financial_queries[0] if query_set.financial_queries else "",
@@ -294,11 +287,78 @@ async def _step3_parallel_search(query_set: QuerySet) -> dict[str, list[dict]]:
 
 
 
+# ─── Step 3.5: Filter top URLs per angle ──────────────────────────────────────
+
+def _step3_5_filter_top_urls(
+    angle_results: dict[str, list[dict]],
+    max_per_angle: int = 2,
+) -> dict[str, list[str]]:
+    """
+    Step 3.5: Filter dan rank URL terbaik dari setiap angle search.
+    Skip social media dan login-wall domains.
+    """
+    SKIP_DOMAINS = [
+        "linkedin.com", "facebook.com", "instagram.com",
+        "twitter.com", "x.com", "tiktok.com",
+    ]
+
+    angle_urls: dict[str, list[str]] = {}
+    for angle, results in angle_results.items():
+        scored: list[tuple[int, str]] = []
+        for r in results:
+            url = (r.get("url") or "").strip()
+            if not url:
+                continue
+            if any(skip in url for skip in SKIP_DOMAINS):
+                continue
+            content_len = len(r.get("content", r.get("raw_content", "")))
+            scored.append((content_len, url))
+        scored.sort(reverse=True)
+        angle_urls[angle] = [u for _, u in scored[:max_per_angle]]
+
+    return angle_urls
+
+
+# ─── Step 3.6: Fetch full article content per angle ────────────────────────────
+
+async def _step3_6_extract_articles(
+    angle_urls: dict[str, list[str]],
+) -> dict[str, list[dict]]:
+    """
+    Step 3.6: Fetch full article content untuk setiap angle secara paralel.
+    """
+    from app.services.external_apis import fetch_and_extract_urls
+
+    async def _fetch_angle(
+        angle: str, urls: list[str]
+    ) -> tuple[str, list[dict]]:
+        if not urls:
+            return angle, []
+        fetched = await fetch_and_extract_urls(urls, max_urls=2)
+        return angle, fetched
+
+    tasks   = [_fetch_angle(a, u) for a, u in angle_urls.items() if u]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    angle_content: dict[str, list[dict]] = {}
+    for result in results:
+        if isinstance(result, Exception):
+            logger.warning("[lane_a] Step3.6 angle fetch error: %s", result)
+            continue
+        angle, pages = result
+        angle_content[angle] = pages
+
+    total = sum(len(p) for p in angle_content.values())
+    logger.info("[lane_a] Step3.6 DONE | total_pages=%d", total)
+    return angle_content
+
+
 # ─── Step 4: Parallel Distillation R1 + R2 ───────────────────────────────────
 
 async def _step4_parallel_distill(
     angle_results: dict[str, list[dict]],
     company_name: str,
+    angle_content: dict[str, list[dict]] | None = None,
 ) -> dict[str, DistilledInsights]:
     """
     Distil semua 6 angle secara paralel menggunakan LLM mini + Structured Output.
@@ -329,7 +389,14 @@ async def _step4_parallel_distill(
                 evidence_facts=[], named_entities=[], pain_signals=[],
                 summary_paragraph=f"Tidak ada data dari {angle_name}."
             )
-        text = _format_results(results, max_items=4)
+        full_pages = (angle_content or {}).get(angle_name, [])
+        if full_pages:
+            text = "\n\n---\n\n".join(
+                f"URL: {p['url']}\nFetched: {p.get('fetched_at', '')}\n\n{p['content'][:3000]}"
+                for p in full_pages
+            )
+        else:
+            text = _format_results(results, max_items=4)
         try:
             response = await client.beta.chat.completions.parse(
                 model=MODEL_MINI,
@@ -531,9 +598,17 @@ async def run_lane_a_advanced(
     # Step 3: Parallel Tavily Search 6 angles
     angle_results = await _step3_parallel_search(query_set)
 
-    # Step 4: Parallel distillation all angles
+    # Step 3.5: Filter top URLs per angle
+    logger.info("[lane_a] Step 3.5 — filtering top URLs per angle")
+    angle_url_map = _step3_5_filter_top_urls(angle_results)
+
+    # Step 3.6: Fetch full article content
+    logger.info("[lane_a] Step 3.6 — fetching full article content")
+    angle_content = await _step3_6_extract_articles(angle_url_map)
+
+    # Step 4: Parallel distillation all angles (with full content)
     final_insights = await _step4_parallel_distill(
-        angle_results, company_name
+        angle_results, company_name, angle_content=angle_content
     )
 
     # Step 5: Deep Targeted Search R3 (pakai entitas dari Step 4)

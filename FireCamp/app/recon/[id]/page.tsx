@@ -15,6 +15,9 @@ import { StrategicSidebar } from "../components/StrategicSidebar"
 import { PainPointList } from "../components/PainPointList"
 import { NewsSection } from "../components/NewsSection"
 import { KeyContacts } from "../components/KeyContacts"
+import { IntentSignalsCard } from "../components/IntentSignalsCard"
+import { AnomalySection } from "../components/AnomalySection"
+import { TavilyReportView } from "../components/TavilyReportView"
 
 export default function SavedReconPage({ params }: { params: { id: string } }) {
   const router = useRouter()
@@ -65,7 +68,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4 text-muted-foreground">
-        <Loader2 className="w-7 h-7 animate-spin" />
+        <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
         <p className="text-[14px] font-medium">Memuat profil perusahaan...</p>
       </div>
     )
@@ -77,7 +80,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
     return (
       <div className="flex flex-col items-center justify-center py-24 px-8">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
-          <AlertCircle className="w-8 h-8 text-red-500" />
+          <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
           <p className="font-bold text-[15px] text-red-800">Gagal memuat profil</p>
           <p className="text-[13px] text-red-700">{error}</p>
           <Button onClick={() => router.push("/research-library")} variant="outline" size="sm" className="mt-1 rounded-xl">
@@ -101,15 +104,15 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
         >
           Research Library
         </span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span className="text-foreground font-semibold">Review Profil</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Match</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Craft</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Polish</span>
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
         <span>Launch</span>
       </div>
 
@@ -132,63 +135,75 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
           onClick={() => router.push("/research-library")}
           className="shadow-sm font-semibold text-[13.5px] rounded-xl"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
           Research Library
         </Button>
       </div>
 
       {/* Content */}
-      <CompanyHeader company={profile} />
+      {profile.reconMode === 'pro' ? (
+        <TavilyReportView
+          report={profile.tavilyReport ?? ""}
+          companyName={profile.name}
+          companyUrl={profile.url}
+        />
+      ) : (
+        <>
+          <CompanyHeader company={profile} />
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-        <div className="md:col-span-8 space-y-5">
-          <StrategicMainContent report={profile.strategicReport} />
-          <PainPointList painPoints={profile.painPoints} />
-        </div>
-        <div className="md:col-span-4 space-y-4">
-          <StrategicSidebar company={profile} />
-          <KeyContacts contacts={profile.contacts} />
-          <NewsSection news={profile.news} />
-        </div>
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div className="md:col-span-8 space-y-5">
+              <StrategicMainContent report={profile.strategicReport} />
+              <AnomalySection anomalies={profile.anomalies} />
+              <PainPointList painPoints={profile.painPoints} />
+            </div>
+            <div className="md:col-span-4 space-y-4">
+              <StrategicSidebar company={profile} />
+              <KeyContacts contacts={profile.contacts} />
+              <IntentSignalsCard signals={profile.intentSignals || []} />
+              <NewsSection news={profile.news} />
+            </div>
+          </div>
 
-      {/* Bottom CTA */}
-      <div className="border-t border-border/40 pt-6">
-        {isPulseDone ? (
-          <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
-            <div>
-              <p className="font-bold text-[15px] text-brand">Campaign sudah berjalan</p>
-              <p className="text-[13px] text-brand/70 mt-0.5">Pantau performa pengiriman email campaign perusahaan ini.</p>
-            </div>
-            <Button onClick={() => router.push("/pulse")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-              <BarChart2 className="w-4 h-4 mr-2" />
-              Lihat Analytics
-            </Button>
+          {/* Bottom CTA */}
+          <div className="border-t border-border/40 pt-6">
+            {isPulseDone ? (
+              <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-brand">Campaign sudah berjalan</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">Pantau performa pengiriman email campaign perusahaan ini.</p>
+                </div>
+                <Button onClick={() => router.push("/pulse")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  <BarChart2 className="w-4 h-4 mr-2"  strokeWidth={1.5} />
+                  Lihat Analytics
+                </Button>
+              </div>
+            ) : isMatchDone ? (
+              <div className="flex items-center justify-between bg-muted/50 border border-border/60 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-foreground">Campaign sudah dimulai</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">Lanjutkan campaign yang sedang berjalan.</p>
+                </div>
+                <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  Lanjutkan Campaign
+                  <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-brand">Profil siap untuk di-match</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">Pilih produk yang paling relevan dengan pain points perusahaan ini.</p>
+                </div>
+                <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  Lanjutkan ke Match
+                  <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
+                </Button>
+              </div>
+            )}
           </div>
-        ) : isMatchDone ? (
-          <div className="flex items-center justify-between bg-muted/50 border border-border/60 rounded-2xl px-6 py-4">
-            <div>
-              <p className="font-bold text-[15px] text-foreground">Campaign sudah dimulai</p>
-              <p className="text-[13px] text-muted-foreground mt-0.5">Lanjutkan campaign yang sedang berjalan.</p>
-            </div>
-            <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-              Lanjutkan Campaign
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
-            <div>
-              <p className="font-bold text-[15px] text-brand">Profil siap untuk di-match</p>
-              <p className="text-[13px] text-brand/70 mt-0.5">Pilih produk yang paling relevan dengan pain points perusahaan ini.</p>
-            </div>
-            <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-              Lanjutkan ke Match
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   )
 }

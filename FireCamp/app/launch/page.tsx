@@ -122,15 +122,15 @@ export default function LaunchPage() {
   const breadcrumb = (
     <div className="flex items-center gap-1.5 text-[12.5px] text-muted-foreground font-medium">
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/research-library")}>Research Library</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => { const id = session.getCompanyId(); if (id) router.push(`/recon/${id}`) }}>Review Profil</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/match")}>Match</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/craft")}>Craft</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="hover:text-foreground cursor-pointer transition-colors" onClick={() => router.push("/polish")}>Polish</span>
-      <ChevronRight className="w-3.5 h-3.5" />
+      <ChevronRight className="w-3.5 h-3.5"  strokeWidth={1.5} />
       <span className="text-foreground font-semibold">Launch</span>
     </div>
   )
@@ -142,7 +142,7 @@ export default function LaunchPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
-          <Loader2 className="w-5 h-5 animate-spin text-brand" />
+          <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
           <p className="text-[14px] font-medium">Memuat data sesi...</p>
         </div>
       </div>
@@ -155,7 +155,7 @@ export default function LaunchPage() {
         {breadcrumb}
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl w-[340px] shadow-sm text-center">
+          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Rocket className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
@@ -197,7 +197,7 @@ export default function LaunchPage() {
             onClick={() => router.push("/polish")}
             className="shadow-sm font-semibold text-[13.5px]"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
             Kembali
           </Button>
           {isActive && (
@@ -206,7 +206,7 @@ export default function LaunchPage() {
               className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]"
             >
               Lihat Pulse
-              <ArrowRight className="w-4 h-4 ml-2" />
+              <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
             </Button>
           )}
         </div>
@@ -244,7 +244,7 @@ export default function LaunchPage() {
         <div className="mt-8 bg-brand/5 border border-brand/20 shadow-sm p-5 pr-6 rounded-2xl flex items-center justify-between z-10 animate-in fade-in duration-500">
           <div className="flex items-center gap-5">
             <div className="w-12 h-12 bg-brand/10 text-brand rounded-full flex items-center justify-center shrink-0 shadow-sm">
-              <Rocket className="w-5 h-5" />
+              <Rocket className="w-5 h-5"  strokeWidth={1.5} />
             </div>
             <div>
               <p className="font-bold text-[16px] text-foreground tracking-tight">Campaign diluncurkan!</p>
@@ -256,7 +256,7 @@ export default function LaunchPage() {
             className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]"
           >
             Buka Pulse
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
           </Button>
         </div>
       )}

@@ -24,7 +24,7 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-start gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0 border border-border/60">
-              <Building2 className="w-5 h-5 text-muted-foreground" />
+              <Building2 className="w-5 h-5 text-muted-foreground"  strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-[15px] text-foreground leading-tight truncate">{company.name}</h3>
@@ -39,7 +39,7 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
               className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
               title="Hapus profil"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4"  strokeWidth={1.5} />
             </button>
           ) : (
             <div className="flex items-center gap-1.5 shrink-0 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
@@ -49,14 +49,14 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
                 className="p-1 rounded text-red-600 hover:bg-red-100 transition-colors"
                 title="Ya, hapus"
               >
-                <Check className="w-3.5 h-3.5" />
+                <Check className="w-3.5 h-3.5"  strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 className="p-1 rounded text-muted-foreground hover:bg-muted transition-colors"
                 title="Batal"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3.5 h-3.5"  strokeWidth={1.5} />
               </button>
             </div>
           )}
@@ -65,15 +65,15 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
         {/* Meta row */}
         <div className="flex flex-wrap items-center gap-3 mb-4 text-[12px] text-muted-foreground">
           <span className="flex items-center gap-1">
-            <MapPin className="w-3 h-3" />
+            <MapPin className="w-3 h-3"  strokeWidth={1.5} />
             {company.hq}
           </span>
           <span className="flex items-center gap-1">
-            <Calendar className="w-3 h-3" />
+            <Calendar className="w-3 h-3"  strokeWidth={1.5} />
             {formatDate(company.savedAt)}
           </span>
           <span className="flex items-center gap-1 font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
-            <AlertTriangle className="w-3 h-3" />
+            <AlertTriangle className="w-3 h-3"  strokeWidth={1.5} />
             {company.painPointsCount} pain points
           </span>
         </div>
@@ -109,7 +109,7 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
               "transition-all duration-150"
             )}
           >
-            <Eye className="w-3.5 h-3.5 mr-1.5" />
+            <Eye className="w-3.5 h-3.5 mr-1.5"  strokeWidth={1.5} />
             Preview
           </Button>
         </Link>

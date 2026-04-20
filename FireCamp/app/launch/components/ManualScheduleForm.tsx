@@ -108,7 +108,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
                 "p-2 rounded-lg shrink-0",
                 isActive ? "bg-emerald-50 text-emerald-600" : "bg-muted text-muted-foreground"
               )}>
-                <Mail className="w-4 h-4" />
+                <Mail className="w-4 h-4"  strokeWidth={1.5} />
               </div>
               <div>
                 <p className="font-bold text-[14px] text-foreground">
@@ -118,7 +118,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
               </div>
               {isActive && (
                 <span className="ml-auto inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-full">
-                  <CheckCircle2 className="w-3 h-3" />
+                  <CheckCircle2 className="w-3 h-3"  strokeWidth={1.5} />
                   Terjadwal
                 </span>
               )}
@@ -178,7 +178,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
             {/* Inline error */}
             {errors[index] && (
               <div className="flex items-center gap-2 mt-3 text-[12px] font-medium text-red-600">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <AlertCircle className="w-3.5 h-3.5 shrink-0"  strokeWidth={1.5} />
                 {errors[index]}
               </div>
             )}
@@ -193,13 +193,13 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
           disabled={hasErrors || !allFilled || isActivating}
           className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarDays className="w-4 h-4 mr-2" />}
+          {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : <CalendarDays className="w-4 h-4 mr-2"  strokeWidth={1.5} />}
           {isActivating ? "Mengaktifkan..." : "Simpan Jadwal & Aktifkan"}
         </Button>
       ) : (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
           <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+            <CheckCircle2 className="w-5 h-5"  strokeWidth={1.5} />
           </div>
           <div>
             <p className="font-bold text-[14.5px] text-emerald-800">Jadwal tersimpan & aktif!</p>
