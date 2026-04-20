@@ -142,11 +142,64 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
 
       {/* Content */}
       {profile.reconMode === 'pro' ? (
-        <TavilyReportView
-          report={profile.tavilyReport ?? ""}
-          companyName={profile.name}
-          companyUrl={profile.url}
-        />
+        <>
+          <TavilyReportView
+            report={profile.tavilyReport ?? ""}
+            companyName={profile.name}
+            companyUrl={profile.url}
+          />
+
+          {/* Extracted structured sections */}
+          {profile.painPoints?.length > 0 && (
+            <PainPointList painPoints={profile.painPoints} />
+          )}
+
+          {profile.contacts?.length > 0 && (
+            <KeyContacts contacts={profile.contacts} />
+          )}
+
+          {profile.news?.length > 0 && (
+            <NewsSection news={profile.news} />
+          )}
+
+          {/* Bottom CTA — same as Free Mode */}
+          <div className="border-t border-border/40 pt-6">
+            {isPulseDone ? (
+              <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-brand">Campaign sudah berjalan</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">Pantau performa pengiriman email campaign perusahaan ini.</p>
+                </div>
+                <Button onClick={() => router.push("/pulse")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  Lihat Analytics
+                </Button>
+              </div>
+            ) : isMatchDone ? (
+              <div className="flex items-center justify-between bg-muted/50 border border-border/60 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-foreground">Campaign sudah dimulai</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">Lanjutkan campaign yang sedang berjalan.</p>
+                </div>
+                <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  Lanjutkan Campaign
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
+                <div>
+                  <p className="font-bold text-[15px] text-brand">Profil siap untuk di-match</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">Pilih produk yang paling relevan dengan pain points perusahaan ini.</p>
+                </div>
+                <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
+                  Lanjutkan ke Match
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <>
           <CompanyHeader company={profile} />

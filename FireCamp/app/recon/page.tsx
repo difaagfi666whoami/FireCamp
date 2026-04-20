@@ -42,6 +42,7 @@ export default function ReconPage() {
   const [reconUrl, setReconUrl]   = useState("")
   const [reconMode, setReconMode] = useState<'free' | 'pro'>('free')
   const [proQuery, setProQuery]   = useState("")
+  const [selectedChips, setSelectedChips] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
@@ -257,12 +258,69 @@ export default function ReconPage() {
                 placeholder={"Contoh input:\nhttps://www.javaplas.com/\n\nAtau dengan arahan riset spesifik:\nhttps://www.javaplas.com/ cari tahu strategi pricing, target audiens, kompetitor utama, dan kontak eksekutif di bidang marketing."}
                 className="w-full resize-y rounded-xl border border-border/60 bg-muted/30 px-4 py-4 text-[13.5px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-50 min-h-[140px] leading-relaxed"
               />
+
+              {/* Topic chips system */}
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Tambahkan topik riset <span className="normal-case font-normal">(opsional)</span>
+                </p>
+
+                {/* Selected chips (active tags with remove) */}
+                {selectedChips.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {selectedChips.map(chip => (
+                      <span
+                        key={chip}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 border border-brand/30 text-[11.5px] text-brand font-semibold"
+                      >
+                        {chip}
+                        <button
+                          disabled={isLoading || isAutoSaving}
+                          onClick={() => setSelectedChips(prev => prev.filter(c => c !== chip))}
+                          className="w-3.5 h-3.5 rounded-full hover:bg-brand/20 flex items-center justify-center transition-colors disabled:opacity-40"
+                        >
+                          <X className="w-2.5 h-2.5" strokeWidth={2} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Available chips (unselected only) */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "pain points & tantangan bisnis",
+                    "kontak eksekutif & decision maker",
+                    "pricing & minimum order",
+                    "kompetitor & posisi pasar",
+                    "berita terbaru & anomali",
+                    "sinyal hiring & ekspansi",
+                    "produk & layanan utama",
+                    "sertifikasi & kepatuhan regulasi",
+                  ].filter(chip => !selectedChips.includes(chip)).map(chip => (
+                    <button
+                      key={chip}
+                      disabled={isLoading || isAutoSaving}
+                      onClick={() => setSelectedChips(prev => [...prev, chip])}
+                      className="px-2.5 py-1 rounded-full border border-border/60 bg-white text-[11.5px] text-muted-foreground hover:border-brand/40 hover:text-brand hover:bg-brand-light transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      + {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <Button
                 className="mt-4 w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-bold h-11"
-                disabled={isLoading || isAutoSaving || !proQuery.trim()}
+                disabled={isLoading || isAutoSaving || (!proQuery.trim() && selectedChips.length === 0)}
                 onClick={() => {
-                  const urlMatch = proQuery.match(/https?:\/\/[^\s]+/)
-                  handleGenerate(urlMatch ? urlMatch[0] : proQuery.trim())
+                  // Merge textarea URL + selected chips into one final query
+                  const chipsSuffix = selectedChips.length > 0
+                    ? ` cari tahu tentang: ${selectedChips.join(", ")}`
+                    : ""
+                  const finalQuery = `${proQuery.trim()}${chipsSuffix}`.trim()
+                  const urlMatch = finalQuery.match(/https?:\/\/[^\s]+/)
+                  handleGenerate(urlMatch ? urlMatch[0] : finalQuery)
                 }}
               >
                 {(isLoading || isAutoSaving) ? <Loader2 className="w-4 h-4 animate-spin mr-2"  strokeWidth={1.5} /> : null}

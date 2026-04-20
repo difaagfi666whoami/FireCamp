@@ -23,9 +23,10 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+from typing import Any, Literal
 
 from openai import AsyncOpenAI
+from pydantic import BaseModel
 
 from app.core.config import settings
 from app.models.schemas import (
@@ -40,6 +41,34 @@ logger = logging.getLogger(__name__)
 
 MODEL_MINI   = "gpt-4o-mini"
 MODEL_MAIN   = "gpt-4o"
+
+
+# ─── Pro Mode extraction models ───────────────────────────────────────────────
+
+class ExtractedPainPoint(BaseModel):
+    category:   Literal["Marketing", "Operations", "Technology", "Growth"]
+    issue:      str
+    severity:   Literal["high", "medium", "low"]
+    matchAngle: str = ""
+
+class ExtractedContact(BaseModel):
+    name:        str
+    title:       str
+    email:       str = ""
+    linkedin_url: str = ""
+    reasoning:   str = ""
+
+class ExtractedNews(BaseModel):
+    title:   str
+    date:    str = ""
+    source:  str = ""
+    summary: str = ""
+    url:     str = ""
+
+class ProModeExtraction(BaseModel):
+    painPoints: list[ExtractedPainPoint]
+    contacts:   list[ExtractedContact]
+    news:       list[ExtractedNews]
 
 
 # ─── Client factory ───────────────────────────────────────────────────────────
@@ -952,3 +981,52 @@ async def generate_campaign(
     except Exception as exc:
         logger.error("[openai] generate_campaign FAILED | error=%s", exc)
         raise RuntimeError(f"Generate campaign gagal: {exc}") from exc
+
+
+# ─── extract_from_tavily_report ───────────────────────────────────────────────
+
+async def extract_from_tavily_report(
+    report: str,
+    company_name: str,
+) -> ProModeExtraction:
+    """
+    Extract structured pain_points, contacts, news from Tavily markdown report.
+    Uses gpt-4o-mini with structured output for speed and cost efficiency.
+    """
+    system_prompt = (
+        "Kamu adalah analis sales intelligence. "
+        "Ekstrak data terstruktur dari laporan riset perusahaan berikut. "
+        "Fokus pada informasi yang actionable untuk tim sales B2B.\n\n"
+        "Aturan:\n"
+        "- painPoints: 3-5 pain point yang paling relevan. "
+        "  matchAngle: satu kalimat tentang cara menawarkan solusi.\n"
+        "- contacts: maksimal 3 kontak yang disebutkan (nama, jabatan, email/LinkedIn jika ada).\n"
+        "- news: 3-5 berita atau perkembangan terbaru yang relevan untuk sales.\n"
+        "- Jika informasi tidak tersedia, kembalikan array kosong."
+    )
+    user_prompt = f"Perusahaan: {company_name}\n\nLaporan:\n{report[:12000]}"
+
+    client = _get_client()
+    try:
+        logger.info("[openai] extract_from_tavily_report | company=%r", company_name[:40])
+        response = await client.beta.chat.completions.parse(
+            model=MODEL_MINI,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user",   "content": user_prompt},
+            ],
+            response_format=ProModeExtraction,
+            max_tokens=2000,
+            temperature=0.2,
+        )
+        result = response.choices[0].message.parsed
+        if result is None:
+            return ProModeExtraction(painPoints=[], contacts=[], news=[])
+        logger.info(
+            "[openai] extract_from_tavily_report OK | painPoints=%d contacts=%d news=%d",
+            len(result.painPoints), len(result.contacts), len(result.news),
+        )
+        return result
+    except Exception as exc:
+        logger.warning("[openai] extract_from_tavily_report FAILED: %s", exc)
+        return ProModeExtraction(painPoints=[], contacts=[], news=[])

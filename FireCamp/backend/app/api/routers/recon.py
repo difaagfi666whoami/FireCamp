@@ -52,6 +52,7 @@ from app.services import (
     lane_g_service,
 )
 from app.core.config import settings
+from app.services.openai_service import extract_from_tavily_report
 from app.services.tavily_research_service import run_tavily_research
 
 logger = logging.getLogger(__name__)
@@ -509,6 +510,95 @@ async def recon_pro(req: ProReconRequest):
     except Exception as exc:
         logger.error("[recon_pro] Supabase insert failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Gagal menyimpan laporan: {exc}")
+
+    # ── Post-process: extract structured data from Tavily report ─────────────
+    try:
+        extracted = await extract_from_tavily_report(
+            report=content,
+            company_name=company_name,
+        )
+    except Exception as exc:
+        logger.warning("[recon_pro] extraction skipped: %s", exc)
+        extracted = None
+
+    if extracted:
+        # Save pain_points
+        if extracted.painPoints:
+            pain_rows = [
+                {
+                    "company_id":  company_id,
+                    "category":    p.category,
+                    "issue":       p.issue,
+                    "severity":    p.severity,
+                    "match_angle": p.matchAngle or None,
+                }
+                for p in extracted.painPoints
+            ]
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    await client.post(
+                        f"{supabase_base}/rest/v1/pain_points",
+                        headers=headers,
+                        json=pain_rows,
+                    )
+            except Exception as exc:
+                logger.warning("[recon_pro] pain_points insert failed: %s", exc)
+
+        # Save contacts
+        if extracted.contacts:
+            contact_rows = [
+                {
+                    "company_id":     company_id,
+                    "name":           c.name,
+                    "title":          c.title,
+                    "email":          c.email or "",
+                    "linkedin_url":   c.linkedin_url or None,
+                    "reasoning":      c.reasoning or "",
+                    "prospect_score": 50,
+                    "phone":          "",
+                }
+                for c in extracted.contacts
+            ]
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    await client.post(
+                        f"{supabase_base}/rest/v1/contacts",
+                        headers=headers,
+                        json=contact_rows,
+                    )
+            except Exception as exc:
+                logger.warning("[recon_pro] contacts insert failed: %s", exc)
+
+        # Save news
+        if extracted.news:
+            news_rows = [
+                {
+                    "company_id":     company_id,
+                    "title":          n.title,
+                    "published_date": n.date or None,
+                    "source":         n.source or "",
+                    "summary":        n.summary or "",
+                    "url":            n.url or "",
+                    "signal_type":    None,
+                }
+                for n in extracted.news
+            ]
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    await client.post(
+                        f"{supabase_base}/rest/v1/news",
+                        headers=headers,
+                        json=news_rows,
+                    )
+            except Exception as exc:
+                logger.warning("[recon_pro] news insert failed: %s", exc)
+
+        logger.info(
+            "[recon_pro] extracted | pain_points=%d contacts=%d news=%d",
+            len(extracted.painPoints),
+            len(extracted.contacts),
+            len(extracted.news),
+        )
 
     logger.info("[recon_pro] DONE | company_id=%s name=%r", company_id, company_name[:40])
     return {"company_id": company_id, "name": company_name}
