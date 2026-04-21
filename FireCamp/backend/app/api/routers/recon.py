@@ -455,16 +455,28 @@ async def recon_pro(req: ProReconRequest):
 
     content: str = result["content"]
 
-    # Extract company name from first substantive line of the markdown report
-    company_name = query.split("/")[2] if "://" in query else query[:60]
-    for line in content.splitlines():
-        stripped = line.lstrip("#").strip()
-        if len(stripped) > 3:
-            company_name = stripped[:80]
-            break
-
     url_match = re.search(r"https?://[^\s]+", query)
     company_url = url_match.group(0).rstrip("/") if url_match else query[:120]
+
+    # Domain-based fallback name (used as hint for extraction and as final fallback)
+    domain_fallback = _extract_domain(company_url).split(".")[0].replace("-", " ").title()
+
+    # ── Run extraction BEFORE Supabase insert so we get a clean company_name ──
+    try:
+        extracted = await extract_from_tavily_report(
+            report=content,
+            company_name=domain_fallback,
+        )
+    except Exception as exc:
+        logger.warning("[recon_pro] extraction skipped: %s", exc)
+        extracted = None
+
+    # Use AI-extracted clean name if available, else fall back to domain-based name
+    company_name = (
+        extracted.company_name.strip()
+        if extracted and extracted.company_name.strip()
+        else domain_fallback
+    )
 
     company_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
@@ -510,16 +522,6 @@ async def recon_pro(req: ProReconRequest):
     except Exception as exc:
         logger.error("[recon_pro] Supabase insert failed: %s", exc)
         raise HTTPException(status_code=502, detail=f"Gagal menyimpan laporan: {exc}")
-
-    # ── Post-process: extract structured data from Tavily report ─────────────
-    try:
-        extracted = await extract_from_tavily_report(
-            report=content,
-            company_name=company_name,
-        )
-    except Exception as exc:
-        logger.warning("[recon_pro] extraction skipped: %s", exc)
-        extracted = None
 
     if extracted:
         # Save pain_points

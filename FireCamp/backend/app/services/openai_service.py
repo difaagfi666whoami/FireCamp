@@ -66,9 +66,10 @@ class ExtractedNews(BaseModel):
     url:     str = ""
 
 class ProModeExtraction(BaseModel):
-    painPoints: list[ExtractedPainPoint]
-    contacts:   list[ExtractedContact]
-    news:       list[ExtractedNews]
+    company_name: str
+    painPoints:   list[ExtractedPainPoint]
+    contacts:     list[ExtractedContact]
+    news:         list[ExtractedNews]
 
 
 # ─── Client factory ───────────────────────────────────────────────────────────
@@ -998,6 +999,11 @@ async def extract_from_tavily_report(
         "Ekstrak data terstruktur dari laporan riset perusahaan berikut. "
         "Fokus pada informasi yang actionable untuk tim sales B2B.\n\n"
         "Aturan:\n"
+        "- company_name: nama merek/perusahaan yang bersih dan singkat (1-5 kata). "
+        "  JANGAN gunakan kata-kata dari judul laporan seperti 'Profil', 'Laporan', 'Analisis', "
+        "  'Lengkap', 'Mendalam'. Contoh BENAR: 'Javaplas Pack'. "
+        "  Contoh SALAH: 'Profil Lengkap Javaplas Pack Indonesia'. "
+        "  Jika tidak bisa menentukan, gunakan nama yang diberikan sebagai konteks.\n"
         "- painPoints: 3-5 pain point yang paling relevan. "
         "  matchAngle: satu kalimat tentang cara menawarkan solusi.\n"
         "- contacts: maksimal 3 kontak yang disebutkan (nama, jabatan, email/LinkedIn jika ada).\n"
@@ -1021,7 +1027,7 @@ async def extract_from_tavily_report(
         )
         result = response.choices[0].message.parsed
         if result is None:
-            return ProModeExtraction(painPoints=[], contacts=[], news=[])
+            return ProModeExtraction(company_name=company_name, painPoints=[], contacts=[], news=[])
         logger.info(
             "[openai] extract_from_tavily_report OK | painPoints=%d contacts=%d news=%d",
             len(result.painPoints), len(result.contacts), len(result.news),
@@ -1029,4 +1035,4 @@ async def extract_from_tavily_report(
         return result
     except Exception as exc:
         logger.warning("[openai] extract_from_tavily_report FAILED: %s", exc)
-        return ProModeExtraction(painPoints=[], contacts=[], news=[])
+        return ProModeExtraction(company_name=company_name, painPoints=[], contacts=[], news=[])
