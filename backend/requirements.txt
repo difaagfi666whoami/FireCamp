@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+openai
+tavily-python
+python-dotenv
+pypdf
+python-multipart
+supabase>=2.0.0
+stripe>=10.0.0
