@@ -211,16 +211,37 @@ Dua tab: "Matching" dan "Katalog Produk". CRUD + PDF drag & drop di tab kedua. *
 
 ---
 
-## 9. Roadmap Phase 2 (Billing — Belum Implementasi)
+## 9. Phase 2 Billing — DONE (Stripe Pay-As-You-Go Credits)
 
-- **Provider:** Stripe (test mode dulu; checkout sessions + webhook).
-- **Pricing model:** Credit / pay-as-you-go. Tabel baru `user_credits` (saldo per user) dan `credit_transactions` (history pembelian + pemakaian).
-- **Cost per operation (proposal, finalkan sebelum launch):** Recon Free = 1 credit, Recon Pro = 5, Match = 1, Craft = 2.
-- **Routes baru:** `/pricing`, `/billing/success`, `/api/billing/checkout`, `/api/webhooks/stripe`.
-- **Quota enforcement:** middleware backend tolak request kalau `user_credits.balance < cost`. `token_writer.py` debit credits saat success.
-- **Env vars:** `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+**Tabel:** `user_credits` (saldo per user) + `credit_transactions` (ledger). Migration: [supabase/migrations/019_billing.sql](supabase/migrations/019_billing.sql) + [020_signup_credit_grant.sql](supabase/migrations/020_signup_credit_grant.sql).
 
-Saat eksekusi Phase 2, **jangan reintroduce** aturan lama "no landing / no registration" — itu hanya berlaku saat project masih internal tool.
+**Cost per operasi** (sumber tunggal di [backend/app/core/billing.py](backend/app/core/billing.py) `OpCost`):
+- Recon Free = 1, Recon Pro = 5, Match = 1, Craft = 2, Polish (rewrite tone) = 1.
+
+**Credit packs** (di `CREDIT_PACKS` constant):
+- Starter 50 credits / Rp 100.000 · Growth 200 credits / Rp 350.000 (recommended) · Scale 500 credits / Rp 750.000.
+
+**API:**
+- `GET /api/billing/packages` (public) · `GET /api/billing/balance` (auth) · `POST /api/billing/checkout` · `POST /api/webhooks/stripe` (signature-verified, idempotent).
+
+**Frontend:**
+- [/pricing](app/(shell)/pricing/page.tsx) — paket + saldo + simulasi biaya.
+- [/billing/success](app/(shell)/billing/success/page.tsx) — polling balance ~9 detik setelah checkout.
+- Sidebar widget "Credits" auto-refresh via event `campfire_credits_changed` setelah setiap AI op + on-focus.
+
+**Aturan saat coding:**
+- Frontend AI calls (Recon/Match/Craft/Rewrite) wajib panggil `notifyCreditsChanged()` dari [lib/api/credits.ts](lib/api/credits.ts) setelah response 2xx — sudah terpasang di `recon.ts`, `match.ts`, `craft.ts`.
+- New user otomatis dapat 5 credits free via DB trigger `trg_grant_signup_credits`.
+- Kalau ingin ubah harga/cost: cukup edit `OpCost` atau `CREDIT_PACKS` di `backend/app/core/billing.py`. Frontend baca via `/api/billing/packages` jadi otomatis sinkron.
+
+**Env vars wajib (`.env.local`):**
+```
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+**Setup local webhook testing:** `stripe listen --forward-to localhost:8000/api/webhooks/stripe`. Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
 
 ---
 

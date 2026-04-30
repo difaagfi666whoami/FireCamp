@@ -164,16 +164,17 @@ async def stripe_webhook(request: Request):
         logger.error("[billing] webhook signature verification FAILED: %s", exc)
         raise HTTPException(status_code=400, detail="Invalid webhook signature") from exc
 
-    if event["type"] != "checkout.session.completed":
-        logger.info("[billing] webhook ignored event type=%s", event["type"])
+    if event.type != "checkout.session.completed":
+        logger.info("[billing] webhook ignored event type=%s", event.type)
         return {"received": True, "handled": False}
 
-    session = event["data"]["object"]
-    metadata = session.get("metadata") or {}
-    user_id      = metadata.get("user_id")
-    pack_id      = metadata.get("pack_id")
-    credits_str  = metadata.get("credits")
-    session_id   = session.get("id")
+    session = event.data.object
+    metadata = getattr(session, "metadata", None)
+    
+    user_id      = getattr(metadata, "user_id", None) if metadata else None
+    pack_id      = getattr(metadata, "pack_id", None) if metadata else None
+    credits_str  = getattr(metadata, "credits", None) if metadata else None
+    session_id   = getattr(session, "id", None)
 
     if not user_id or not pack_id or not credits_str:
         logger.error("[billing] webhook missing metadata | session=%s metadata=%s", session_id, metadata)

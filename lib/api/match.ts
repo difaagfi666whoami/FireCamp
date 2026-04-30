@@ -4,6 +4,7 @@ import { mockData } from "@/lib/mock/mockdata"
 import { supabase, getCurrentUserId, getCurrentSessionToken } from "@/lib/supabase/client"
 import { session } from "@/lib/session"
 import { isMockMode } from "@/lib/demoMode"
+import { notifyCreditsChanged } from "@/lib/api/credits"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const API_URL  = sq(process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000")
@@ -32,10 +33,14 @@ export async function runMatching(companyProfile: CompanyProfile): Promise<Produ
   })
 
   if (!res.ok) {
+    if (res.status === 402 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("campfire_out_of_credits"))
+    }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
     throw new Error(err.detail || `HTTP ${res.status}`)
   }
 
+  notifyCreditsChanged()
   const body = await res.json() as { matches: ProductMatch[]; tokens_used: number }
 
   // Simpan token di sessionStorage agar bisa dibawa ke /api/craft (campaign_id

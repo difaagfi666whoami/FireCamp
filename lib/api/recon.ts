@@ -2,6 +2,7 @@ import { CompanyProfile } from "@/types/recon.types"
 import { mockData } from "@/lib/mock/mockdata"
 import { supabase, getCurrentUserId, getCurrentSessionToken } from "@/lib/supabase/client"
 import { isMockMode } from "@/lib/demoMode"
+import { notifyCreditsChanged } from "@/lib/api/credits"
 
 function stripQuotes(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const API_URL = stripQuotes(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
@@ -52,10 +53,14 @@ export async function generateReconProfile(
   })
 
   if (!res.ok) {
+    if (res.status === 402 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("campfire_out_of_credits"))
+    }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
     throw new Error(err.detail || `HTTP ${res.status}`)
   }
 
+  notifyCreditsChanged()
   return res.json()
 }
 
@@ -408,9 +413,13 @@ export async function runProRecon(query: string): Promise<{ id: string; name: st
     body: JSON.stringify({ query }),
   })
   if (!res.ok) {
+    if (res.status === 402 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("campfire_out_of_credits"))
+    }
     const err = await res.json().catch(() => ({}))
     throw new Error(err.detail ?? "Tavily Research gagal")
   }
+  notifyCreditsChanged()
   const data = await res.json()
   return { id: data.company_id, name: data.name }
 }

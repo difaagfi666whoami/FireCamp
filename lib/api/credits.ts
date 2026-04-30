@@ -65,3 +65,36 @@ export function formatRupiah(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount)
 }
+
+// ─── Transaction History ────────────────────────────────────────────────────
+
+export interface CreditTransaction {
+  id:          string
+  type:        "purchase" | "debit" | "refund" | "grant"
+  amount:      number
+  description: string
+  created_at:  string
+}
+
+export async function getTransactions(): Promise<CreditTransaction[]> {
+  const { data, error } = await supabase
+    .from("credit_transactions")
+    .select("id, type, amount, description, created_at")
+    .order("created_at", { ascending: false })
+    .limit(100)
+
+  if (error) {
+    console.error("[credits] getTransactions failed:", error)
+    return []
+  }
+  return (data ?? []) as CreditTransaction[]
+}
+
+// Tell Sidebar (and anything else listening) that the credit balance just
+// changed — fire after a successful AI op so the widget reflects the debit
+// without waiting for the next focus event.
+export function notifyCreditsChanged(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("campfire_credits_changed"))
+  }
+}

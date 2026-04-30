@@ -3,6 +3,7 @@ import { ProductMatch } from "@/types/match.types"
 import { Campaign } from "@/types/craft.types"
 import { supabase, getCurrentUserId, getCurrentSessionToken } from "@/lib/supabase/client"
 import { session } from "@/lib/session"
+import { notifyCreditsChanged } from "@/lib/api/credits"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const API_URL  = sq(process.env.NEXT_PUBLIC_API_URL  ?? "http://localhost:8000")
@@ -33,6 +34,9 @@ export async function generateCampaign(
   })
 
   if (!res.ok) {
+    if (res.status === 402 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("campfire_out_of_credits"))
+    }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
     // Log payload + error detail agar 422 Pydantic bisa didiagnosa di DevTools
     console.error("[Campfire/craft] POST /api/craft failed", {
@@ -52,6 +56,7 @@ export async function generateCampaign(
     throw new Error(detailMsg)
   }
 
+  notifyCreditsChanged()
   return res.json()
 }
 
@@ -225,6 +230,9 @@ export async function regenerateEmailTone(req: RewriteRequestPayload): Promise<R
   })
 
   if (!res.ok) {
+    if (res.status === 402 && typeof window !== "undefined") {
+      window.dispatchEvent(new Event("campfire_out_of_credits"))
+    }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
     const detailMsg =
       typeof err?.detail === "string"
@@ -235,5 +243,6 @@ export async function regenerateEmailTone(req: RewriteRequestPayload): Promise<R
     throw new Error(detailMsg)
   }
 
+  notifyCreditsChanged()
   return res.json()
 }

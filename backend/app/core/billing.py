@@ -31,7 +31,7 @@ class CreditPack(TypedDict):
     name:        str   # display name
     credits:     int   # credits granted on purchase
     price_idr:   int   # display price in IDR (whole rupiah)
-    price_cents: int   # Stripe charge amount in IDR (Stripe expects smallest unit; IDR has no fractional, so cents == rupiah)
+    price_cents: int   # Stripe charge amount = price_idr * 100 (Stripe treats IDR as 2-decimal per ISO 4217)
     highlight:   bool  # show "Recommended" badge on /pricing
     description: str   # one-liner shown on the pricing card
 
@@ -42,7 +42,7 @@ CREDIT_PACKS: list[CreditPack] = [
         "name":        "Starter",
         "credits":     50,
         "price_idr":   100_000,
-        "price_cents": 100_000,
+        "price_cents": 10_000_000,
         "highlight":   False,
         "description": "Coba dulu — sekitar 10 Recon Pro atau 50 Match.",
     },
@@ -51,7 +51,7 @@ CREDIT_PACKS: list[CreditPack] = [
         "name":        "Growth",
         "credits":     200,
         "price_idr":   350_000,
-        "price_cents": 350_000,
+        "price_cents": 35_000_000,
         "highlight":   True,
         "description": "Hemat 12.5%. Cocok untuk 1 sales rep aktif per bulan.",
     },
@@ -60,7 +60,7 @@ CREDIT_PACKS: list[CreditPack] = [
         "name":        "Scale",
         "credits":     500,
         "price_idr":   750_000,
-        "price_cents": 750_000,
+        "price_cents": 75_000_000,
         "highlight":   False,
         "description": "Hemat 25%. Untuk tim sales kecil-menengah.",
     },

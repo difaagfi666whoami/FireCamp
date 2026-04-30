@@ -63,9 +63,14 @@ export default function PricingPage() {
         {/* Current balance */}
         {!isLoading && (
           <div className="mt-8 flex items-baseline justify-between">
-            <span className="text-[15px] font-semibold text-muted-foreground">
-              Saldo kamu saat ini:
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="text-[15px] font-semibold text-muted-foreground">
+                Saldo kamu saat ini:
+              </span>
+              <a href="/billing" className="text-[12.5px] text-brand hover:underline font-medium">
+                Lihat Riwayat Transaksi →
+              </a>
+            </div>
             <span className="text-6xl font-black tracking-tighter text-foreground leading-none">
               {balance}
             </span>
@@ -82,7 +87,8 @@ export default function PricingPage() {
 
       {/* Packs grid */}
       {!isLoading && packs.length > 0 && (
-        <div className="grid md:grid-cols-3 gap-5">
+        <div className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-5">
           {packs.map((p) => (
             <div
               key={p.id}
@@ -133,6 +139,12 @@ export default function PricingPage() {
               </Button>
             </div>
           ))}
+          </div>
+          <div className="text-center pt-2">
+            <p className="text-[13.5px] text-muted-foreground">
+              Butuh lebih dari 500 kredit per bulan untuk tim yang besar? <a href="mailto:sales@campfire.id" className="text-foreground font-semibold hover:underline cursor-pointer">Hubungi Kami</a>
+            </p>
+          </div>
         </div>
       )}
 
@@ -203,6 +215,44 @@ export default function PricingPage() {
                   <span className="font-bold text-[14px] text-brand">Total Estimasi</span>
                   <span className="font-black text-white bg-brand px-3 py-1.5 rounded-lg text-[13px]">9 kredit / target</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FAQ Section */}
+      {!isLoading && (
+        <div className="mt-12 pt-8 border-t border-border/40 pb-12 flex flex-col items-center">
+          <div className="mb-6 text-center">
+            <h2 className="text-lg font-bold tracking-tight text-foreground">Pertanyaan yang Sering Diajukan</h2>
+          </div>
+          <div className="w-full max-w-2xl flex flex-col text-[13.5px]">
+            <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
+                1
+              </span>
+              <div>
+                <h4 className="font-bold text-foreground mb-1.5">Apakah kredit bisa hangus?</h4>
+                <p className="text-muted-foreground leading-relaxed">Tidak. Kredit yang kamu beli tidak memiliki masa kedaluwarsa dan akan tetap ada di akunmu selama akun aktif.</p>
+              </div>
+            </div>
+            <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
+                2
+              </span>
+              <div>
+                <h4 className="font-bold text-foreground mb-1.5">Metode bayar yang didukung?</h4>
+                <p className="text-muted-foreground leading-relaxed">Saat ini kami menerima pembayaran via kartu kredit dan debit berlogo Visa/Mastercard melalui sistem aman Stripe.</p>
+              </div>
+            </div>
+            <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
+                3
+              </span>
+              <div>
+                <h4 className="font-bold text-foreground mb-1.5">Apakah ada biaya tersembunyi?</h4>
+                <p className="text-muted-foreground leading-relaxed">Tidak, harga paket yang tertera di atas sudah final. Tidak ada tambahan biaya tersembunyi seperti pajak tambahan saat checkout.</p>
               </div>
             </div>
           </div>
