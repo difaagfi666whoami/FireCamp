@@ -79,7 +79,7 @@ export async function getUserProfile(): Promise<UserProfileRow | null> {
       .from("user_profiles")
       .select("*")
       .eq("user_id", userData.user.id)
-      .single()
+      .maybeSingle()
 
     if (error || !data) {
       return null

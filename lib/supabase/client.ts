@@ -1,16 +1,11 @@
-import { createClient } from "@supabase/supabase-js"
+import { createBrowserClient } from "@supabase/ssr"
 
-// Strip surrounding quotes yang mungkin ikut terbaca di Windows
-// Contoh: 'https://...' → https://...
 function stripQuotes(value: string): string {
   return value.replace(/^(['"])(.*)\1$/, "$2").trim()
 }
 
-const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-const rawKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-
-const url = stripQuotes(rawUrl)
-const key = stripQuotes(rawKey)
+const url = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+const key = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "")
 
 if (!url || !key) {
   throw new Error(
@@ -18,17 +13,10 @@ if (!url || !key) {
   )
 }
 
-if (!url.startsWith("https://")) {
-  throw new Error(
-    `NEXT_PUBLIC_SUPABASE_URL tidak valid: "${url}". Pastikan tidak ada tanda kutip di .env.local`
-  )
-}
+// createBrowserClient from @supabase/ssr handles cookie chunking natively —
+// preventing silent cookie drops when session.user exceeds 4KB
+export const supabase = createBrowserClient(url, key)
 
-// Singleton — aman untuk hot-reload Next.js
-export const supabase = createClient(url, key)
-
-// Resolve the currently authenticated user's id. Throws if not authenticated.
-// Frontend writes must include user_id so RLS WITH CHECK passes.
 export async function getCurrentUserId(): Promise<string> {
   const { data, error } = await supabase.auth.getUser()
   if (error || !data.user) {

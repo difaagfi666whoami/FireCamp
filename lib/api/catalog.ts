@@ -143,9 +143,9 @@ export async function getProductById(id: string): Promise<ProductCatalogItem | n
     .from("products")
     .select("*")
     .eq("id", id)
-    .single()
+    .maybeSingle()
 
-  if (error) {
+  if (error || !data) {
     console.error("[Campfire/catalog] getProductById error:", error)
     return null
   }

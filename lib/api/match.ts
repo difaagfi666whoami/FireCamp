@@ -97,7 +97,7 @@ export async function saveCampaignAndMatching(
       })
       .eq("id", finalCampaignId)
       .select("id")
-      .single()
+      .maybeSingle()
 
     if (updateErr || !updated) {
       console.warn("[Campfire/match] Update campaign gagal, fallback insert baru", updateErr)

@@ -24,7 +24,7 @@ export default function LoginPage() {
     setState("loading")
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     if (error) {
       setState("error")
@@ -37,7 +37,7 @@ export default function LoginPage() {
     setState("loading")
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     })
     setState(error ? "error" : "success")
   }
@@ -47,7 +47,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/confirm`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     })
     if (error) setState("error")
