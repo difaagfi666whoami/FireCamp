@@ -18,5 +18,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=AuthFailed`)
   }
 
+  // Redirect new users straight to /onboarding — avoids shell flash
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("onboarding_completed")
+      .eq("user_id", user.id)
+      .maybeSingle()
+
+    if (!profile || !profile.onboarding_completed) {
+      return NextResponse.redirect(`${origin}/onboarding`)
+    }
+  }
+
   return NextResponse.redirect(`${origin}${next}`)
 }

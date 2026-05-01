@@ -29,10 +29,11 @@ export default function OnboardingPage() {
 
     // Persist sender identity to database — fire-and-forget, never blocks navigation
     saveUserProfile({
-      senderName:    senderName.trim(),
-      senderTitle:   senderTitle.trim(),
-      signature:     signature.trim(),
-      workspaceName: teamName.trim(),
+      senderName:           senderName.trim(),
+      senderTitle:          senderTitle.trim(),
+      signature:            signature.trim(),
+      workspaceName:        teamName.trim(),
+      onboardingCompleted:  true,
     })
 
     router.push(targetUrl.trim() ? "/recon" : "/research-library")
@@ -197,6 +198,13 @@ export default function OnboardingPage() {
                     if (teamName.trim()) {
                       localStorage.setItem("campfire_workspace_name", teamName.trim())
                     }
+                    saveUserProfile({
+                      senderName:          senderName.trim(),
+                      senderTitle:         senderTitle.trim(),
+                      signature:           signature.trim(),
+                      workspaceName:       teamName.trim(),
+                      onboardingCompleted: true,
+                    })
                     router.push("/research-library")
                   }}
                   className="text-sm text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors"

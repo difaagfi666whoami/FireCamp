@@ -51,8 +51,7 @@ app = FastAPI(
 # Allow Next.js dev server (localhost:3000) dan production origin jika ada.
 
 ALLOWED_ORIGINS: list[str] = [
-    "http://localhost:3000",   # Next.js dev
-    "http://127.0.0.1:3000",  # alternatif localhost
+    o.strip() for o in settings.cors_origins.split(",") if o.strip()
 ]
 
 app.add_middleware(

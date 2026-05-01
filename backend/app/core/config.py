@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET:  str = ""
     NEXT_PUBLIC_APP_URL:    str = "http://localhost:3000"  # for Stripe success/cancel redirects
 
+    # ── CORS ──────────────────────────────────────────────────────────────────
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+
     @field_validator(
         "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "HUNTER_API_KEY",
         "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "NEXT_PUBLIC_APP_URL",

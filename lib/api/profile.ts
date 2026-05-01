@@ -9,6 +9,7 @@ export interface UserProfileData {
   senderTitle: string
   signature: string
   workspaceName: string
+  onboardingCompleted?: boolean
 }
 
 export interface UserProfileRow {
@@ -18,6 +19,7 @@ export interface UserProfileRow {
   sender_title: string
   signature: string
   workspace_name: string
+  onboarding_completed: boolean
   created_at: string
   updated_at: string
 }
@@ -37,19 +39,21 @@ export async function saveUserProfile(
       return { error: "User tidak terautentikasi" }
     }
 
+    const payload: Record<string, unknown> = {
+      user_id:        userData.user.id,
+      sender_name:    data.senderName,
+      sender_title:   data.senderTitle,
+      signature:      data.signature,
+      workspace_name: data.workspaceName,
+      updated_at:     new Date().toISOString(),
+    }
+    if (data.onboardingCompleted === true) {
+      payload.onboarding_completed = true
+    }
+
     const { error: upsertError } = await supabase
       .from("user_profiles")
-      .upsert(
-        {
-          user_id:        userData.user.id,
-          sender_name:    data.senderName,
-          sender_title:   data.senderTitle,
-          signature:      data.signature,
-          workspace_name: data.workspaceName,
-          updated_at:     new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      )
+      .upsert(payload, { onConflict: "user_id" })
 
     if (upsertError) {
       console.error("[profile] Gagal menyimpan profil ke database:", upsertError.message)
