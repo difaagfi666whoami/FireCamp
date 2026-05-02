@@ -21,6 +21,7 @@ from app.api.routers import match as match_router
 from app.api.routers import catalog as catalog_router
 from app.api.routers import craft as craft_router
 from app.api.routers import billing as billing_router
+from app.api.routers import xendit as xendit_router
 from app.core.config import settings
 
 # ─── Logging setup ────────────────────────────────────────────────────────────
@@ -93,6 +94,7 @@ app.include_router(match_router.router)
 app.include_router(catalog_router.router)
 app.include_router(craft_router.router)
 app.include_router(billing_router.router)
+app.include_router(xendit_router.router)
 
 # ─── Startup / Shutdown events ────────────────────────────────────────────────
 

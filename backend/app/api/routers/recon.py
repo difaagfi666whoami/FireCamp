@@ -431,11 +431,13 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
         # RuntimeError dari pipeline = error operasional yang sudah ter-log
         msg = str(exc)
         logger.error("[POST /api/recon] pipeline error | url=%r mode=%s: %s", url, payload.mode.value, msg)
+        await credits_service.grant(user_id, cost, f"Refund Recon gagal: {url}", tx_type="refund")
         raise HTTPException(status_code=502, detail=msg) from exc
 
     except Exception as exc:
         # Exception tak terduga
         logger.exception("[POST /api/recon] unexpected error | url=%r mode=%s", url, payload.mode.value)
+        await credits_service.grant(user_id, cost, f"Refund Recon error: {url}", tx_type="refund")
         raise HTTPException(
             status_code=500,
             detail="Terjadi kesalahan internal pada server. Silakan coba lagi.",

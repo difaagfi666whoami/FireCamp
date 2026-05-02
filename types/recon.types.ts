@@ -34,6 +34,7 @@ export interface CompanyProfile {
   hq: string
   description: string
   deepInsights?: string[]
+  techStack?: string[]
   strategicReport?: StrategicReport
   linkedin: {
     followers: string

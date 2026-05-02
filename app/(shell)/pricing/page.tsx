@@ -2,20 +2,30 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Loader2, Check, Sparkles } from "lucide-react"
+import { Loader2, Check } from "lucide-react"
 import { toast } from "sonner"
-import { getPackages, getBalance, createCheckout, formatRupiah, CreditPack } from "@/lib/api/credits"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { getPackages, getBalance, createCheckout, formatRupiah, type CreditPack } from "@/lib/api/credits"
+import { PaymentMethodSelector } from "@/components/billing/PaymentMethodSelector"
 import { PageHelp } from "@/components/ui/PageHelp"
 
 export default function PricingPage() {
   const searchParams = useSearchParams()
   const wasCanceled  = searchParams.get("status") === "canceled"
 
-  const [packs, setPacks]           = useState<CreditPack[]>([])
-  const [balance, setBalance]       = useState<number>(0)
-  const [isLoading, setIsLoading]   = useState(true)
-  const [checkoutPackId, setCheckoutPackId] = useState<string | null>(null)
+  const [packs, setPacks]         = useState<CreditPack[]>([])
+  const [balance, setBalance]     = useState<number>(0)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Payment modal state
+  const [selectedPack, setSelectedPack]       = useState<CreditPack | null>(null)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [stripeLoading, setStripeLoading]       = useState<string | null>(null)
 
   useEffect(() => {
     Promise.all([getPackages(), getBalance()])
@@ -28,15 +38,26 @@ export default function PricingPage() {
     if (wasCanceled) toast("Checkout dibatalkan. Tidak ada credits dipotong.")
   }, [wasCanceled])
 
-  const handleBuy = async (packId: string) => {
-    setCheckoutPackId(packId)
+  const openPaymentModal = (pack: CreditPack) => {
+    setSelectedPack(pack)
+    setShowPaymentModal(true)
+  }
+
+  const handleStripe = async () => {
+    if (!selectedPack) return
+    setShowPaymentModal(false)
+    setStripeLoading(selectedPack.id)
     try {
-      const url = await createCheckout(packId)
+      const url = await createCheckout(selectedPack.id)
       window.location.href = url
     } catch (err: any) {
       toast.error(err?.message ?? "Gagal membuat sesi checkout")
-      setCheckoutPackId(null)
+      setStripeLoading(null)
     }
+  }
+
+  const handleXenditSuccess = (newBalance: number) => {
+    setBalance(newBalance)
   }
 
   return (
@@ -55,7 +76,7 @@ export default function PricingPage() {
             content={{
               what: "Setiap operasi memotong kredit: Recon Free 1, Recon Pro 5, Match 1, Craft 2, Polish 1.",
               tips: "Beli paket sesuai volume kerjamu. Tidak kadaluarsa — kredit tetap ada selama akun aktif.",
-              next: "Pilih paket di bawah, klik 'Beli', dan selesaikan pembayaran. Saldo akan otomatis bertambah.",
+              next: "Pilih paket di bawah, klik 'Beli', pilih metode bayar (QRIS, Transfer, atau Kartu), lalu selesaikan pembayaran.",
             }}
           />
         </div>
@@ -119,30 +140,40 @@ export default function PricingPage() {
                 </p>
               </div>
 
-              <Button
-                onClick={() => handleBuy(p.id)}
-                disabled={!!checkoutPackId}
-                className={`w-full rounded-full font-semibold text-[13.5px] mt-2 ${
+              <button
+                onClick={() => openPaymentModal(p)}
+                disabled={stripeLoading === p.id}
+                className={`w-full rounded-full font-semibold text-[13.5px] mt-2 py-2.5 transition-colors disabled:opacity-60 ${
                   p.highlight
                     ? "bg-brand hover:bg-brand/90 text-white"
                     : "bg-foreground hover:bg-foreground/90 text-background"
                 }`}
               >
-                {checkoutPackId === p.id ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" strokeWidth={1.5} />
+                {stripeLoading === p.id ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                     Mengarahkan ke Stripe...
-                  </>
+                  </span>
                 ) : (
                   "Beli sekarang →"
                 )}
-              </Button>
+              </button>
             </div>
           ))}
           </div>
+
+          {/* Payment methods note */}
+          <div className="flex items-center justify-center gap-2 text-[12.5px] text-muted-foreground">
+            <Check className="w-3.5 h-3.5 text-success shrink-0" strokeWidth={2} />
+            <span>QRIS · GoPay · OVO · DANA · Transfer BCA / Mandiri / BNI / BRI · Kartu Kredit</span>
+          </div>
+
           <div className="text-center pt-2">
             <p className="text-[13.5px] text-muted-foreground">
-              Butuh lebih dari 500 kredit per bulan untuk tim yang besar? <a href="mailto:sales@campfire.id" className="text-foreground font-semibold hover:underline cursor-pointer">Hubungi Kami</a>
+              Butuh lebih dari 500 kredit per bulan untuk tim yang besar?{" "}
+              <a href="mailto:sales@campfire.id" className="text-foreground font-semibold hover:underline cursor-pointer">
+                Hubungi Kami
+              </a>
             </p>
           </div>
         </div>
@@ -229,27 +260,21 @@ export default function PricingPage() {
           </div>
           <div className="w-full max-w-2xl flex flex-col text-[13.5px]">
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
-              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
-                1
-              </span>
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">1</span>
               <div>
                 <h4 className="font-bold text-foreground mb-1.5">Apakah kredit bisa hangus?</h4>
                 <p className="text-muted-foreground leading-relaxed">Tidak. Kredit yang kamu beli tidak memiliki masa kedaluwarsa dan akan tetap ada di akunmu selama akun aktif.</p>
               </div>
             </div>
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
-              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
-                2
-              </span>
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">2</span>
               <div>
                 <h4 className="font-bold text-foreground mb-1.5">Metode bayar yang didukung?</h4>
-                <p className="text-muted-foreground leading-relaxed">Saat ini kami menerima pembayaran via kartu kredit dan debit berlogo Visa/Mastercard melalui sistem aman Stripe.</p>
+                <p className="text-muted-foreground leading-relaxed">QRIS (scan via GoPay, OVO, DANA, ShopeePay, atau aplikasi bank apapun), Transfer Virtual Account (BCA, Mandiri, BNI, BRI, Permata), dan Kartu Kredit/Debit Visa/Mastercard.</p>
               </div>
             </div>
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
-              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">
-                3
-              </span>
+              <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">3</span>
               <div>
                 <h4 className="font-bold text-foreground mb-1.5">Apakah ada biaya tersembunyi?</h4>
                 <p className="text-muted-foreground leading-relaxed">Tidak, harga paket yang tertera di atas sudah final. Tidak ada tambahan biaya tersembunyi seperti pajak tambahan saat checkout.</p>
@@ -258,6 +283,23 @@ export default function PricingPage() {
           </div>
         </div>
       )}
+
+      {/* Payment Method Dialog */}
+      <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) setShowPaymentModal(false) }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[16px] font-bold">Pilih Metode Pembayaran</DialogTitle>
+          </DialogHeader>
+          {selectedPack && (
+            <PaymentMethodSelector
+              pack={selectedPack}
+              onStripe={handleStripe}
+              onSuccess={handleXenditSuccess}
+              onClose={() => setShowPaymentModal(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

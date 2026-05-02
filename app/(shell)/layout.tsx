@@ -13,37 +13,31 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
   const router = useRouter()
   const pathname = usePathname()
 
-  // Synchronous fast-path: if localStorage already confirms onboarding done,
-  // show content immediately without waiting for a DB round-trip.
-  const [ready, setReady] = useState(() => {
-    if (typeof window === "undefined") return false
-    return localStorage.getItem(ONBOARDING_KEY) === "true"
-  })
+  // Fix hydration error: always start ready=true on both server and client to match SSR HTML.
+  const [ready, setReady] = useState(true)
 
   useEffect(() => {
     if (pathname === "/onboarding" || pathname?.startsWith("/settings")) {
-      setReady(true)
       return
     }
 
     // Already confirmed via localStorage — skip DB check
     if (localStorage.getItem(ONBOARDING_KEY) === "true") {
-      setReady(true)
       return
     }
 
     async function checkOnboarding() {
       const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { setReady(true); return }
+      if (!userData.user) { return }
 
       const profile = await getUserProfile()
       if (!profile || profile.onboarding_completed === false) {
+        setReady(false)
         router.push("/onboarding")
         return
       }
 
       localStorage.setItem(ONBOARDING_KEY, "true")
-      setReady(true)
     }
 
     checkOnboarding()

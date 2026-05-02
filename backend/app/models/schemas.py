@@ -175,6 +175,7 @@ class CompanyProfile(BaseModel):
     hq:           str  = ""
     description:    str  = ""
     deepInsights:   list[str]               = []
+    techStack:      list[str]               = []
     strategicReport: Optional[StrategicReport] = None
     reconMode:      Optional[ReconMode]     = None
     linkedin:     LinkedInInfo

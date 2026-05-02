@@ -76,7 +76,7 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     .from("companies")
     .select(`
       id, url, name, industry, size, founded, hq, description,
-      deep_insights, strategic_report, recon_mode,
+      deep_insights, tech_stack, strategic_report, recon_mode,
       tavily_report, situational_summary, anomalies, citations,
       linkedin_followers, linkedin_employees, linkedin_growth,
       progress_recon, progress_match, progress_craft,
@@ -117,6 +117,7 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     hq:             data.hq             ?? "",
     description:    data.description    ?? "",
     deepInsights:   data.deep_insights  ?? [],
+    techStack:      data.tech_stack     ?? [],
     strategicReport: data.strategic_report ? {
       ...data.strategic_report,
       citations:          data.citations
@@ -274,6 +275,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
       hq:                  profile.hq,
       description:         profile.description,
       deep_insights:       profile.deepInsights     ?? [],
+      tech_stack:          profile.techStack        ?? [],
       strategic_report:    profile.strategicReport  ?? null,
       recon_mode:          profile.reconMode        ?? null,
       situational_summary: profile.strategicReport?.situationalSummary ?? null,
@@ -348,7 +350,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
         source:         n.source,
         summary:        n.summary,
         url:            n.url,
-        signal_type:    n.signalType ?? null,
+        signal_type:    (n as any).signal_type ?? n.signalType ?? null,
       }))
     )
     if (error) throw new Error(error.message)
@@ -364,7 +366,7 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
       source:          s.source         ?? null,
       summary:         s.summary        ?? null,
       url:             s.url            ?? null,
-      signal_type:     s.signalType,
+      signal_type:     (s as any).signal_type ?? s.signalType,
       verified_amount: s.verifiedAmount ?? null,
       verified_date:   s.verifiedDate   ?? null,
     }))
