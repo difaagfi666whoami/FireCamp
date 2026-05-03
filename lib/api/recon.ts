@@ -68,7 +68,7 @@ export async function generateReconProfile(
 // GET company by ID — fetch dari Supabase dengan semua relasi
 // FIX BUG 2: map signalType pada news
 // FIX BUG 5: map match_angle pada pain_points
-// FIX BUG 6: select intent_signals + anomalies + citations + tech_stack
+// FIX BUG 6: select intent_signals + anomalies + citations
 // -----------------------------------------------------------------------------
 
 export async function getCompanyById(id: string): Promise<CompanyProfile> {
@@ -76,7 +76,7 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     .from("companies")
     .select(`
       id, url, name, industry, size, founded, hq, description,
-      deep_insights, tech_stack, strategic_report, recon_mode,
+      deep_insights, strategic_report, recon_mode,
       tavily_report, situational_summary, anomalies, citations,
       linkedin_followers, linkedin_employees, linkedin_growth,
       progress_recon, progress_match, progress_craft,
@@ -117,7 +117,7 @@ export async function getCompanyById(id: string): Promise<CompanyProfile> {
     hq:             data.hq             ?? "",
     description:    data.description    ?? "",
     deepInsights:   data.deep_insights  ?? [],
-    techStack:      data.tech_stack     ?? [],
+
     strategicReport: data.strategic_report ? {
       ...data.strategic_report,
       citations:          data.citations
@@ -258,7 +258,7 @@ export async function getResearchLibrary(): Promise<LibraryEntry[]> {
 // -----------------------------------------------------------------------------
 // SAVE company profile (companies + contacts + pain_points + news + intent_signals)
 // FIX BUG 1: save intent_signals
-// FIX BUG 3: save tech_stack + anomalies + citations + situational_summary
+// FIX BUG 3: save anomalies + citations + situational_summary
 // -----------------------------------------------------------------------------
 
 export async function saveCompanyProfile(profile: CompanyProfile): Promise<string> {
@@ -275,7 +275,6 @@ export async function saveCompanyProfile(profile: CompanyProfile): Promise<strin
       hq:                  profile.hq,
       description:         profile.description,
       deep_insights:       profile.deepInsights     ?? [],
-      tech_stack:          profile.techStack        ?? [],
       strategic_report:    profile.strategicReport  ?? null,
       recon_mode:          profile.reconMode        ?? null,
       situational_summary: profile.strategicReport?.situationalSummary ?? null,

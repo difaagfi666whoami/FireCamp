@@ -14,8 +14,9 @@ const PROTECTED_PREFIXES = [
   "/pricing",
   "/billing",
   "/auth/redeem-invite",
-  "/admin",
 ]
+
+const ADMIN_UI_PREFIXES = ["/admin"]
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
@@ -24,17 +25,58 @@ function isProtectedPath(pathname: string): boolean {
 }
 
 // Paths that require auth but are exempt from the Phase 5 invite gate —
-// we don't want to redirect users *away* from the redemption page itself,
-// and admin routes have their own gate (requireAdmin) so they shouldn't be
-// blocked just because the admin doesn't have an invite redemption row.
+// we don't want to redirect users *away* from the redemption page itself.
 function isInviteGateExempt(pathname: string): boolean {
-  return pathname === "/auth/redeem-invite" || pathname.startsWith("/admin")
+  return pathname === "/auth/redeem-invite"
+}
+
+function isAdminUIPath(pathname: string): boolean {
+  return ADMIN_UI_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (process.env.NEXT_PUBLIC_AUTH_DEV_BYPASS === "true") {
+    return NextResponse.next()
+  }
+
+  // --- ADMIN UI BASIC AUTH ---
+  // Independent from Supabase auth. Uses ADMIN_EMAILS as username and ADMIN_SECRET_KEY as password.
+  if (isAdminUIPath(pathname)) {
+    const authHeader = request.headers.get("authorization")
+    const envSecret = process.env.ADMIN_SECRET_KEY
+    const allowlist = (process.env.ADMIN_EMAILS ?? "")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean)
+
+    let isAuthenticatedAdmin = false
+    if (authHeader && envSecret) {
+      const match = authHeader.match(/^Basic\s+(.*)$/)
+      if (match) {
+        try {
+          const decoded = atob(match[1])
+          const [user, ...passParts] = decoded.split(":")
+          const pass = passParts.join(":")
+          if (allowlist.includes(user.toLowerCase()) && pass === envSecret) {
+            isAuthenticatedAdmin = true
+          }
+        } catch (e) {
+          // ignore base64 errors
+        }
+      }
+    }
+
+    if (!isAuthenticatedAdmin) {
+      return new NextResponse("Admin Authentication Required", {
+        status: 401,
+        headers: { "WWW-Authenticate": 'Basic realm="Campfire Admin Panel"' },
+      })
+    }
+
     return NextResponse.next()
   }
 
