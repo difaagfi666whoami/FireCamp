@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Gift, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getBalance, getTransactions, formatRupiah, CreditTransaction } from "@/lib/api/credits"
+import { flags } from "@/lib/config/feature-flags"
 
 // ─── Type config ────────────────────────────────────────────────────────────
 
@@ -53,18 +54,20 @@ export default function BillingHistoryPage() {
             Catatan lengkap semua aktivitas kredit di akunmu.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full font-semibold"
-          onClick={() => router.push("/pricing")}
-        >
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-          Kembali ke Pricing
-        </Button>
+        {flags.BILLING_ACTIVE && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full font-semibold"
+            onClick={() => router.push("/pricing")}
+          >
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+            Kembali ke Pricing
+          </Button>
+        )}
       </div>
 
-      {/* Balance card */}
+      {/* Balance card — Top-Up button is billing-gated. */}
       <div className="rounded-2xl border border-brand/30 bg-brand/5 p-6 mb-8 flex items-center justify-between">
         <div>
           <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wider">Saldo Saat Ini</p>
@@ -72,12 +75,18 @@ export default function BillingHistoryPage() {
             {balance !== null ? `${balance} kredit` : "—"}
           </p>
         </div>
-        <Button
-          className="rounded-full font-semibold bg-brand hover:bg-brand/90 text-white"
-          onClick={() => router.push("/pricing")}
-        >
-          Top-Up Kredit →
-        </Button>
+        {flags.BILLING_ACTIVE ? (
+          <Button
+            className="rounded-full font-semibold bg-brand hover:bg-brand/90 text-white"
+            onClick={() => router.push("/pricing")}
+          >
+            Top-Up Kredit →
+          </Button>
+        ) : (
+          <span className="text-[11.5px] font-bold uppercase tracking-widest text-brand/70 px-3 py-1.5 rounded-full bg-white/60 border border-brand/20">
+            Early Access
+          </span>
+        )}
       </div>
 
       {/* Transaction list */}
@@ -88,7 +97,11 @@ export default function BillingHistoryPage() {
         </div>
       ) : transactions.length === 0 ? (
         <div className="py-16 text-center border border-border/40 rounded-2xl bg-white">
-          <p className="text-muted-foreground text-[14px]">Belum ada transaksi. Mulai dengan membeli paket kredit.</p>
+          <p className="text-muted-foreground text-[14px]">
+            {flags.BILLING_ACTIVE
+              ? "Belum ada transaksi. Mulai dengan membeli paket kredit."
+              : "Belum ada transaksi. Kredit Early Access akan muncul di sini ketika kamu mulai menggunakan pipeline."}
+          </p>
         </div>
       ) : (
         <div className="border border-border/40 rounded-2xl bg-white overflow-hidden">

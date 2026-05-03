@@ -13,6 +13,7 @@ import { session } from "@/lib/session"
 import { supabase } from "@/lib/supabase/client"
 import { getUserProfile } from "@/lib/api/profile"
 import { getBalance } from "@/lib/api/credits"
+import { flags } from "@/lib/config/feature-flags"
 import { useEffect, useState } from "react"
 
 const PIPELINE_STEPS = [
@@ -240,31 +241,44 @@ export function Sidebar() {
       {/* Divider */}
       <div className="border-t border-border/50 my-3 mx-1" />
 
-      {/* Credit balance + Beli Credits */}
-      <Link
-        href="/pricing"
-        className={cn(
-          "mx-1 mb-1 px-3 py-2.5 rounded-xl border transition-colors flex items-center justify-between",
-          pathname === "/pricing"
-            ? "bg-brand text-white border-brand shadow-sm"
-            : "bg-brand/5 border-brand/20 hover:bg-brand/10"
-        )}
-      >
-        <p
+      {/* Credit balance + Beli Credits — billing-gated.
+          When BILLING_ACTIVE is false (Early Access), show a non-clickable
+          badge with the current balance instead of a "Beli Kredit" CTA. */}
+      {flags.BILLING_ACTIVE ? (
+        <Link
+          href="/pricing"
           className={cn(
-            "text-[11.5px] font-bold uppercase tracking-widest",
-            pathname === "/pricing" ? "text-white" : "text-brand"
+            "mx-1 mb-1 px-3 py-2.5 rounded-xl border transition-colors flex items-center justify-between",
+            pathname === "/pricing"
+              ? "bg-brand text-white border-brand shadow-sm"
+              : "bg-brand/5 border-brand/20 hover:bg-brand/10"
           )}
         >
-          Beli Kredit
-        </p>
-        <span className={cn(
-          "text-[14px] leading-none",
-          pathname === "/pricing" ? "text-white/80" : "text-brand/60"
-        )}>
-          →
-        </span>
-      </Link>
+          <p
+            className={cn(
+              "text-[11.5px] font-bold uppercase tracking-widest",
+              pathname === "/pricing" ? "text-white" : "text-brand"
+            )}
+          >
+            Beli Kredit
+          </p>
+          <span className={cn(
+            "text-[14px] leading-none",
+            pathname === "/pricing" ? "text-white/80" : "text-brand/60"
+          )}>
+            →
+          </span>
+        </Link>
+      ) : (
+        <div className="mx-1 mb-1 px-3 py-2.5 rounded-xl border border-brand/20 bg-brand/5 flex items-center justify-between">
+          <p className="text-[11.5px] font-bold uppercase tracking-widest text-brand/80">
+            Early Access
+          </p>
+          <span className="text-[12px] font-semibold tabular-nums text-brand">
+            {creditBalance ?? 0} kredit
+          </span>
+        </div>
+      )}
 
       {/* Demo Mode Toggle */}
       <button

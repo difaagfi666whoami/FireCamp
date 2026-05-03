@@ -20,6 +20,7 @@ export interface UserProfileRow {
   signature: string
   workspace_name: string
   onboarding_completed: boolean
+  early_access_seen: boolean
   created_at: string
   updated_at: string
 }
@@ -93,5 +94,27 @@ export async function getUserProfile(): Promise<UserProfileRow | null> {
   } catch (err) {
     console.error("[profile] Gagal mengambil profil:", err)
     return null
+  }
+}
+
+// -----------------------------------------------------------------------------
+// markEarlyAccessSeen — flip the Phase 5 welcome-modal flag to true.
+// Fire-and-forget: the modal closes regardless of DB outcome.
+// -----------------------------------------------------------------------------
+
+export async function markEarlyAccessSeen(): Promise<void> {
+  try {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return
+
+    await supabase
+      .from("user_profiles")
+      .update({
+        early_access_seen: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userData.user.id)
+  } catch (err) {
+    console.error("[profile] markEarlyAccessSeen failed:", err)
   }
 }

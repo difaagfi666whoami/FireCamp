@@ -4,6 +4,9 @@ import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { OutOfCreditsModal } from "@/components/ui/OutOfCreditsModal"
+import { FeedbackWidget } from "@/components/feedback/FeedbackWidget"
+import { EarlyAccessBanner } from "@/components/layout/EarlyAccessBanner"
+import { OnboardingModal } from "@/components/onboarding/OnboardingModal"
 import { supabase } from "@/lib/supabase/client"
 import { getUserProfile } from "@/lib/api/profile"
 
@@ -48,8 +51,13 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 min-w-0 overflow-auto bg-background">{children}</main>
+      <main className="flex-1 min-w-0 overflow-auto bg-background">
+        <EarlyAccessBanner />
+        {children}
+      </main>
       <OutOfCreditsModal />
+      <FeedbackWidget />
+      <OnboardingModal />
     </div>
   )
 }

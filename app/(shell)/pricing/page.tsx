@@ -13,8 +13,40 @@ import {
 import { getPackages, getBalance, createCheckout, formatRupiah, type CreditPack } from "@/lib/api/credits"
 import { PaymentMethodSelector } from "@/components/billing/PaymentMethodSelector"
 import { PageHelp } from "@/components/ui/PageHelp"
+import { flags } from "@/lib/config/feature-flags"
+
+function BillingDisabledPlaceholder() {
+  return (
+    <div className="p-8 max-w-3xl mx-auto animate-in fade-in duration-500">
+      <div className="rounded-2xl border border-brand/20 bg-brand/5 p-12 text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Pembelian Kredit Segera Hadir
+        </h1>
+        <p className="text-muted-foreground mt-3 text-[14.5px] leading-relaxed">
+          Kamu sedang dalam Early Access Campfire. Selama periode ini, kredit
+          dibagikan gratis dan tidak ada pembelian. Kami akan beritahu kamu
+          segera setelah opsi top-up tersedia.
+        </p>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("campfire_open_feedback"))}
+          className="mt-7 rounded-full bg-brand text-white px-5 py-2.5 text-[13.5px] font-semibold hover:bg-brand/90 transition-colors"
+        >
+          Kirim Masukan →
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function PricingPage() {
+  if (!flags.BILLING_ACTIVE) {
+    return <BillingDisabledPlaceholder />
+  }
+  return <PricingPageInner />
+}
+
+function PricingPageInner() {
   const searchParams = useSearchParams()
   const wasCanceled  = searchParams.get("status") === "canceled"
 
