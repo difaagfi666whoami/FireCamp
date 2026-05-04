@@ -52,11 +52,11 @@ export function Sidebar() {
   useEffect(() => {
     async function loadUserData() {
       const [{ data: authData }, profile, bal] = await Promise.all([
-        supabase.auth.getUser(),
+        supabase.auth.getSession(),
         getUserProfile(),
         getBalance().catch(() => 0),
       ])
-      setUserEmail(authData?.user?.email ?? null)
+      setUserEmail(authData?.session?.user?.email ?? null)
       setWorkspaceName(profile?.workspace_name?.trim() || null)
       setCreditBalance(bal)
       setDemoModeState(isMockMode())

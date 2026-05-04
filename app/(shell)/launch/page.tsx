@@ -13,6 +13,7 @@ import { markStageDone } from "@/lib/progress"
 import { session } from "@/lib/session"
 import { saveCampaignSchedule } from "@/lib/api/launch"
 import { updateCompanyProgress } from "@/lib/api/recon"
+import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
 
 type Mode = "ai" | "manual"
 
@@ -151,26 +152,7 @@ export default function LaunchPage() {
   }
 
   if (!hasCampaign) {
-    return (
-      <div className="p-8 max-w-3xl mx-auto space-y-6 animate-in fade-in duration-500">
-        {breadcrumb}
-        <div className="flex items-center">{stepBadge}</div>
-        <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
-            <div className="bg-brand/10 p-5 rounded-full mb-6">
-              <Rocket className="w-8 h-8 text-brand" strokeWidth={1.5} />
-            </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada campaign</h3>
-            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Anda belum memiliki draft campaign untuk di-launch. Silakan buat campaign dari tahap awal terlebih dahulu.
-            </p>
-            <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Mulai Recon
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    return <SessionExpiredState currentStage="launch" />
   }
 
   return (

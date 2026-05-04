@@ -448,10 +448,11 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
 
 class ProReconRequest(BaseModel):
     query:   str                       # free-form: URL only, or URL + research directives
+    user_id: Optional[str] = None
 
 
 @router.post("/recon/pro")
-async def recon_pro(req: ProReconRequest, user_id: str = Depends(get_current_user)):
+async def recon_pro(req: ProReconRequest, auth_user: str = Depends(get_current_user)):
     """
     Pro Mode: call Tavily Research API directly, save markdown report to Supabase.
     Returns company_id for redirect to /recon/[id].
@@ -460,6 +461,9 @@ async def recon_pro(req: ProReconRequest, user_id: str = Depends(get_current_use
     if not query:
         raise HTTPException(status_code=400, detail="Query tidak boleh kosong")
 
+    # Pro mode requires valid user_id
+    user_id = getattr(req, "user_id", auth_user) or auth_user
+    user_id = user_id.strip() if isinstance(user_id, str) else ""
     if not user_id:
         raise HTTPException(status_code=401, detail="user_id wajib disertakan. Silakan login ulang.")
 

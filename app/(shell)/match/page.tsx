@@ -9,19 +9,31 @@ import { MatchingTab } from "./components/MatchingTab"
 import { ProductCatalogTab } from "./components/ProductCatalogTab"
 import { session } from "@/lib/session"
 import { PageHelp } from "@/components/ui/PageHelp"
+import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
 
 export default function MatchPage() {
   const router = useRouter()
 
   const [companyName, setCompanyName] = useState<string>("")
   const [companyId, setCompanyId] = useState<string>("")
+  const [sessionChecked, setSessionChecked] = useState(false)
+  const [hasSessionData, setHasSessionData] = useState(true)
 
   useEffect(() => {
     const profile = session.getReconProfile()
-    if (profile?.name) setCompanyName(profile.name)
     const id = session.getCompanyId()
-    if (id) setCompanyId(id)
+    
+    if (!profile || !id) {
+      setHasSessionData(false)
+    } else {
+      if (profile.name) setCompanyName(profile.name)
+      setCompanyId(id)
+    }
+    setSessionChecked(true)
   }, [])
+
+  if (!sessionChecked) return null
+  if (!hasSessionData) return <SessionExpiredState currentStage="match" />
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500">

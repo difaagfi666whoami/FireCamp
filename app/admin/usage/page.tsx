@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, RefreshCcw, AlertTriangle } from "lucide-react"
+import { Loader2, RefreshCcw, AlertTriangle, ExternalLink } from "lucide-react"
 
 type Stats = {
   users: {
@@ -221,6 +221,31 @@ export default function AdminUsagePage() {
               ))}
             </div>
           )}
+        </Section>
+
+        <Section title="Pantau Kredit API Eksternal">
+          <p className="text-[12px] text-muted-foreground/80 mb-4">
+            Cek dashboard masing-masing provider untuk memantau pemakaian real-time.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { name: "Tavily Search",  url: "https://app.tavily.com",       color: "text-blue-600",    bg: "bg-blue-50"   },
+              { name: "Jina AI",        url: "https://jina.ai/dashboard",    color: "text-violet-600",  bg: "bg-violet-50" },
+              { name: "Serper.dev",     url: "https://serper.dev/dashboard", color: "text-emerald-600", bg: "bg-emerald-50"},
+              { name: "Resend",         url: "https://resend.com/overview",  color: "text-orange-600",  bg: "bg-orange-50" },
+            ].map(api => (
+              <a
+                key={api.name}
+                href={api.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center justify-between rounded-xl border border-border/40 px-4 py-3 ${api.bg} hover:border-border transition-colors group`}
+              >
+                <span className={`text-[13px] font-semibold ${api.color}`}>{api.name}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+              </a>
+            ))}
+          </div>
         </Section>
 
         <Section title="Free Tier API Burn (estimasi bulan ini)">

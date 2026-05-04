@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert, Loader2, Activity, ChevronRight } from "lucide-react"
+import { ArrowLeft, Mail, MessageSquareReply, Eye, CheckCircle2, Clock, Calendar, MousePointerClick, AlertTriangle, XCircle, ShieldAlert, Loader2, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useEffect, useState } from "react"
@@ -12,8 +12,8 @@ import { updateCompanyProgress } from "@/lib/api/recon"
 import { StatCards } from "./components/StatCards"
 import { PerformanceBarChart } from "./components/PerformanceBarChart"
 import { EngagementLineChart } from "./components/EngagementLineChart"
-import { TokenUsageCard } from "./components/TokenUsageCard"
 import { PageHelp } from "@/components/ui/PageHelp"
+import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   replied: {
@@ -89,7 +89,7 @@ export default function PulsePage() {
   const [analytics, setAnalytics] = useState<AnalyticsData>(ZERO_ANALYTICS)
   const [hasCampaign, setHasCampaign] = useState(true)
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
-  const { summary, perEmail, timeline, tokenUsage } = analytics
+  const { summary, perEmail, timeline } = analytics
 
   useEffect(() => {
     setCompanyName(session.getReconProfile()?.name ?? "Perusahaan")
@@ -143,26 +143,7 @@ export default function PulsePage() {
   }
 
   if (!hasCampaign) {
-    return (
-      <div className="p-8 max-w-6xl mx-auto space-y-6 animate-in fade-in duration-500">
-        {breadcrumb}
-        <div className="flex items-center">{stepBadge}</div>
-        <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
-            <div className="bg-brand/10 p-5 rounded-full mb-6">
-              <Activity className="w-8 h-8 text-brand" strokeWidth={1.5} />
-            </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada analitik campaign</h3>
-            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Anda belum meluncurkan campaign apapun. Dasbor Pulse akan aktif setelah campaign Anda berjalan.
-            </p>
-            <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Mulai Recon
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    return <SessionExpiredState currentStage="pulse" />
   }
 
   return (
@@ -210,55 +191,49 @@ export default function PulsePage() {
         <EngagementLineChart data={timeline} />
       </div>
 
-      {/* Bottom Row: Email Status List + Token Usage */}
-      <div className="grid grid-cols-[1fr_360px] gap-6">
-        {/* Email Status List */}
-        <div className="bg-white border border-border/60 rounded-xl p-6 shadow-sm">
-          <div className="mb-5">
-            <h3 className="font-bold text-[15px] text-foreground">Status per Email</h3>
-            <p className="text-[12.5px] text-muted-foreground mt-0.5">
-              Status terkini masing-masing email dalam sekuens
-            </p>
-          </div>
-          <div className="space-y-3">
-            {perEmail.map((email: any) => {
-              const cfg = STATUS_CONFIG[email.status] ?? STATUS_CONFIG.pending
-              return (
-                <div
-                  key={email.emailNumber}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-slate-50/50"
-                >
-                  <div className="p-2 bg-muted rounded-lg shrink-0 text-muted-foreground">
-                    <Mail className="w-4 h-4"  strokeWidth={1.5} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-[14px] text-foreground">{email.name}</p>
-                    <div className="flex gap-3 mt-1.5 text-[12px] text-muted-foreground font-medium">
-                      <span>{email.opens} opens</span>
-                      <span>·</span>
-                      <span>{email.clicks} clicks</span>
-                      <span>·</span>
-                      <span>{email.replies} replies</span>
-                    </div>
-                  </div>
-                  <span
-                    className={cn(
-                      "inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-full border",
-                      cfg.color,
-                      cfg.bg
-                    )}
-                  >
-                    {cfg.icon}
-                    {cfg.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+      {/* Email Status List — full width */}
+      <div className="bg-white border border-border/60 rounded-xl p-6 shadow-sm">
+        <div className="mb-5">
+          <h3 className="font-bold text-[15px] text-foreground">Status per Email</h3>
+          <p className="text-[12.5px] text-muted-foreground mt-0.5">
+            Status terkini masing-masing email dalam sekuens
+          </p>
         </div>
-
-        {/* Token Usage */}
-        <TokenUsageCard tokenUsage={tokenUsage} />
+        <div className="space-y-3">
+          {perEmail.map((email: any) => {
+            const cfg = STATUS_CONFIG[email.status] ?? STATUS_CONFIG.pending
+            return (
+              <div
+                key={email.emailNumber}
+                className="flex items-center gap-4 p-4 rounded-xl border border-border/60 bg-slate-50/50"
+              >
+                <div className="p-2 bg-muted rounded-lg shrink-0 text-muted-foreground">
+                  <Mail className="w-4 h-4" strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-[14px] text-foreground">{email.name}</p>
+                  <div className="flex gap-3 mt-1.5 text-[12px] text-muted-foreground font-medium">
+                    <span>{email.opens} opens</span>
+                    <span>·</span>
+                    <span>{email.clicks} clicks</span>
+                    <span>·</span>
+                    <span>{email.replies} replies</span>
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 text-[11.5px] font-bold px-2.5 py-1 rounded-full border",
+                    cfg.color,
+                    cfg.bg
+                  )}
+                >
+                  {cfg.icon}
+                  {cfg.label}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

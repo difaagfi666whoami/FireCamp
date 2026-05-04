@@ -16,6 +16,7 @@ import { session } from "@/lib/session"
 import { syncPolishedEmails, regenerateEmailTone, getCraftedEmailsByCompany } from "@/lib/api/craft"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { toast } from "sonner"
+import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
@@ -43,6 +44,9 @@ export default function PolishPage() {
   const [companyName, setCompanyName] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [sessionChecked, setSessionChecked] = useState(false)
+  const [hasSessionData, setHasSessionData] = useState(true)
+  
   // Helper: AI payload might not have `id`, fallback to sequenceNumber
   const getEmailId = (e: CampaignEmail) => String(e.id || e.sequenceNumber)
 
@@ -51,8 +55,18 @@ export default function PolishPage() {
   // ─── Mount: restore emails (4-level hierarchy) ─────────────────────────
 
   useEffect(() => {
-    const reconName = session.getReconProfile()?.name
-    if (reconName) setCompanyName(reconName)
+    const reconProfile = session.getReconProfile()
+    const companyId = session.getCompanyId()
+
+    if (!reconProfile || !companyId) {
+      setHasSessionData(false)
+      setIsLoading(false)
+      setSessionChecked(true)
+      return
+    }
+
+    setCompanyName(reconProfile.name)
+    setSessionChecked(true)
 
     const alreadyStarted = sessionStorage.getItem("campfire_polish_started")
     if (alreadyStarted === "1") setHasStarted(true)
@@ -247,6 +261,9 @@ export default function PolishPage() {
   )
   const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 4 dari 6</span>
 
+  if (!sessionChecked) return null
+  if (!hasSessionData) return <SessionExpiredState currentStage="polish" />
+
   if (isLoading) {
     return (
       <div className="p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-300">
@@ -261,29 +278,7 @@ export default function PolishPage() {
   }
 
   if (emails.length === 0) {
-    return (
-      <div className="p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500">
-        {breadcrumb}
-        <div className="flex items-center">{stepBadge}</div>
-        <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
-            <div className="bg-brand/10 p-5 rounded-full mb-6">
-              <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
-            </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada draft email</h3>
-            <p className="text-[13px] text-muted-foreground font-medium mb-4">
-              Target: <span className="font-bold text-foreground">{companyName || "Belum dipilih"}</span>
-            </p>
-            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Anda belum melakukan generate campaign di tahap Craft. Silakan kembali ke Craft untuk membuat draft email terlebih dahulu.
-            </p>
-            <Button onClick={() => router.push("/craft")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Menuju Craft
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    return <SessionExpiredState currentStage="polish" />
   }
 
   if (!hasStarted) {

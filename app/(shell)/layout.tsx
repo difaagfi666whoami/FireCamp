@@ -30,17 +30,27 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
     }
 
     async function checkOnboarding() {
-      const { data: userData } = await supabase.auth.getUser()
-      if (!userData.user) { return }
+      try {
+        const { data: userData } = await supabase.auth.getUser()
+        if (!userData.user) { return }
 
-      const profile = await getUserProfile()
-      if (!profile || profile.onboarding_completed === false) {
-        setReady(false)
-        router.push("/onboarding")
-        return
+        // Add timeout — if DB check takes >5s, assume onboarded to prevent blank screen
+        const timeoutPromise = new Promise<null>((resolve) => 
+          setTimeout(() => resolve(null), 5000)
+        )
+        const profilePromise = getUserProfile()
+        const profile = await Promise.race([profilePromise, timeoutPromise])
+
+        if (!profile || profile.onboarding_completed === false) {
+          setReady(false)
+          router.push("/onboarding")
+          return
+        }
+
+        localStorage.setItem(ONBOARDING_KEY, "true")
+      } catch (err) {
+        console.error("[ShellLayout] onboarding check failed:", err)
       }
-
-      localStorage.setItem(ONBOARDING_KEY, "true")
     }
 
     checkOnboarding()

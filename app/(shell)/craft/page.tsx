@@ -19,6 +19,7 @@ import { EmailPreviewCard } from "./components/EmailPreviewCard"
 import { Campaign } from "@/types/craft.types"
 import { toast } from "sonner"
 import { PageHelp } from "@/components/ui/PageHelp"
+import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
 
 const CRAFTING_STEPS = [
   "Menganalisis profil perusahaan & pain points...",
@@ -349,26 +350,7 @@ export default function CraftPage() {
   }
 
   if (isProfileLoaded && !companyProfile) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
-        {breadcrumb}
-        <div className="flex items-center">{stepBadge}</div>
-        <div className="flex justify-center py-10">
-          <div className="bg-white flex flex-col items-center justify-center p-8 border border-dashed border-border/80 rounded-2xl max-w-sm w-full shadow-sm text-center">
-            <div className="bg-brand/10 p-5 rounded-full mb-6">
-              <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
-            </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada profil perusahaan</h3>
-            <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Sistem tidak menemukan profil perusahaan target. Silakan kembali ke Recon untuk memulai riset.
-            </p>
-            <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Mulai Recon
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+    return <SessionExpiredState currentStage="craft" />
   }
 
   // ─── Render: idle ─────────────────────────────────────────────────────────

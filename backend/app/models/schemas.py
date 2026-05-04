@@ -175,7 +175,6 @@ class CompanyProfile(BaseModel):
     hq:           str  = ""
     description:    str  = ""
     deepInsights:   list[str]               = []
-    techStack:      list[str]               = []
     strategicReport: Optional[StrategicReport] = None
     reconMode:      Optional[ReconMode]     = None
     linkedin:     LinkedInInfo
@@ -196,6 +195,7 @@ class ReconRequest(BaseModel):
     """POST /api/recon — request body dari Frontend."""
     url:     str
     mode:    ReconMode = ReconMode.free
+    user_id: Optional[str] = None
 
 
 class ReconResponse(CompanyProfile):
@@ -234,6 +234,7 @@ class MatchRequest(BaseModel):
     """POST /api/match — request body dari Frontend."""
     companyProfile: CompanyProfile
     campaign_id:    Optional[str] = None
+    user_id:        Optional[str] = None
 
 
 class MatchResponse(BaseModel):
@@ -277,6 +278,7 @@ class CraftRequest(BaseModel):
     token_recon:     Optional[int] = 0
     token_match:     Optional[int] = 0
     campaign_id:     Optional[str] = None
+    user_id:         Optional[str] = None
 
 
 class CraftResponse(Campaign):
@@ -296,6 +298,7 @@ class RewriteRequest(BaseModel):
     newTone:           str
     sequenceNumber:    int
     campaign_id:       Optional[str] = None
+    user_id:           Optional[str] = None
 
 
 class RewriteResponse(BaseModel):
