@@ -43,8 +43,8 @@ export default function RedeemInvitePage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUserEmail(data.session?.user?.email ?? null)
+    supabase.auth.getSession().then((res) => {
+      setUserEmail(res.data.session?.user?.email ?? null)
     })
 
     // Guard: only auto-send once per browser session to prevent duplicate emails
