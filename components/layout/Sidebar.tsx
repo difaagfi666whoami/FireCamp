@@ -96,22 +96,23 @@ export function Sidebar() {
       return
     }
     let cancelled = false
-    supabase
-      .from("companies")
-      .select("progress_recon, progress_match, progress_craft, progress_polish, progress_launch, progress_pulse")
-      .eq("id", activeCompanyId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (cancelled || !data) return
-        setProgress({
-          recon:  !!data.progress_recon,
-          match:  !!data.progress_match,
-          craft:  !!data.progress_craft,
-          polish: !!data.progress_polish,
-          launch: !!data.progress_launch,
-          pulse:  !!data.progress_pulse,
-        })
+    async function fetchProgress() {
+      const { data } = await supabase
+        .from("companies")
+        .select("progress_recon, progress_match, progress_craft, progress_polish, progress_launch, progress_pulse")
+        .eq("id", activeCompanyId)
+        .maybeSingle()
+      if (cancelled || !data) return
+      setProgress({
+        recon:  !!data.progress_recon,
+        match:  !!data.progress_match,
+        craft:  !!data.progress_craft,
+        polish: !!data.progress_polish,
+        launch: !!data.progress_launch,
+        pulse:  !!data.progress_pulse,
       })
+    }
+    fetchProgress()
     return () => { cancelled = true }
   }, [activeCompanyId, pathname])
 
