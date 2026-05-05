@@ -8,8 +8,9 @@ import { Resend } from "resend"
 // fires them through Resend, and marks them as "sent" in Supabase.
 // ---------------------------------------------------------------------------
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
+const stripQ = (v: string) => v.replace(/^(['"])(.*)\1$/, "$2").trim()
+const supabaseUrl = stripQ(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+const supabaseServiceKey = stripQ(process.env.SUPABASE_SERVICE_ROLE_KEY ?? "")
 const resendApiKey = process.env.RESEND_API_KEY ?? ""
 
 function buildSupabase() {

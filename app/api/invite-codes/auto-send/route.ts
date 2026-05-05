@@ -85,8 +85,9 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const force = !!body?.force
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
+  const stripQ = (v: string) => v.replace(/^(['"])(.*)\1$/, "$2").trim()
+  const supabaseUrl = stripQ(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+  const supabaseKey = stripQ(process.env.SUPABASE_SERVICE_ROLE_KEY ?? "")
   if (!supabaseUrl || !supabaseKey) {
     return NextResponse.json({ error: "config" }, { status: 500 })
   }

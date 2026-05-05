@@ -6,8 +6,9 @@ export async function GET(req: NextRequest) {
   const result = await requireAdmin(req)
   if (result instanceof Response) return result
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
+  const stripQ = (v: string) => v.replace(/^(['"])(.*)\1$/, "$2").trim()
+  const url = stripQ(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+  const key = stripQ(process.env.SUPABASE_SERVICE_ROLE_KEY ?? "")
   if (!url || !key) {
     return NextResponse.json({ error: "Supabase env vars missing" }, { status: 500 })
   }

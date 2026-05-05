@@ -14,8 +14,9 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js"
 // On successful match, increments reply metrics via RPC and updates timeline.
 // ---------------------------------------------------------------------------
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""
+const stripQ = (v: string) => v.replace(/^(['"])(.*)\1$/, "$2").trim()
+const supabaseUrl = stripQ(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+const supabaseServiceKey = stripQ(process.env.SUPABASE_SERVICE_ROLE_KEY ?? "")
 
 function buildSupabase() {
   if (!supabaseUrl || !supabaseServiceKey) {

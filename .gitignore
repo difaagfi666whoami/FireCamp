@@ -45,3 +45,4 @@ __pycache__/
 .zencoder/
 skills-lock.json
 skills/
+.vercel
