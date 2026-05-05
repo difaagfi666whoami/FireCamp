@@ -4,21 +4,38 @@ function stripQuotes(value: string): string {
   return value.replace(/^(['"])(.*)\1$/, "$2").trim()
 }
 
-const url = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
-const key = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "")
+// Lazy-init: defer client creation to runtime so `next build` can
+// generate static pages without requiring Supabase env vars.
+let _supabase: ReturnType<typeof createBrowserClient> | null = null
 
-if (!url || !key) {
-  throw new Error(
-    "Missing Supabase env vars. Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY ada di .env.local"
-  )
+export function getSupabaseClient() {
+  if (_supabase) return _supabase
+
+  const url = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "")
+  const key = stripQuotes(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "")
+
+  if (!url || !key) {
+    throw new Error(
+      "Missing Supabase env vars. Pastikan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY ada di .env.local"
+    )
+  }
+
+  // createBrowserClient from @supabase/ssr handles cookie chunking natively —
+  // preventing silent cookie drops when session.user exceeds 4KB
+  _supabase = createBrowserClient(url, key)
+  return _supabase
 }
 
-// createBrowserClient from @supabase/ssr handles cookie chunking natively —
-// preventing silent cookie drops when session.user exceeds 4KB
-export const supabase = createBrowserClient(url, key)
+/** @deprecated Use getSupabaseClient() instead */
+export const supabase = new Proxy({} as ReturnType<typeof createBrowserClient>, {
+  get(_target, prop) {
+    return (getSupabaseClient() as any)[prop]
+  },
+})
 
 export async function getCurrentUserId(): Promise<string> {
-  const { data, error } = await supabase.auth.getUser()
+  const client = getSupabaseClient()
+  const { data, error } = await client.auth.getUser()
   if (error || !data.user) {
     throw new Error("Tidak terautentikasi. Silakan login ulang.")
   }
@@ -26,7 +43,8 @@ export async function getCurrentUserId(): Promise<string> {
 }
 
 export async function getCurrentSessionToken(): Promise<string> {
-  const { data, error } = await supabase.auth.getSession()
+  const client = getSupabaseClient()
+  const { data, error } = await client.auth.getSession()
   if (error || !data.session) {
     throw new Error("Sesi tidak valid. Silakan login ulang.")
   }
