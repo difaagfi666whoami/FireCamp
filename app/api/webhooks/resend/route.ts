@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY
+  if (!key) throw new Error("RESEND_API_KEY is not set")
+  return new Resend(key)
+}
 
 // ---------------------------------------------------------------------------
 // Resend Webhook Receiver
@@ -81,6 +85,7 @@ export async function POST(req: NextRequest) {
 
   let event: ResendWebhookEvent
   try {
+    const resend = getResendClient()
     event = resend.webhooks.verify({
       payload,
       headers: {
