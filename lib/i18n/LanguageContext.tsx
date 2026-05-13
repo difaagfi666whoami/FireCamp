@@ -17,10 +17,15 @@ const STORAGE_KEY = "campfire_lang"
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("id")
+  // Prevents SSR hydration mismatch: server always renders "id", client syncs after mount
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === "en" || stored === "id") setLangState(stored)
+    if (stored === "en" || stored === "id") {
+      setLangState(stored)
+    }
+    setMounted(true)
   }, [])
 
   const setLang = useCallback((next: Lang) => {
@@ -30,7 +35,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: TranslationKey, vars?: Record<string, string | number>): string => {
-      let str: string = translations[lang][key] ?? key
+      const activeLang: Lang = mounted ? lang : "id"
+      let str: string = translations[activeLang][key] ?? key
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           str = str.replace(new RegExp(`\\{${k}\\}`, "g"), String(v))
@@ -38,11 +44,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
       return str
     },
-    [lang]
+    [lang, mounted]
   )
 
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang: mounted ? lang : "id", setLang, t }}>
       {children}
     </LanguageContext.Provider>
   )
