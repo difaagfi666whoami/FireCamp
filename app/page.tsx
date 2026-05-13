@@ -60,9 +60,9 @@ export default function LandingPage() {
             {/* EN | ID toggle */}
             <button
               onClick={() => setLang(lang === "id" ? "en" : "id")}
-              className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors"
+              className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full border border-[#0D1A14]/20 text-[#0D1A14]/70 hover:border-[#0D1A14]/50 hover:text-[#0D1A14] transition-all"
             >
-              <Languages size={14} strokeWidth={1.8} />
+              <Languages size={13} strokeWidth={2} />
               <span>{lang === "id" ? "EN" : "ID"}</span>
             </button>
             <Link
