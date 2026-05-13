@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase/client"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 type State = "idle" | "loading" | "success" | "error"
 
@@ -15,6 +16,7 @@ const IS_DEV = process.env.NODE_ENV === "development"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [email, setEmail] = useState("")
   const [state, setState] = useState<State>("idle")
 
@@ -63,9 +65,7 @@ export default function LoginPage() {
 
         <div>
           <p className="text-4xl font-black text-[#F5F3EF] tracking-tighter leading-tight">
-            Setiap outreach yang terstruktur
-            <br />
-            dimulai dari sini.
+            {t("Every structured outreach starts here.")}
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex flex-col">
         <div className="p-6">
           <Link href="/" className="text-sm text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors">
-            ← Kembali ke beranda
+            {t("← Back to home")}
           </Link>
         </div>
 
@@ -84,21 +84,21 @@ export default function LoginPage() {
             {state === "success" ? (
               <div className="flex flex-col items-center text-center gap-4">
                 <CheckCircle2 size={48} color="#0F6E56" />
-                <h2 className="text-2xl font-bold text-[#0D1A14] tracking-tight">Link masuk terkirim!</h2>
-                <p className="text-sm text-[#0D1A14]/60">Cek inbox email kamu. Link berlaku 10 menit.</p>
+                <h2 className="text-2xl font-bold text-[#0D1A14] tracking-tight">{t("Magic link sent!")}</h2>
+                <p className="text-sm text-[#0D1A14]/60">{t("Check your inbox. Link is valid for 10 minutes.")}</p>
                 <button
                   onClick={handleResend}
                   className="text-sm text-[#0F6E56] hover:underline font-semibold"
                 >
-                  Kirim ulang →
+                  {t("Resend →")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <h1 className="text-3xl font-black text-[#0D1A14] tracking-tight">Masuk</h1>
+                  <h1 className="text-3xl font-black text-[#0D1A14] tracking-tight">{t("Sign In")}</h1>
                   <p className="text-sm text-[#0D1A14]/60 mt-2">
-                    Masukkan email kamu. Kami kirim link masuk langsung ke inbox.
+                    {t("Enter your email. We'll send a magic link directly to your inbox.")}
                   </p>
                 </div>
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="nama@perusahaan.com"
+                    placeholder={t("name@company.com")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={state === "loading"}
@@ -120,7 +120,7 @@ export default function LoginPage() {
 
                 {state === "error" && (
                   <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                    Gagal mengirim link. Pastikan email valid dan coba lagi.
+                    {t("Failed to send link. Make sure the email is valid and try again.")}
                   </p>
                 )}
 
@@ -132,10 +132,10 @@ export default function LoginPage() {
                   {state === "loading" ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Mengirim...
+                      {t("Sending...")}
                     </>
                   ) : (
-                    "Kirim Link Masuk →"
+                    t("Send Magic Link →")
                   )}
                 </Button>
 
@@ -144,7 +144,7 @@ export default function LoginPage() {
                     <div className="w-full border-t border-[#0D1A14]/10" />
                   </div>
                   <div className="relative flex justify-center text-xs">
-                    <span className="bg-[#F5F3EF] px-2 text-[#0D1A14]/50 font-medium">ATAU</span>
+                    <span className="bg-[#F5F3EF] px-2 text-[#0D1A14]/50 font-medium">{t("OR")}</span>
                   </div>
                 </div>
 
@@ -160,11 +160,11 @@ export default function LoginPage() {
                     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                   </svg>
-                  Lanjutkan dengan Google
+                  {t("Continue with Google")}
                 </Button>
 
                 <p className="text-xs text-[#0D1A14]/40 text-center mt-6">
-                  Belum punya akses? Hubungi tim Campfire.
+                  {t("No access yet? Contact the Campfire team.")}
                 </p>
 
                 {IS_DEV && (
