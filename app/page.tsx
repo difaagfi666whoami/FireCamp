@@ -56,20 +56,24 @@ export default function LandingPage() {
             <button
               onClick={() => setLang(lang === "id" ? "en" : "id")}
               aria-label="Switch language"
-              className="flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-[#0D1A14]/5 transition-colors"
+              className="flex items-center gap-0 text-[12px] font-bold tracking-wider"
             >
               <span
-                className="text-[12px] font-bold tracking-wide transition-colors"
-                style={{ color: lang === "en" ? "#0D1A14" : "rgba(13,26,20,0.3)" }}
+                className="px-2 py-1 rounded-md transition-all"
+                style={{
+                  background: lang === "en" ? "rgba(13,26,20,0.08)" : "transparent",
+                  color: lang === "en" ? "#0D1A14" : "rgba(13,26,20,0.45)",
+                }}
               >
                 EN
               </span>
-              <span className="text-[11px] font-normal mx-0.5" style={{ color: "rgba(13,26,20,0.2)" }}>
-                |
-              </span>
+              <span style={{ color: "rgba(13,26,20,0.3)" }}>|</span>
               <span
-                className="text-[12px] font-bold tracking-wide transition-colors"
-                style={{ color: lang === "id" ? "#0D1A14" : "rgba(13,26,20,0.3)" }}
+                className="px-2 py-1 rounded-md transition-all"
+                style={{
+                  background: lang === "id" ? "rgba(13,26,20,0.08)" : "transparent",
+                  color: lang === "id" ? "#0D1A14" : "rgba(13,26,20,0.45)",
+                }}
               >
                 ID
               </span>
