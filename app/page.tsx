@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Flame, Languages } from "lucide-react"
+import { Flame } from "lucide-react"
 import { AuroraCanvas } from "@/components/landing/AuroraCanvas"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 
@@ -51,20 +51,27 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#F5F3EF]/90 backdrop-blur-sm border-b border-[#0D1A14]/10">
         <div className="grid grid-cols-3 items-center px-6 lg:px-16 h-16">
-          <div />
+          {/* KIRI — Language toggle */}
+          <div className="flex items-center">
+            <button
+              onClick={() => setLang(lang === "id" ? "en" : "id")}
+              className="flex items-center gap-1 text-[12px] font-bold px-2 py-1.5 rounded-md hover:bg-[#0D1A14]/5 transition-colors"
+              aria-label="Switch language"
+            >
+              <span className={lang === "en" ? "text-[#0D1A14]" : "text-[#0D1A14]/35"}>EN</span>
+              <span className="text-[#0D1A14]/25 mx-0.5">|</span>
+              <span className={lang === "id" ? "text-[#0D1A14]" : "text-[#0D1A14]/35"}>ID</span>
+            </button>
+          </div>
+
+          {/* TENGAH — Logo */}
           <div className="flex items-center justify-center gap-2">
             <Flame size={16} color="#0F6E56" />
             <span className="text-sm tracking-tight text-[#0D1A14] font-black">campfire</span>
           </div>
+
+          {/* KANAN — Sign In + Request Access */}
           <div className="flex items-center justify-end gap-5">
-            {/* EN | ID toggle */}
-            <button
-              onClick={() => setLang(lang === "id" ? "en" : "id")}
-              className="flex items-center gap-1.5 text-[12px] font-bold px-3 py-1.5 rounded-full border border-[#0D1A14]/20 text-[#0D1A14]/70 hover:border-[#0D1A14]/50 hover:text-[#0D1A14] transition-all"
-            >
-              <Languages size={13} strokeWidth={2} />
-              <span>{lang === "id" ? "EN" : "ID"}</span>
-            </button>
             <Link
               href="/login"
               className="text-sm tracking-[0.04em] text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors"
