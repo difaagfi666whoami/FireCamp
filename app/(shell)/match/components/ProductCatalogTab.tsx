@@ -10,12 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 type ProductInput = Omit<ProductCatalogItem, "id" | "createdAt" | "updatedAt">
 
 const IS_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true"
 
 export function ProductCatalogTab() {
+  const { t } = useLanguage()
   const catalog = useCatalog()
 
   const [isModalOpen, setIsModalOpen]       = useState(false)
@@ -108,7 +110,7 @@ export function ProductCatalogTab() {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground animate-in fade-in">
         <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
-        <p className="text-[14px] font-medium">Memuat katalog produk...</p>
+        <p className="text-[14px] font-medium">{t("Loading product catalog...")}</p>
       </div>
     )
   }
@@ -120,10 +122,10 @@ export function ProductCatalogTab() {
       <div className="flex flex-col items-center justify-center py-24 gap-4 animate-in fade-in">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
           <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
-          <p className="font-bold text-[15px] text-red-800">Gagal memuat katalog</p>
+          <p className="font-bold text-[15px] text-red-800">{t("Failed to load catalog")}</p>
           <p className="text-[13px] text-red-700">{catalog.error}</p>
           <Button onClick={catalog.refresh} variant="outline" size="sm" className="mt-1 rounded-xl">
-            Coba Lagi
+            {t("Try Again")}
           </Button>
         </div>
       </div>
@@ -141,10 +143,10 @@ export function ProductCatalogTab() {
           : "bg-emerald-50 border-emerald-200 text-emerald-700"
       }`}>
         <span className={`w-2 h-2 rounded-full ${IS_MOCK ? "bg-amber-400" : "bg-emerald-500"}`} />
-        {IS_MOCK ? "MOCK MODE — data tidak disimpan ke Supabase" : "SUPABASE MODE — data tersimpan ke database"}
+        {IS_MOCK ? t("MOCK MODE — data not saved to Supabase") : t("SUPABASE MODE — data saved to database")}
       </div>
 
-      <h2 className="text-xl font-bold tracking-tight mb-6">Katalog Produk</h2>
+      <h2 className="text-xl font-bold tracking-tight mb-6">{t("Product Catalog")}</h2>
 
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -153,7 +155,7 @@ export function ProductCatalogTab() {
             <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><FileText className="w-5 h-5"  strokeWidth={1.5} /></div>
             <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5"  strokeWidth={1.5} />
           </div>
-          <div className="font-semibold text-[15px] mt-4 tracking-tight">Tambah Manual</div>
+          <div className="font-semibold text-[15px] mt-4 tracking-tight">{t("Add Manually")}</div>
         </div>
 
         <div onClick={triggerPdfUpload} className="group cursor-pointer rounded-2xl border border-border/80 p-4 pb-5 hover:border-border hover:bg-muted/20 transition-colors flex flex-col justify-between min-h-[140px]">
@@ -163,8 +165,8 @@ export function ProductCatalogTab() {
             </div>
             {!isExtracting && <Plus className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5"  strokeWidth={1.5} />}
           </div>
-          <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? (extractStep || "Mengekstrak AI...") : "Ekstrak PDF Brosur"}</div>
-          <label htmlFor="pdf-catalog-upload" className="sr-only">Upload file PDF katalog</label>
+          <div className="font-semibold text-[15px] mt-4 tracking-tight">{isExtracting ? (extractStep || t("Extracting AI...")) : t("Extract PDF Brochure")}</div>
+          <label htmlFor="pdf-catalog-upload" className="sr-only">{t("Upload PDF catalog file")}</label>
           <input
             id="pdf-catalog-upload"
             name="pdf-catalog-upload"
@@ -180,20 +182,20 @@ export function ProductCatalogTab() {
           <div className="flex justify-between items-start">
             <div className="bg-foreground text-background p-2.5 rounded-xl self-start"><Folder className="w-5 h-5"  strokeWidth={1.5} /></div>
           </div>
-          <div className="font-semibold text-[15px] mt-4 tracking-tight">Import CSV (Segera)</div>
+          <div className="font-semibold text-[15px] mt-4 tracking-tight">{t("Import CSV (Coming Soon)")}</div>
         </div>
       </div>
 
       {/* Recently Added */}
-      <h2 className="text-[17px] font-bold tracking-tight mb-4">Baru ditambahkan</h2>
+      <h2 className="text-[17px] font-bold tracking-tight mb-4">{t("Recently Added")}</h2>
       {recentProducts.length === 0 ? (
         <div className="flex items-center gap-4 p-5 border border-dashed border-border/60 rounded-2xl mb-10 text-muted-foreground">
           <div className="bg-muted/50 p-3 rounded-xl border border-border/40 shrink-0">
             <FileText className="w-5 h-5 text-muted-foreground/50"  strokeWidth={1.5} />
           </div>
           <div>
-            <p className="text-[13.5px] font-semibold text-foreground/70">Belum ada produk ditambahkan</p>
-            <p className="text-[12.5px] text-muted-foreground mt-0.5">Tambah produk pertama kamu via form manual atau ekstrak dari PDF brosur.</p>
+            <p className="text-[13.5px] font-semibold text-foreground/70">{t("No products added yet")}</p>
+            <p className="text-[12.5px] text-muted-foreground mt-0.5">{t("Add your first product via manual form or extract from a PDF brochure.")}</p>
           </div>
         </div>
       ) : (
@@ -220,7 +222,7 @@ export function ProductCatalogTab() {
 
       {/* All Products header */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[17px] font-bold tracking-tight">Semua Produk</h2>
+        <h2 className="text-[17px] font-bold tracking-tight">{t("All Products")}</h2>
         {someChecked && (
           <Button
             variant="destructive"
@@ -229,7 +231,7 @@ export function ProductCatalogTab() {
             className="rounded-xl font-bold text-[12.5px] h-9 gap-2"
           >
             <Trash2 className="w-3.5 h-3.5"  strokeWidth={1.5} />
-            Hapus {checkedIds.size} item
+            {t("Delete {count} item", { count: checkedIds.size })}
           </Button>
         )}
       </div>
@@ -238,12 +240,12 @@ export function ProductCatalogTab() {
       <div className="mb-4">
         <div className="relative w-full sm:w-[260px]">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"  strokeWidth={1.5} />
-          <label htmlFor="catalog-search" className="sr-only">Cari produk</label>
+          <label htmlFor="catalog-search" className="sr-only">{t("Search products")}</label>
           <input
             id="catalog-search"
             name="catalog-search"
             type="text"
-            placeholder="Cari produk..."
+            placeholder={t("Search products...")}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-xl border border-border text-[13.5px] outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-colors"
@@ -259,15 +261,15 @@ export function ProductCatalogTab() {
               <TableHead className="w-[50px] pl-4">
                 <Checkbox checked={allChecked} onCheckedChange={toggleAll} />
               </TableHead>
-              <TableHead className="font-medium text-xs text-muted-foreground">Nama Produk</TableHead>
-              <TableHead className="font-medium text-xs text-muted-foreground text-right pr-6">Ditambahkan oleh</TableHead>
+              <TableHead className="font-medium text-xs text-muted-foreground">{t("Product Name")}</TableHead>
+              <TableHead className="font-medium text-xs text-muted-foreground text-right pr-6">{t("Added by")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={3} className="text-center py-10 text-muted-foreground text-[13.5px]">
-                  {searchQuery ? `Tidak ada produk yang cocok dengan "${searchQuery}"` : "Belum ada produk."}
+                  {searchQuery ? t("No products match \"{query}\"", { query: searchQuery }) : t("No products yet.")}
                 </TableCell>
               </TableRow>
             ) : (

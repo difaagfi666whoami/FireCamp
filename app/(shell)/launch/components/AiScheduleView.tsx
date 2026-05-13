@@ -4,6 +4,7 @@ import { Sparkles, Mail, CheckCircle2, Clock, Zap, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { ScheduleItem } from "../page"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface AiScheduleViewProps {
   schedule: ScheduleItem[]
@@ -23,6 +24,7 @@ function formatDate(dateStr: string): string {
 }
 
 export function AiScheduleView({ schedule, isActive, isActivating, onActivate }: AiScheduleViewProps) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-6">
       {/* AI Recommendation Card */}
@@ -32,22 +34,21 @@ export function AiScheduleView({ schedule, isActive, isActivating, onActivate }:
             <Sparkles className="w-4 h-4 text-brand"  strokeWidth={1.5} />
           </div>
           <div>
-            <h3 className="font-bold text-[14px] text-foreground">Rekomendasi AI</h3>
+            <h3 className="font-bold text-[14px] text-foreground">{t("AI Recommendation")}</h3>
             <p className="text-[12.5px] text-muted-foreground mt-0.5">
-              Berdasarkan profil target dan pola engagement optimal B2B
+              {t("Based on target profile and optimal B2B engagement patterns")}
             </p>
           </div>
         </div>
         <p className="text-[13.5px] text-foreground/80 leading-relaxed border-t border-border/40 pt-4">
-          Jadwal 3-email dengan interval <strong>Hari ke-1 → ke-4 → ke-10</strong> dipilih karena target berada di fase ekspansi aktif post-funding, di mana decision maker biasanya responsif di awal minggu.
-          Email pertama dikirim Selasa pagi (09:00) untuk menghindari inbox Monday dump. Follow-up Hari ke-4 memanfaatkan window sebelum akhir pekan. Email terakhir di Hari ke-10 memberi jarak yang cukup untuk tidak terasa memaksa.
+          {t("Campaign will be sent automatically according to the schedule above.")}
         </p>
       </div>
 
       {/* Schedule List */}
       <div className="space-y-3">
         <h3 className="font-bold text-[13px] text-muted-foreground uppercase tracking-wider">
-          Jadwal Pengiriman
+          {t("Delivery Schedule")}
         </h3>
         {schedule.map((item) => (
           <div
@@ -103,7 +104,7 @@ export function AiScheduleView({ schedule, isActive, isActivating, onActivate }:
             {isActive && (
               <span className="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">
                 <CheckCircle2 className="w-3 h-3"  strokeWidth={1.5} />
-                Terjadwal
+                {t("Scheduled")}
               </span>
             )}
           </div>
@@ -118,7 +119,7 @@ export function AiScheduleView({ schedule, isActive, isActivating, onActivate }:
           className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md disabled:opacity-60"
         >
           {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : <Zap className="w-4 h-4 mr-2"  strokeWidth={1.5} />}
-          {isActivating ? "Mengaktifkan..." : "Aktifkan Automation"}
+          {isActivating ? t("Activating...") : t("Activate Automation")}
         </Button>
       ) : (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
@@ -126,9 +127,9 @@ export function AiScheduleView({ schedule, isActive, isActivating, onActivate }:
             <CheckCircle2 className="w-5 h-5"  strokeWidth={1.5} />
           </div>
           <div>
-            <p className="font-bold text-[14.5px] text-emerald-800">Automation aktif!</p>
+            <p className="font-bold text-[14.5px] text-emerald-800">{t("Automation active!")}</p>
             <p className="text-[12.5px] text-emerald-700 mt-0.5">
-              Campaign akan dikirim otomatis sesuai jadwal di atas.
+              {t("Campaign will be sent automatically according to the schedule above.")}
             </p>
           </div>
         </div>

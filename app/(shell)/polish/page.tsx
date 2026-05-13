@@ -17,6 +17,7 @@ import { syncPolishedEmails, regenerateEmailTone, getCraftedEmailsByCompany } fr
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { toast } from "sonner"
 import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 function sq(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
 const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
@@ -37,6 +38,7 @@ function loadSavedEmails(): CampaignEmail[] | null {
 
 export default function PolishPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   // Client-side state initialization
   const [emails, setEmails] = useState<CampaignEmail[]>([])
   const [hasStarted, setHasStarted] = useState(false)
@@ -146,7 +148,7 @@ export default function PolishPage() {
     const craftCampaign = session.getCraftCampaign()
 
     if (!craftCampaign || !craftCampaign.reasoning) {
-      toast.error("Gagal merubah tone", { description: "Data Campaign asli hilang dari sesi, tidak ada context reasoning untuk AI." })
+      toast.error(t("Failed to change tone"), { description: t("Campaign data missing from session. No AI reasoning context.") })
       return
     }
 
@@ -171,10 +173,10 @@ export default function PolishPage() {
         body: newContent.body,
         isApproved: false // pastikan dicabut kembali kalau-kalau dicentang sembari nunggu
       })
-      toast.success(`Berhasil meregenerasi tone Email ${email.sequenceNumber}`)
+      toast.success(t("Successfully regenerated tone for Email {n}", { n: email.sequenceNumber }))
       
     } catch (err: any) {
-      toast.error("Gagal meregenerasi tone email", { description: err.message })
+      toast.error(t("Failed to regenerate email tone"), { description: err.message })
       // rollback UI tone
       updateEmail(emailId, { tone: email.tone })
     } finally {
@@ -235,7 +237,7 @@ export default function PolishPage() {
       try {
         await syncPolishedEmails(campaignId, buildEmailPayload())
       } catch (err: any) {
-        toast.error("Gagal menyimpan hasil edit", { description: err.message ?? "Koneksi ke database gagal." })
+        toast.error(t("Failed to save edits"), { description: err.message ?? t("Database connection failed.") })
         setIsSyncing(false)
         return
       }
@@ -259,7 +261,7 @@ export default function PolishPage() {
       <span>Launch</span>
     </div>
   )
-  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 4 dari 6</span>
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">{t("Step {step} of {total}", { step: 4, total: 6 })}</span>
 
   if (!sessionChecked) return null
   if (!hasSessionData) return <SessionExpiredState currentStage="polish" />
@@ -271,7 +273,7 @@ export default function PolishPage() {
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground">
           <Loader2 className="w-8 h-8 text-brand animate-spin"  strokeWidth={1.5} />
-          <p className="text-[13.5px] font-medium">Memuat data email...</p>
+          <p className="text-[13.5px] font-medium">{t("Loading email data...")}</p>
         </div>
       </div>
     )
@@ -291,15 +293,15 @@ export default function PolishPage() {
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <FileEdit className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Mulai Polish</h3>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">{t("Start Polish")}</h3>
             <p className="text-[13px] text-muted-foreground font-medium mb-1">
               Target: <span className="font-bold text-foreground">{companyName}</span>
             </p>
             <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Review dan edit 3 draft email yang sudah digenerate. Approve setiap email sebelum melanjutkan ke Launch.
+              {t("Review and edit the 3 generated email drafts. Approve each email before continuing to Launch.")}
             </p>
             <Button onClick={handleStartPolish} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Mulai Polish
+              {t("Start Polish")}
             </Button>
           </div>
         </div>
@@ -317,9 +319,9 @@ export default function PolishPage() {
           <div className="flex items-center gap-2 mb-1">
             {stepBadge}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mt-2">Review & Editor (Polish)</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">{t("Review & Editor (Polish)")}</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
-            Review dan finalisasi draft email. Seluruh email wajib di-approve sebelum campaign bisa diaktifkan di tahap selanjutnya.
+            {t("Review and finalize email drafts. All emails must be approved before the campaign can be activated.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -333,17 +335,17 @@ export default function PolishPage() {
           />
           <Button variant="outline" onClick={() => router.push("/craft")} className="shadow-sm font-semibold text-[13.5px]">
             <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-            Kembali
+            {t("Back")}
           </Button>
           {allApproved ? (
             <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
               {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : null}
-              {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
+              {isSyncing ? t("Saving...") : t("Continue to Launch")}
               {!isSyncing && <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />}
             </Button>
           ) : (
             <Button disabled className="bg-muted text-muted-foreground font-semibold text-[13.5px]">
-              Approve semua untuk Lanjut
+              {t("Approve all to continue")}
             </Button>
           )}
         </div>
@@ -358,9 +360,9 @@ export default function PolishPage() {
             </div>
             <div>
               <p className="font-bold text-[13.5px] text-emerald-800">
-                Progress tersimpan — {emails.filter(e => e.isApproved).length}/{emails.length} email di-approve
+                {t("Progress saved — {approved}/{total} emails approved", { approved: emails.filter(e => e.isApproved).length, total: emails.length })}
               </p>
-              <p className="text-[12px] text-emerald-700 font-medium">Pilihan tone dan approval sudah diingat dari sesi sebelumnya.</p>
+              <p className="text-[12px] text-emerald-700 font-medium">{t("Tone and approval choices are remembered from the previous session.")}</p>
             </div>
           </div>
           <button
@@ -416,8 +418,8 @@ export default function PolishPage() {
 
                 <div className="space-y-6">
                   <div className="bg-slate-50 border border-border/60 rounded-xl p-6 shadow-sm">
-                    <h3 className="font-bold text-[14px] text-muted-foreground uppercase tracking-wider mb-1">Tone & Persona</h3>
-                    <p className="text-[12px] text-muted-foreground mb-4">Pilih tone untuk regenerasi otomatis isi email.</p>
+                    <h3 className="font-bold text-[14px] text-muted-foreground uppercase tracking-wider mb-1">{t("Tone & Persona")}</h3>
+                    <p className="text-[12px] text-muted-foreground mb-4">{t("Choose a tone to automatically regenerate the email content.")}</p>
                     <ToneSelector
                       currentTone={email.tone}
                       onChange={(val) => handleToneChange(eId, val)}
@@ -427,7 +429,7 @@ export default function PolishPage() {
                   </div>
 
                   <div className="bg-slate-50 border border-border/60 rounded-xl p-6 shadow-sm">
-                    <h3 className="font-bold text-[14px] text-muted-foreground uppercase tracking-wider mb-4">Approval Status</h3>
+                    <h3 className="font-bold text-[14px] text-muted-foreground uppercase tracking-wider mb-4">{t("Approval Status")}</h3>
                     <ApproveButton
                       isApproved={email.isApproved}
                       emailNumber={email.sequenceNumber}
@@ -435,7 +437,7 @@ export default function PolishPage() {
                     />
                     {email.isApproved && (
                       <p className="text-[12.5px] text-muted-foreground mt-4 font-medium leading-relaxed bg-white border border-border/50 p-3 rounded-lg">
-                        <span className="font-bold text-foreground">Kunci:</span> Email ini disetujui (Read-only). Batalkan approve jika Anda ingin mengedit kembali.
+                        <span className="font-bold text-foreground">{t("Locked:")}</span> {t("This email is approved (Read-only). Cancel approval if you want to edit it again.")}
                       </p>
                     )}
                   </div>
@@ -453,13 +455,13 @@ export default function PolishPage() {
               <Check className="w-6 h-6 stroke-[3]"  strokeWidth={1.5} />
             </div>
             <div>
-              <p className="font-bold text-[16px] text-emerald-900 tracking-tight">Semua draft diapprove!</p>
-              <p className="text-[13.5px] text-emerald-700 font-medium">Siap masuk jadwal automation.</p>
+              <p className="font-bold text-[16px] text-emerald-900 tracking-tight">{t("All drafts approved!")}</p>
+              <p className="text-[13.5px] text-emerald-700 font-medium">{t("Ready for automation schedule.")}</p>
             </div>
           </div>
           <Button onClick={handleProceedToLaunch} disabled={isSyncing} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]">
             {isSyncing ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : null}
-            {isSyncing ? "Menyimpan..." : "Lanjut ke Launch"}
+            {isSyncing ? t("Saving...") : t("Continue to Launch")}
             {!isSyncing && <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />}
           </Button>
         </div>

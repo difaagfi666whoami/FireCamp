@@ -14,6 +14,7 @@ import { PerformanceBarChart } from "./components/PerformanceBarChart"
 import { EngagementLineChart } from "./components/EngagementLineChart"
 import { PageHelp } from "@/components/ui/PageHelp"
 import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   replied: {
@@ -85,14 +86,15 @@ const ZERO_ANALYTICS: AnalyticsData = {
 
 export default function PulsePage() {
   const router = useRouter()
-  const [companyName, setCompanyName] = useState("Perusahaan")
+  const { t } = useLanguage()
+  const [companyName, setCompanyName] = useState("")
   const [analytics, setAnalytics] = useState<AnalyticsData>(ZERO_ANALYTICS)
   const [hasCampaign, setHasCampaign] = useState(true)
   const [isSessionLoaded, setIsSessionLoaded] = useState(false)
   const { summary, perEmail, timeline } = analytics
 
   useEffect(() => {
-    setCompanyName(session.getReconProfile()?.name ?? "Perusahaan")
+    setCompanyName(session.getReconProfile()?.name ?? "")
     const companyId  = session.getCompanyId()
     const campaignId = session.getCampaignId()
     
@@ -127,7 +129,7 @@ export default function PulsePage() {
       <span className="text-foreground font-semibold">Pulse</span>
     </div>
   )
-  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 6 dari 6</span>
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">{t("Step {step} of {total}", { step: 6, total: 6 })}</span>
 
   if (!isSessionLoaded) {
     return (
@@ -136,7 +138,7 @@ export default function PulsePage() {
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
-          <p className="text-[14px] font-medium">Memuat data sesi...</p>
+          <p className="text-[14px] font-medium">{t("Loading session data...")}</p>
         </div>
       </div>
     )
@@ -154,12 +156,11 @@ export default function PulsePage() {
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 6 dari 6</span>
+            {stepBadge}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mt-2">Pulse — Campaign Analytics</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">{t("Pulse — Campaign Analytics")}</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
-            Pantau performa real-time campaign untuk{" "}
-            <span className="font-bold text-foreground">{companyName}</span>.
+            {t("Monitor real-time campaign performance for {name}.", { name: companyName })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -177,7 +178,7 @@ export default function PulsePage() {
             className="shadow-sm font-semibold text-[13.5px]"
           >
             <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-            Kembali ke Launch
+            {t("Back to Launch")}
           </Button>
         </div>
       </div>
@@ -194,9 +195,9 @@ export default function PulsePage() {
       {/* Email Status List — full width */}
       <div className="bg-white border border-border/60 rounded-xl p-6 shadow-sm">
         <div className="mb-5">
-          <h3 className="font-bold text-[15px] text-foreground">Status per Email</h3>
+          <h3 className="font-bold text-[15px] text-foreground">{t("Status per Email")}</h3>
           <p className="text-[12.5px] text-muted-foreground mt-0.5">
-            Status terkini masing-masing email dalam sekuens
+            {t("Current status of each email in the sequence")}
           </p>
         </div>
         <div className="space-y-3">

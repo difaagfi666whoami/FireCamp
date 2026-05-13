@@ -9,6 +9,7 @@ import { getCampaignWithMatchResult } from "@/lib/api/match"
 import { getCraftedEmailsByCompany } from "@/lib/api/craft"
 import { session } from "@/lib/session"
 import { CompanyProfile } from "@/types/recon.types"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { CompanyHeader } from "../components/CompanyHeader"
 import { StrategicMainContent } from "../components/StrategicMainContent"
 import { StrategicSidebar } from "../components/StrategicSidebar"
@@ -21,6 +22,7 @@ import { TavilyReportView } from "../components/TavilyReportView"
 
 export default function SavedReconPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { t } = useLanguage()
   const [profile, setProfile] = useState<CompanyProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,7 +58,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
           }
         }
       })
-      .catch(e => setError(e instanceof Error ? e.message : "Gagal memuat profil"))
+      .catch(e => setError(e instanceof Error ? e.message : t("Failed to load profile")))
       .finally(() => setIsLoading(false))
   }, [params.id])
 
@@ -69,7 +71,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4 text-muted-foreground">
         <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
-        <p className="text-[14px] font-medium">Memuat profil perusahaan...</p>
+        <p className="text-[14px] font-medium">{t("Loading company profile...")}</p>
       </div>
     )
   }
@@ -81,10 +83,10 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
       <div className="flex flex-col items-center justify-center py-24 px-8">
         <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
           <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
-          <p className="font-bold text-[15px] text-red-800">Gagal memuat profil</p>
+          <p className="font-bold text-[15px] text-red-800">{t("Failed to load profile")}</p>
           <p className="text-[13px] text-red-700">{error}</p>
           <Button onClick={() => router.push("/research-library")} variant="outline" size="sm" className="mt-1 rounded-xl">
-            Kembali ke Library
+            {t("Back to Library")}
           </Button>
         </div>
       </div>
@@ -121,13 +123,12 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">
-              Langkah 1 dari 6
+              {t("Step {step} of {total}", { step: 1, total: 6 })}
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mt-2">Review Profil</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">{t("Review Profile")}</h1>
           <p className="text-muted-foreground mt-1 text-[14.5px] font-medium">
-            Tinjau hasil riset untuk{" "}
-            <span className="font-bold text-foreground">{profile.name}</span> sebelum melanjutkan ke Match.
+            {t("Review research results for {name} before continuing to Match.", { name: profile.name })}
           </p>
         </div>
         <Button
@@ -167,33 +168,33 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
             {isPulseDone ? (
               <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-brand">Campaign sudah berjalan</p>
-                  <p className="text-[13px] text-brand/70 mt-0.5">Pantau performa pengiriman email campaign perusahaan ini.</p>
+                  <p className="font-bold text-[15px] text-brand">{t("Campaign is live")}</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">{t("Monitor the email campaign performance for this company.")}</p>
                 </div>
                 <Button onClick={() => router.push("/pulse")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
                   <BarChart2 className="w-4 h-4 mr-2" />
-                  Lihat Analytics
+                  {t("View Analytics")}
                 </Button>
               </div>
             ) : isMatchDone ? (
               <div className="flex items-center justify-between bg-muted/50 border border-border/60 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-foreground">Campaign sudah dimulai</p>
-                  <p className="text-[13px] text-muted-foreground mt-0.5">Lanjutkan campaign yang sedang berjalan.</p>
+                  <p className="font-bold text-[15px] text-foreground">{t("Campaign in progress")}</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">{t("Continue the ongoing campaign.")}</p>
                 </div>
                 <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-                  Lanjutkan Campaign
+                  {t("Continue Campaign")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-brand">Profil siap untuk di-match</p>
-                  <p className="text-[13px] text-brand/70 mt-0.5">Pilih produk yang paling relevan dengan pain points perusahaan ini.</p>
+                  <p className="font-bold text-[15px] text-brand">{t("Profile ready for matching")}</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">{t("Select the most relevant product to the pain points of this company.")}</p>
                 </div>
                 <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-                  Lanjutkan ke Match
+                  {t("Continue to Match")}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -223,33 +224,33 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
             {isPulseDone ? (
               <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-brand">Campaign sudah berjalan</p>
-                  <p className="text-[13px] text-brand/70 mt-0.5">Pantau performa pengiriman email campaign perusahaan ini.</p>
+                  <p className="font-bold text-[15px] text-brand">{t("Campaign is live")}</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">{t("Monitor the email campaign performance for this company.")}</p>
                 </div>
                 <Button onClick={() => router.push("/pulse")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
                   <BarChart2 className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-                  Lihat Analytics
+                  {t("View Analytics")}
                 </Button>
               </div>
             ) : isMatchDone ? (
               <div className="flex items-center justify-between bg-muted/50 border border-border/60 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-foreground">Campaign sudah dimulai</p>
-                  <p className="text-[13px] text-muted-foreground mt-0.5">Lanjutkan campaign yang sedang berjalan.</p>
+                  <p className="font-bold text-[15px] text-foreground">{t("Campaign in progress")}</p>
+                  <p className="text-[13px] text-muted-foreground mt-0.5">{t("Continue the ongoing campaign.")}</p>
                 </div>
                 <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-                  Lanjutkan Campaign
+                  {t("Continue Campaign")}
                   <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
                 </Button>
               </div>
             ) : (
               <div className="flex items-center justify-between bg-brand-light border border-brand/20 rounded-2xl px-6 py-4">
                 <div>
-                  <p className="font-bold text-[15px] text-brand">Profil siap untuk di-match</p>
-                  <p className="text-[13px] text-brand/70 mt-0.5">Pilih produk yang paling relevan dengan pain points perusahaan ini.</p>
+                  <p className="font-bold text-[15px] text-brand">{t("Profile ready for matching")}</p>
+                  <p className="text-[13px] text-brand/70 mt-0.5">{t("Select the most relevant product to the pain points of this company.")}</p>
                 </div>
                 <Button onClick={() => router.push("/match")} className="bg-brand hover:bg-brand/90 text-white rounded-xl font-bold shadow-sm h-11 px-6">
-                  Lanjutkan ke Match
+                  {t("Continue to Match")}
                   <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
                 </Button>
               </div>

@@ -2,6 +2,7 @@
 
 import { HelpCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface PageHelpContent {
   what: string
@@ -15,6 +16,8 @@ interface PageHelpProps {
 }
 
 export function PageHelp({ title, content }: PageHelpProps) {
+  const { t } = useLanguage()
+
   return (
     <Dialog>
       <DialogTrigger
@@ -30,15 +33,15 @@ export function PageHelp({ title, content }: PageHelpProps) {
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <div>
-            <p className="font-semibold text-foreground mb-1">Apa ini?</p>
+            <p className="font-semibold text-foreground mb-1">{t("What is this?")}</p>
             <p className="text-muted-foreground leading-relaxed">{content.what}</p>
           </div>
           <div>
-            <p className="font-semibold text-foreground mb-1">Tips</p>
+            <p className="font-semibold text-foreground mb-1">{t("Tips")}</p>
             <p className="text-muted-foreground leading-relaxed">{content.tips}</p>
           </div>
           <div>
-            <p className="font-semibold text-foreground mb-1">Langkah berikutnya</p>
+            <p className="font-semibold text-foreground mb-1">{t("Next step")}</p>
             <p className="text-muted-foreground leading-relaxed">{content.next}</p>
           </div>
         </div>

@@ -1,62 +1,28 @@
+"use client"
+
 import { BookOpen } from "lucide-react"
-
-const PIPELINE_STEPS = [
-  {
-    step: 1,
-    name: "Recon",
-    desc: "Masukkan URL perusahaan target. Campfire menganalisis pain point, kontak PIC, berita terkini, dan posisi kompetitor secara otomatis.",
-  },
-  {
-    step: 2,
-    name: "Match",
-    desc: "Campfire mencocokkan pain point target dengan produk dari katalog kamu. Pilih produk dengan relevansi tertinggi.",
-  },
-  {
-    step: 3,
-    name: "Craft",
-    desc: "AI menyusun 3 email campaign berdasarkan konteks bisnis target dan produk yang dipilih. Proses memakan waktu 30–60 detik.",
-  },
-  {
-    step: 4,
-    name: "Polish",
-    desc: "Edit subject dan isi email sesuai kebutuhan. Gunakan tombol 'Salin Email' untuk menyalin ke clipboard.",
-  },
-  {
-    step: 5,
-    name: "Launch",
-    desc: "Jadwalkan pengiriman email ke PIC target. Cek ulang alamat dan jadwal sebelum mengaktifkan campaign.",
-  },
-  {
-    step: 6,
-    name: "Pulse",
-    desc: "Pantau open rate, click rate, dan reply rate secara real-time setelah campaign aktif.",
-  },
-]
-
-const FAQ = [
-  {
-    q: "Kenapa kontak PIC tidak muncul di hasil Recon?",
-    a: "Campfire mencari kontak dari data publik. Jika kontak tidak ditemukan, coba gunakan Pro Mode yang melakukan pencarian lebih dalam. Beberapa perusahaan kecil memang tidak memiliki data kontak publik yang cukup.",
-  },
-  {
-    q: "Berapa lama proses Recon berlangsung?",
-    a: "Free Mode selesai dalam 15–30 detik. Pro Mode membutuhkan 45–90 detik karena melakukan analisis lebih mendalam dengan lebih banyak sumber data.",
-  },
-  {
-    q: "Apakah email dikirim langsung atau bisa dijadwalkan?",
-    a: "Kamu bisa memilih pengiriman langsung atau menjadwalkan ke tanggal dan jam tertentu di halaman Launch. Semua email dikirim melalui akun email yang terdaftar di Pengaturan.",
-  },
-  {
-    q: "Berapa email yang dikirim per campaign?",
-    a: "Setiap campaign menghasilkan 3 email (Email 1, 2, 3) yang ditujukan ke 1 PIC target. Kamu bisa mengedit masing-masing email sebelum pengiriman.",
-  },
-  {
-    q: "Bagaimana cara memulai ulang riset untuk perusahaan yang sama?",
-    a: "Buka Research Library, temukan profil perusahaan, lalu klik 'Recon Ulang'. URL akan otomatis terisi dan kamu bisa langsung generate profil baru.",
-  },
-]
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function GuidePage() {
+  const { t } = useLanguage()
+
+  const PIPELINE_STEPS = [
+    { step: 1, name: "Recon",  desc: t("Enter the target company URL. Campfire automatically analyzes pain points, key contacts, latest news, and competitor positioning.") },
+    { step: 2, name: "Match",  desc: t("Campfire matches the target's pain points with the most relevant product from your catalog. Select the product with the highest relevance.") },
+    { step: 3, name: "Craft",  desc: t("AI composes 3 email campaigns based on the target's business context and selected product. Process takes 30–60 seconds.") },
+    { step: 4, name: "Polish", desc: t("Edit the subject and email body as needed. Use the 'Copy Email' button to copy to clipboard.") },
+    { step: 5, name: "Launch", desc: t("Schedule email delivery to the target contact. Double-check the address and schedule before activating the campaign.") },
+    { step: 6, name: "Pulse",  desc: t("Monitor open rate, click rate, and reply rate in real-time after the campaign is active.") },
+  ]
+
+  const FAQ = [
+    { q: t("Why don't key contacts appear in Recon results?"),         a: t("Campfire searches for contacts from public data. If not found, try using Pro Mode for deeper search. Some smaller companies simply don't have enough public contact data.") },
+    { q: t("How long does the Recon process take?"),                    a: t("Free Mode completes in 15–30 seconds. Pro Mode takes 45–90 seconds as it performs deeper analysis with more data sources.") },
+    { q: t("Are emails sent immediately or can they be scheduled?"),    a: t("You can choose immediate delivery or schedule a specific date and time on the Launch page. All emails are sent through the email account registered in Settings.") },
+    { q: t("How many emails are sent per campaign?"),                   a: t("Each campaign generates 3 emails (Email 1, 2, 3) directed to 1 target contact. You can edit each email before sending.") },
+    { q: t("How do I restart research for the same company?"),         a: t("Open Research Library, find the company profile, then click 'Re-run Recon'. The URL will be pre-filled and you can generate a new profile immediately.") },
+  ]
+
   return (
     <div className="p-8 max-w-3xl mx-auto">
       {/* Header */}
@@ -65,37 +31,30 @@ export default function GuidePage() {
           <BookOpen className="w-4 h-4 text-brand" strokeWidth={1.5} />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Panduan Campfire</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("Campfire Guide")}</h1>
           <p className="text-muted-foreground mt-1 text-[14.5px] font-medium">
-            Semua yang perlu kamu tahu untuk mulai.
+            {t("Everything you need to know to get started.")}
           </p>
         </div>
       </div>
 
       <div className="space-y-3">
-        {/* Section 1 — Apa itu Campfire */}
+        {/* Section 1 — What is Campfire */}
         <details className="group border border-border/60 rounded-2xl overflow-hidden" open>
           <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none font-semibold text-[14.5px] hover:bg-muted/50 transition-colors select-none">
-            Apa itu Campfire?
+            {t("What is Campfire?")}
             <span className="text-muted-foreground text-lg transition-transform group-open:rotate-180">⌄</span>
           </summary>
           <div className="px-5 pb-5 space-y-3 text-[14px] text-muted-foreground leading-relaxed border-t border-border/40 pt-4">
-            <p>
-              Campfire adalah platform outreach B2B yang mengotomatisasi seluruh proses — dari riset
-              perusahaan target hingga pengiriman email campaign. Cukup satu URL perusahaan untuk memulai.
-            </p>
-            <p>
-              Campfire dirancang untuk tim sales dan marketing yang ingin menjalankan outreach secara
-              terstruktur: riset mendalam, pencocokan produk, email yang dipersonalisasi, dan analytics —
-              semua dalam satu pipeline.
-            </p>
+            <p>{t("Campfire is a B2B outreach platform that automates the entire process — from target company research to email campaign delivery. All you need is a single company URL to get started.")}</p>
+            <p>{t("Campfire is designed for sales and marketing teams who want to run outreach in a structured way: deep research, product matching, personalized emails, and analytics — all in one pipeline.")}</p>
           </div>
         </details>
 
-        {/* Section 2 — Happy Path */}
+        {/* Section 2 — Workflow */}
         <details className="group border border-border/60 rounded-2xl overflow-hidden" open>
           <summary className="flex items-center justify-between px-5 py-4 cursor-pointer list-none font-semibold text-[14.5px] hover:bg-muted/50 transition-colors select-none">
-            Alur Kerja — 6 Langkah
+            {t("Workflow — 6 Steps")}
             <span className="text-muted-foreground text-lg transition-transform group-open:rotate-180">⌄</span>
           </summary>
           <div className="px-5 pb-5 border-t border-border/40 pt-4">

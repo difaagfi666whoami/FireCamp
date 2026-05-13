@@ -12,24 +12,7 @@ import { ReconForm } from "./components/ReconForm"
 import { LoadingSteps } from "@/components/shared/LoadingSteps"
 import { PageHelp } from "@/components/ui/PageHelp"
 import { cn } from "@/lib/utils"
-
-const LOADING_STEPS = [
-  "Membaca halaman website perusahaan target...",
-  "Mencari berita, lowongan, dan sinyal bisnis...",
-  "Mengidentifikasi kontak PIC dari LinkedIn publik...",
-  "Membaca artikel terpilih secara mendalam...",
-  "Menganalisis Hunter metadata & tech stack...",
-  "Menyusun laporan intelijen sales..."
-]
-
-const PRO_LOADING_STEPS = [
-  "Mengirim permintaan ke Tavily Research...",
-  "Tavily menganalisis target perusahaan...",
-  "Mengumpulkan data dari berbagai sumber...",
-  "Memverifikasi dan menyilangkan informasi...",
-  "Menyusun laporan komprehensif...",
-  "Laporan hampir selesai..."
-]
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const SESSION_KEY = "campfire_recon_profile"
 
@@ -38,6 +21,25 @@ const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
 
 export default function ReconPage() {
   const router = useRouter()
+  const { t } = useLanguage()
+
+  const LOADING_STEPS = [
+    t("Reading target company website pages..."),
+    t("Searching for news, job listings, and business signals..."),
+    t("Identifying key contacts from public LinkedIn..."),
+    t("Reading selected articles in depth..."),
+    t("Analyzing Hunter metadata & tech stack..."),
+    t("Composing sales intelligence report..."),
+  ]
+
+  const PRO_LOADING_STEPS = [
+    t("Sending request to Tavily Research..."),
+    t("Tavily analyzing target company..."),
+    t("Gathering data from multiple sources..."),
+    t("Verifying and cross-referencing information..."),
+    t("Composing comprehensive report..."),
+    t("Report almost complete..."),
+  ]
 
   const [profile, setProfile] = useState<any>(null)  // null = SSR-safe
   const [reconUrl, setReconUrl]   = useState("")
@@ -91,7 +93,7 @@ export default function ReconPage() {
       if (!animDone || resolvedProfile === undefined) return
       if (resolvedProfile === null) { setIsLoading(false); return }
       setIsLoading(false)
-      toast.success("Profil berhasil di-generate")
+      toast.success(t("Profile successfully generated"))
 
       if (reconMode === 'pro') {
         router.push(`/recon/${resolvedProfile.id}`)
@@ -123,14 +125,14 @@ export default function ReconPage() {
       runProRecon(proQuery || reconUrl)
         .then(({ id }) => { resolvedProfile = { id }; settle() })
         .catch(e => {
-          toast.error("Tavily Research gagal.", { description: e instanceof Error ? e.message : "Error" })
+          toast.error(t("Tavily Research failed."), { description: e instanceof Error ? e.message : "Error" })
           resolvedProfile = null; settle()
         })
     } else {
       generateReconProfile(reconUrl, reconMode).then(data => {
         resolvedProfile = data; settle()
       }).catch(e => {
-        toast.error("Gagal generate profil.", { description: e instanceof Error ? e.message : "Error" })
+        toast.error(t("Failed to generate profile."), { description: e instanceof Error ? e.message : "Error" })
         resolvedProfile = null; settle()
       })
     }
@@ -159,9 +161,9 @@ export default function ReconPage() {
                 <AlertTriangle className="w-5 h-5 text-amber-600"  strokeWidth={1.5} />
               </div>
               <div>
-                <h3 className="font-bold text-[16px] text-foreground">Generate ulang profil?</h3>
+                <h3 className="font-bold text-[16px] text-foreground">{t("Regenerate profile?")}</h3>
                 <p className="text-[13px] text-muted-foreground mt-1 leading-relaxed">
-                  Profil yang sudah ada akan <strong>ditimpa</strong>. Proses ini menggunakan token AI tambahan.
+                  {t("The existing profile will be overwritten. This process uses additional AI tokens.")}
                 </p>
               </div>
               <button onClick={() => setShowConfirm(false)} className="ml-auto p-1 rounded-lg hover:bg-muted text-muted-foreground shrink-0">
@@ -173,10 +175,10 @@ export default function ReconPage() {
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1 rounded-xl font-semibold" onClick={() => setShowConfirm(false)}>
-                Batal
+                {t("Cancel")}
               </Button>
               <Button className="flex-1 bg-brand hover:bg-brand/90 text-white rounded-xl font-bold" onClick={() => startGenerate(pendingUrl!)}>
-                Ya, Generate Baru
+                {t("Yes, Regenerate")}
               </Button>
             </div>
           </div>
@@ -186,9 +188,9 @@ export default function ReconPage() {
       {/* Header */}
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Recon Baru</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("New Recon (title)")}</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
-            Riset profil target perusahaan untuk menemukan pain points, kontak PIC, dan sinyal bisnis.
+            {t("Research your target company to find pain points, key contacts, and business signals.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -245,7 +247,7 @@ export default function ReconPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-[14.5px] text-foreground">Target Company URL</h2>
-                  <p className="text-[12.5px] text-muted-foreground">Masukkan URL website yang ditarget.</p>
+                  <p className="text-[12.5px] text-muted-foreground">{t("Enter the target website URL.")}</p>
                 </div>
               </div>
               <ReconForm onGenerate={handleGenerate} isLoading={isLoading || isAutoSaving} />
@@ -258,7 +260,7 @@ export default function ReconPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-[14.5px] text-foreground">Research Query</h2>
-                  <p className="text-[12.5px] text-muted-foreground">Mendukung input URL saja, atau URL dengan arahan riset spesifik.</p>
+                  <p className="text-[12.5px] text-muted-foreground">{t("Supports URL only, or URL with specific research direction.")}</p>
                 </div>
               </div>
               <textarea
@@ -273,7 +275,7 @@ export default function ReconPage() {
               {/* Topic chips system */}
               <div className="mt-4">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                  Tambahkan topik riset <span className="normal-case font-normal">(opsional)</span>
+                  {t("Add research topics (optional)")}
                 </p>
 
                 {/* Selected chips (active tags with remove) */}
@@ -284,7 +286,7 @@ export default function ReconPage() {
                         key={chip}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-brand/10 border border-brand/30 text-[11.5px] text-brand font-semibold"
                       >
-                        {chip}
+                        {t(chip as any)}
                         <button
                           disabled={isLoading || isAutoSaving}
                           onClick={() => setSelectedChips(prev => prev.filter(c => c !== chip))}
@@ -300,14 +302,14 @@ export default function ReconPage() {
                 {/* Available chips (unselected only) */}
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    "pain points & tantangan bisnis",
-                    "kontak eksekutif & decision maker",
+                    "pain points & business challenges",
+                    "executive contacts & decision makers",
                     "pricing & minimum order",
-                    "kompetitor & posisi pasar",
-                    "berita terbaru & anomali",
-                    "sinyal hiring & ekspansi",
-                    "produk & layanan utama",
-                    "sertifikasi & kepatuhan regulasi",
+                    "competitors & market position",
+                    "latest news & anomalies",
+                    "hiring & expansion signals",
+                    "main products & services",
+                    "certifications & regulatory compliance",
                   ].filter(chip => !selectedChips.includes(chip)).map(chip => (
                     <button
                       key={chip}
@@ -315,7 +317,7 @@ export default function ReconPage() {
                       onClick={() => setSelectedChips(prev => [...prev, chip])}
                       className="px-2.5 py-1 rounded-full border border-border/60 bg-white text-[11.5px] text-muted-foreground hover:border-brand/40 hover:text-brand hover:bg-brand-light transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      + {chip}
+                      + {t(chip as any)}
                     </button>
                   ))}
                 </div>
@@ -327,7 +329,7 @@ export default function ReconPage() {
                 onClick={() => {
                   // Merge textarea URL + selected chips into one final query
                   const chipsSuffix = selectedChips.length > 0
-                    ? ` cari tahu tentang: ${selectedChips.join(", ")}`
+                    ? ` ${t("learn about: ")}${selectedChips.join(", ")}`
                     : ""
                   const finalQuery = `${proQuery.trim()}${chipsSuffix}`.trim()
                   const urlMatch = finalQuery.match(/https?:\/\/[^\s]+/)
@@ -335,7 +337,7 @@ export default function ReconPage() {
                 }}
               >
                 {(isLoading || isAutoSaving) ? <Loader2 className="w-4 h-4 animate-spin mr-2"  strokeWidth={1.5} /> : null}
-                {(isLoading || isAutoSaving) ? "Menganalisis..." : "Mulai Pro Research"}
+                {(isLoading || isAutoSaving) ? t("Analyzing...") : t("Start Pro Research")}
               </Button>
             </>
           )}
@@ -349,7 +351,7 @@ export default function ReconPage() {
               {isAutoSaving && (
                 <div className="mt-6 flex items-center justify-center gap-2 p-3.5 bg-brand/5 border border-brand/20 rounded-xl animate-in slide-in-from-bottom-2">
                   <Loader2 className="w-4 h-4 animate-spin text-brand" strokeWidth={1.5} />
-                  <p className="text-[13.5px] font-semibold text-brand">Menyimpan profil & automasi redirect...</p>
+                  <p className="text-[13.5px] font-semibold text-brand">{t("Saving profile & redirecting...")}</p>
                 </div>
               )}
             </div>

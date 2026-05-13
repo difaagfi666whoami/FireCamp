@@ -13,19 +13,21 @@ import { createProduct } from "@/lib/api/catalog"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { ProductMatch } from "@/types/match.types"
 import { toast } from "sonner"
-
-const MATCHING_STEPS = [
-  "Menganalisis pain points perusahaan...",
-  "Memindai katalog layanan anda...",
-  "Mengevaluasi kecocokan solusi...",
-  "Menyusun argumentasi value proposition..."
-]
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const SESSION_KEY = "campfire_match_done"
 const PRODUCT_KEY = "campfire_selected_product"
 
 export function MatchingTab() {
   const router = useRouter()
+  const { t } = useLanguage()
+
+  const MATCHING_STEPS = [
+    t("Analyzing company pain points..."),
+    t("Scanning your service catalog..."),
+    t("Evaluating solution fit..."),
+    t("Building value proposition arguments..."),
+  ]
 
   const [isMatching, setIsMatching]     = useState(false)
   const [currentStep, setCurrentStep]   = useState(0)
@@ -109,8 +111,8 @@ export function MatchingTab() {
       console.log("[Debug] Current Company ID:", companyId)
 
       if (!session.isValidUuid(companyId ?? "")) {
-        toast.error("Simpan profil di Recon terlebih dahulu.", {
-          description: "Company ID tidak valid. Klik 'Simpan ke Database' di halaman Recon."
+        toast.error(t("Save profile in Recon first."), {
+          description: t("Company ID is invalid. Click 'Save to Database' on the Recon page.")
         })
         setIsProceeding(false)
         router.push("/recon")
@@ -173,9 +175,9 @@ export function MatchingTab() {
       )
       session.setCampaignId(campaignId)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Koneksi ke database gagal."
+      const msg = e instanceof Error ? e.message : t("Database connection failed.")
       console.error("[MatchingTab] saveCampaignAndMatching error:", e)
-      toast.error("Gagal menyimpan campaign.", { description: msg })
+      toast.error(t("Failed to save campaign."), { description: msg })
       setIsProceeding(false)
       return
     }
@@ -186,8 +188,8 @@ export function MatchingTab() {
 
   const handleStartMatching = () => {
     if (!companyProfile) {
-      toast.error("Profil perusahaan tidak ditemukan.", {
-        description: "Lakukan Recon dan simpan profil terlebih dahulu."
+      toast.error(t("Company profile not found."), {
+        description: t("Run Recon and save the profile first.")
       })
       return
     }
@@ -219,7 +221,7 @@ export function MatchingTab() {
       resolvedResults = results
       settle()
     }).catch(e => {
-      toast.error("AI Matching gagal.", { description: e instanceof Error ? e.message : "Error" })
+      toast.error(t("AI Matching failed."), { description: e instanceof Error ? e.message : "Error" })
       resolvedResults = null
       settle()
     })
@@ -245,7 +247,7 @@ export function MatchingTab() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground animate-in fade-in">
         <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
-        <p className="text-[14px] font-medium">Memuat data sesi...</p>
+        <p className="text-[14px] font-medium">{t("Loading session data...")}</p>
       </div>
     )
   }
@@ -258,13 +260,13 @@ export function MatchingTab() {
             <Search className="w-8 h-8 text-brand" strokeWidth={1.5} />
           </div>
           <h3 className="text-[17px] font-bold mb-1 tracking-tight">
-            Belum ada profil perusahaan
+            {t("No company profile found")}
           </h3>
           <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Sistem tidak menemukan profil perusahaan target. Silakan kembali ke Recon untuk memulai riset.
+            {t("No profile found. Please go back to Recon to start research.")}
           </p>
           <Button onClick={() => router.push("/recon")} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-            Mulai Recon
+            {t("Start Recon")}
           </Button>
         </div>
       </div>
@@ -280,15 +282,15 @@ export function MatchingTab() {
           <div className="bg-brand/10 p-5 rounded-full mb-6">
             <Play className="w-8 h-8 text-brand ml-1" strokeWidth={1.5} />
           </div>
-          <h3 className="text-[17px] font-bold mb-1 text-center tracking-tight">Jalankan AI Matching</h3>
+          <h3 className="text-[17px] font-bold mb-1 text-center tracking-tight">{t("Run AI Matching")}</h3>
           <p className="text-[13px] text-muted-foreground font-medium mb-3 text-center">
             Target: <span className="font-bold text-foreground">{companyName}</span>
           </p>
           <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-            Sistem akan mencari produk di Katalog yang paling tepat untuk menyelesaikan Pain Points perusahaan ini.
+            {t("The system will find the most relevant product in the Catalog to solve the Pain Points of this company.")}
           </p>
           <Button onClick={handleStartMatching} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-            Mulai Pencocokan
+            {t("Start Matching")}
           </Button>
         </div>
       </div>
@@ -300,7 +302,7 @@ export function MatchingTab() {
   if (isMatching) {
     return (
       <div className="max-w-xl mx-auto py-12">
-        <h3 className="text-lg font-semibold mb-6 text-center">Menjalankan Agen AI Matching...</h3>
+        <h3 className="text-lg font-semibold mb-6 text-center">{t("Running AI Matching...")}</h3>
         <LoadingSteps steps={MATCHING_STEPS} currentStep={currentStep} />
       </div>
     )
@@ -312,14 +314,14 @@ export function MatchingTab() {
     <div className="space-y-6 animate-in fade-in duration-700">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="text-[19px] font-bold tracking-tight">Hasil Pencocokan</h3>
+          <h3 className="text-[19px] font-bold tracking-tight">{t("Matching Results")}</h3>
           <p className="text-[13px] text-muted-foreground mt-1">
-            Analisis untuk <span className="font-bold text-foreground">{companyName}</span>
+            {t("Analysis for {name}", { name: companyName })}
           </p>
-          <p className="text-[13px] text-muted-foreground mt-1">Pilih satu produk sebelum melanjutkan ke Craft.</p>
+          <p className="text-[13px] text-muted-foreground mt-1">{t("Select one product before continuing to Craft.")}</p>
         </div>
         <Button variant="outline" size="sm" className="rounded-xl font-semibold text-[12.5px]" onClick={handleStartMatching}>
-          Jalankan Ulang
+          {t("Re-run")}
         </Button>
       </div>
 
@@ -350,16 +352,16 @@ export function MatchingTab() {
                 {selectedId === match.id && <div className="w-2 h-2 rounded-full bg-brand" />}
               </div>
               {selectedId === match.id ? (
-                <span className="truncate">Dipilih untuk Campaign — <span className="font-black">{match.name}</span></span>
-              ) : "Pilih produk ini"}
+                <span className="truncate">{t("Selected for Campaign — {name}", { name: match.name })}</span>
+              ) : t("Select this product")}
               {match.isRecommended && selectedId !== match.id && (
                 <span className="ml-auto text-[11px] bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-full font-bold">
-                  ★ Direkomendasikan
+                  ★ {t("Recommended")}
                 </span>
               )}
               {match.isRecommended && selectedId === match.id && (
                 <span className="ml-auto text-[11px] bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">
-                  ★ Direkomendasikan
+                  ★ {t("Recommended")}
                 </span>
               )}
             </div>
@@ -380,27 +382,27 @@ export function MatchingTab() {
                 <CheckCircle2 className="w-[18px] h-[18px] text-emerald-600"  strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <p className="text-[11.5px] text-emerald-600 font-bold tracking-wide uppercase">Produk Dipilih</p>
+                <p className="text-[11.5px] text-emerald-600 font-bold tracking-wide uppercase">{t("Product Selected")}</p>
                 <p className="text-[14px] font-bold text-foreground truncate leading-tight">
                   {selected?.name ?? "—"}
                 </p>
               </div>
               {selected?.matchScore != null && (
                 <span className="shrink-0 ml-1 inline-flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full bg-brand/10 text-brand border border-brand/20">
-                  {selected.matchScore}% cocok
+                  {t("{score}% match", { score: selected.matchScore })}
                 </span>
               )}
             </div>
           )
         })() : (
-          <p className="text-[13px] text-muted-foreground font-medium">Pilih produk di atas untuk melanjutkan.</p>
+          <p className="text-[13px] text-muted-foreground font-medium">{t("Select a product above to continue.")}</p>
         )}
         <Button
           onClick={handleProceedToCraft}
           disabled={!selectedId || isProceeding}
           className="bg-brand hover:bg-brand/90 text-white font-bold rounded-xl px-6 h-11 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
         >
-          {isProceeding ? "Menyimpan..." : "Lanjutkan ke Craft"}
+          {isProceeding ? t("Saving...") : t("Continue to Craft")}
           <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
         </Button>
       </div>

@@ -2,6 +2,7 @@
 
 import { Zap, CalendarDays } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 type Mode = "ai" | "manual"
 
@@ -11,6 +12,7 @@ interface ModeSelectorProps {
 }
 
 export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
+  const { t } = useLanguage()
   return (
     <div className="grid grid-cols-2 gap-4">
       <button
@@ -33,7 +35,7 @@ export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
             One-click AI Automation
           </p>
           <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
-            Biarkan AI menentukan jadwal optimal berdasarkan pola engagement target.
+            {t("Let AI determine the optimal schedule based on target engagement patterns.")}
           </p>
         </div>
       </button>
@@ -58,7 +60,7 @@ export function ModeSelector({ mode, onChange }: ModeSelectorProps) {
             Manual Scheduling
           </p>
           <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
-            Tentukan sendiri tanggal dan jam pengiriman untuk setiap email.
+            {t("Set your own date and time for each email.")}
           </p>
         </div>
       </button>

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 import { flags } from "@/lib/config/feature-flags"
 import { getUserProfile, markEarlyAccessSeen } from "@/lib/api/profile"
 import { getBalance } from "@/lib/api/credits"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const SEEN_CACHE_KEY = "campfire_eap_seen"
 
@@ -22,6 +23,7 @@ type Step = 1 | 2 | 3
 
 export function OnboardingModal() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<Step>(1)
   const [balance, setBalance] = useState<number>(flags.FREE_CREDITS_ON_SIGNUP)
@@ -72,9 +74,9 @@ export function OnboardingModal() {
     : <MessageSquare className="w-7 h-7 text-brand" />
 
   const stepTitle =
-    step === 1 ? "Selamat datang di Early Access!"
-    : step === 2 ? "Cara kerja Campfire"
-    : "Feedback kamu sangat berarti"
+    step === 1 ? t("Welcome to Early Access!")
+    : step === 2 ? t("How Campfire works")
+    : t("Your feedback matters")
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) dismiss() }}>
@@ -99,31 +101,9 @@ export function OnboardingModal() {
             {stepTitle}
           </DialogTitle>
           <DialogDescription className="text-[14px] leading-relaxed text-muted-foreground pt-1">
-            {step === 1 && (
-              <>
-                Kamu salah satu pengguna pertama Campfire. Kamu punya{" "}
-                <span className="font-bold text-brand">{balance} kredit</span>{" "}
-                untuk memulai.
-              </>
-            )}
-            {step === 2 && (
-              <>
-                Campfire bekerja dalam 6 langkah:{" "}
-                <span className="font-semibold text-foreground">
-                  Recon → Match → Craft → Polish → Launch → Pulse
-                </span>
-                . Mulai dari Recon — masukkan nama perusahaan yang ingin kamu
-                jadikan prospek.
-              </>
-            )}
-            {step === 3 && (
-              <>
-                Tombol{" "}
-                <span className="font-semibold text-foreground">Feedback</span>{" "}
-                selalu ada di pojok kanan bawah. Klik kapan saja untuk memberi
-                masukan, lapor bug, atau minta fitur.
-              </>
-            )}
+            {step === 1 && t("You are one of the first users of Campfire. You have {balance} credits to get started.", { balance })}
+            {step === 2 && t("Campfire works in 6 steps: Recon → Match → Craft → Polish → Launch → Pulse. Start from Recon — enter the name of the company you want to prospect.")}
+            {step === 3 && t("The Feedback button is always at the bottom right corner. Click anytime to give feedback, report a bug, or request a feature.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -133,7 +113,7 @@ export function OnboardingModal() {
               onClick={() => setStep(2)}
               className="w-full rounded-full bg-brand hover:bg-brand/90 text-white font-semibold"
             >
-              Mulai
+              {t("Get Started")}
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           )}
@@ -144,13 +124,13 @@ export function OnboardingModal() {
                 onClick={() => setStep(3)}
                 className="flex-1 rounded-full font-semibold"
               >
-                Nanti dulu
+                {t("Skip for now")}
               </Button>
               <Button
                 onClick={handleTryRecon}
                 className="flex-1 rounded-full bg-brand hover:bg-brand/90 text-white font-semibold"
               >
-                Coba Recon
+                {t("Try Recon")}
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </>
@@ -160,7 +140,7 @@ export function OnboardingModal() {
               onClick={dismiss}
               className="w-full rounded-full bg-brand hover:bg-brand/90 text-white font-semibold"
             >
-              Tutup dan mulai
+              {t("Close and start")}
               <ArrowRight className="ml-2 w-4 h-4" />
             </Button>
           )}

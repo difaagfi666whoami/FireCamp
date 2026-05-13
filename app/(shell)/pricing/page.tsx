@@ -14,25 +14,25 @@ import { getPackages, getBalance, createCheckout, formatRupiah, type CreditPack 
 import { PaymentMethodSelector } from "@/components/billing/PaymentMethodSelector"
 import { PageHelp } from "@/components/ui/PageHelp"
 import { flags } from "@/lib/config/feature-flags"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 function BillingDisabledPlaceholder() {
+  const { t } = useLanguage()
   return (
     <div className="p-8 max-w-3xl mx-auto animate-in fade-in duration-500">
       <div className="rounded-2xl border border-brand/20 bg-brand/5 p-12 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Pembelian Kredit Segera Hadir
+          {t("Credit Purchase Coming Soon")}
         </h1>
         <p className="text-muted-foreground mt-3 text-[14.5px] leading-relaxed">
-          Kamu sedang dalam Early Access Campfire. Selama periode ini, kredit
-          dibagikan gratis dan tidak ada pembelian. Kami akan beritahu kamu
-          segera setelah opsi top-up tersedia.
+          {t("You are in the Campfire Early Access period. During this period, credits are given for free and there are no purchases. We will notify you as soon as top-up options are available.")}
         </p>
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event("campfire_open_feedback"))}
           className="mt-7 rounded-full bg-brand text-white px-5 py-2.5 text-[13.5px] font-semibold hover:bg-brand/90 transition-colors"
         >
-          Kirim Masukan →
+          {t("Send Feedback →")}
         </button>
       </div>
     </div>
@@ -47,6 +47,7 @@ export default function PricingPage() {
 }
 
 function PricingPageInner() {
+  const { t } = useLanguage()
   const searchParams = useSearchParams()
   const wasCanceled  = searchParams.get("status") === "canceled"
 
@@ -62,12 +63,12 @@ function PricingPageInner() {
   useEffect(() => {
     Promise.all([getPackages(), getBalance()])
       .then(([p, b]) => { setPacks(p); setBalance(b) })
-      .catch((err) => toast.error(err?.message ?? "Gagal memuat data"))
+      .catch((err) => toast.error(err?.message ?? t("Failed to load data")))
       .finally(() => setIsLoading(false))
   }, [])
 
   useEffect(() => {
-    if (wasCanceled) toast("Checkout dibatalkan. Tidak ada credits dipotong.")
+    if (wasCanceled) toast(t("Checkout canceled. No credits were deducted."))
   }, [wasCanceled])
 
   const openPaymentModal = (pack: CreditPack) => {
@@ -83,7 +84,7 @@ function PricingPageInner() {
       const url = await createCheckout(selectedPack.id)
       window.location.href = url
     } catch (err: any) {
-      toast.error(err?.message ?? "Gagal membuat sesi checkout")
+      toast.error(err?.message ?? t("Failed to create checkout session"))
       setStripeLoading(null)
     }
   }
@@ -98,17 +99,17 @@ function PricingPageInner() {
       <div className="border-b pb-8 border-border/40">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Beli Kredit</h1>
+            <h1 className="text-2xl font-bold tracking-tight">{t("Buy Credits (title)")}</h1>
             <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
-              Pay-as-you-go. Tidak ada subscription bulanan.
+              {t("Pay-as-you-go. No monthly subscription.")}
             </p>
           </div>
           <PageHelp
-            title="Cara kerja kredit"
+            title={t("How credits work")}
             content={{
-              what: "Setiap operasi memotong kredit: Recon Free 1, Recon Pro 5, Match 1, Craft 2, Polish 1.",
-              tips: "Beli paket sesuai volume kerjamu. Tidak kadaluarsa — kredit tetap ada selama akun aktif.",
-              next: "Pilih paket di bawah, klik 'Beli', pilih metode bayar (QRIS, Transfer, atau Kartu), lalu selesaikan pembayaran.",
+              what: t("Each operation deducts credits: Recon Free 1, Recon Pro 5, Match 1, Craft 2, Polish 1."),
+              tips: t("Buy a package that fits your volume. No expiry — credits stay as long as your account is active."),
+              next: t("Choose a package below, click 'Buy', choose a payment method (QRIS, Transfer, or Card), then complete the payment."),
             }}
           />
         </div>
@@ -118,10 +119,10 @@ function PricingPageInner() {
           <div className="mt-8 flex items-baseline justify-between">
             <div className="flex flex-col gap-1">
               <span className="text-[15px] font-semibold text-muted-foreground">
-                Saldo kamu saat ini:
+                {t("Your current balance:")}
               </span>
               <a href="/billing" className="text-[12.5px] text-brand hover:underline font-medium">
-                Lihat Riwayat Transaksi →
+                {t("View Transaction History →")}
               </a>
             </div>
             <span className="text-6xl font-black tracking-tighter text-foreground leading-none">
@@ -134,7 +135,7 @@ function PricingPageInner() {
       {isLoading && (
         <div className="flex items-center justify-center py-24 text-muted-foreground gap-3">
           <Loader2 className="w-6 h-6 animate-spin" strokeWidth={1.5} />
-          <span className="text-sm font-medium">Memuat paket...</span>
+          <span className="text-sm font-medium">{t("Loading packages...")}</span>
         </div>
       )}
 
@@ -184,10 +185,10 @@ function PricingPageInner() {
                 {stripeLoading === p.id ? (
                   <span className="flex items-center justify-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
-                    Mengarahkan ke Stripe...
+                    {t("Redirecting to Stripe...")}
                   </span>
                 ) : (
-                  "Beli sekarang →"
+                  t("Buy now →")
                 )}
               </button>
             </div>
@@ -197,14 +198,14 @@ function PricingPageInner() {
           {/* Payment methods note */}
           <div className="flex items-center justify-center gap-2 text-[12.5px] text-muted-foreground">
             <Check className="w-3.5 h-3.5 text-success shrink-0" strokeWidth={2} />
-            <span>QRIS · GoPay · OVO · DANA · Transfer BCA / Mandiri / BNI / BRI · Kartu Kredit</span>
+            <span>{t("QRIS · GoPay · OVO · DANA · Transfer BCA / Mandiri / BNI / BRI · Credit Card")}</span>
           </div>
 
           <div className="text-center pt-2">
             <p className="text-[13.5px] text-muted-foreground">
-              Butuh lebih dari 500 kredit per bulan untuk tim yang besar?{" "}
+              {t("Need more than 500 credits per month for a large team?")}{" "}
               <a href="mailto:sales@campfire.id" className="text-foreground font-semibold hover:underline cursor-pointer">
-                Hubungi Kami
+                {t("Contact Us")}
               </a>
             </p>
           </div>
@@ -215,36 +216,36 @@ function PricingPageInner() {
       {!isLoading && (
         <div className="mt-12 pt-8 border-t border-border/40">
           <div className="mb-6">
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Simulasi Biaya Campaign</h2>
-            <p className="text-[13.5px] text-muted-foreground mt-1">Estimasi pengeluaran per satu siklus lengkap (End-to-End) ke satu perusahaan target.</p>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">{t("Campaign Cost Simulation")}</h2>
+            <p className="text-[13.5px] text-muted-foreground mt-1">{t("Estimated cost per one complete cycle (End-to-End) to one target company.")}</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
             {/* Free Mode Simulation */}
             <div className="rounded-2xl border border-border/60 bg-white shadow-sm overflow-hidden flex flex-col">
               <div className="bg-surface px-6 py-4 border-b border-border/60">
-                <h3 className="font-bold text-foreground text-[15px]">Pipeline: Mode Free</h3>
+                <h3 className="font-bold text-foreground text-[15px]">{t("Pipeline: Free Mode")}</h3>
               </div>
               <div className="p-6 pt-4 flex flex-col flex-grow">
                 <div className="space-y-1 mb-6">
                   {[
-                    { label: "Recon (Free)", desc: "Riset dasar via URL perusahaan", cost: 1 },
-                    { label: "Match", desc: "Pencocokan masalah ke produk", cost: 1 },
-                    { label: "Craft", desc: "Auto-generate 3 draft email", cost: 2 },
-                    { label: "Polish", desc: "Rewrite & revisi manual AI", cost: 1 },
+                    { label: "Recon (Free)", desc: t("Basic research via company URL"), cost: 1 },
+                    { label: "Match", desc: t("Problem-to-product matching"), cost: 1 },
+                    { label: "Craft", desc: t("Auto-generate 3 email drafts"), cost: 2 },
+                    { label: "Polish", desc: t("AI rewrite & manual revision"), cost: 1 },
                   ].map((row, i) => (
                     <div key={i} className="flex items-center justify-between py-2.5 border-b border-border/40 last:border-0">
                       <div className="flex flex-col">
                         <span className="font-semibold text-[13.5px] text-foreground">{row.label}</span>
                         <span className="text-[11.5px] text-muted-foreground">{row.desc}</span>
                       </div>
-                      <span className="font-bold text-[13px] text-muted-foreground">{row.cost} kredit</span>
+                      <span className="font-bold text-[13px] text-muted-foreground">{t("{n} credits / target", { n: row.cost })}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-auto pt-4 border-t-2 border-border/60 flex items-center justify-between">
-                  <span className="font-bold text-[14px]">Total Estimasi</span>
-                  <span className="font-black text-brand bg-brand/10 px-3 py-1.5 rounded-lg text-[13px]">5 kredit / target</span>
+                  <span className="font-bold text-[14px]">{t("Total Estimate")}</span>
+                  <span className="font-black text-brand bg-brand/10 px-3 py-1.5 rounded-lg text-[13px]">{t("{n} credits / target", { n: 5 })}</span>
                 </div>
               </div>
             </div>
@@ -255,28 +256,28 @@ function PricingPageInner() {
                 High Impact
               </div>
               <div className="bg-brand px-6 py-4">
-                <h3 className="font-bold text-white text-[15px]">Pipeline: Mode Pro</h3>
+                <h3 className="font-bold text-white text-[15px]">{t("Pipeline: Pro Mode")}</h3>
               </div>
               <div className="p-6 pt-4 flex flex-col flex-grow bg-brand/[0.02]">
                 <div className="space-y-1 mb-6">
                   {[
-                    { label: "Recon (Pro)", desc: "Deep web research & Validasi PIC", cost: 5 },
-                    { label: "Match", desc: "Pencocokan masalah ke produk", cost: 1 },
-                    { label: "Craft", desc: "Auto-generate 3 draft email", cost: 2 },
-                    { label: "Polish", desc: "Rewrite & revisi manual AI", cost: 1 },
+                    { label: "Recon (Pro)", desc: t("Deep web research & PIC validation"), cost: 5 },
+                    { label: "Match", desc: t("Problem-to-product matching"), cost: 1 },
+                    { label: "Craft", desc: t("Auto-generate 3 email drafts"), cost: 2 },
+                    { label: "Polish", desc: t("AI rewrite & manual revision"), cost: 1 },
                   ].map((row, i) => (
                     <div key={i} className="flex items-center justify-between py-2.5 border-b border-brand/10 last:border-0">
                       <div className="flex flex-col">
                         <span className="font-semibold text-[13.5px] text-foreground">{row.label}</span>
                         <span className="text-[11.5px] text-muted-foreground">{row.desc}</span>
                       </div>
-                      <span className="font-bold text-[13px] text-brand">{row.cost} kredit</span>
+                      <span className="font-bold text-[13px] text-brand">{t("{n} credits / target", { n: row.cost })}</span>
                     </div>
                   ))}
                 </div>
                 <div className="mt-auto pt-4 border-t-2 border-brand/20 flex items-center justify-between">
-                  <span className="font-bold text-[14px] text-brand">Total Estimasi</span>
-                  <span className="font-black text-white bg-brand px-3 py-1.5 rounded-lg text-[13px]">9 kredit / target</span>
+                  <span className="font-bold text-[14px] text-brand">{t("Total Estimate")}</span>
+                  <span className="font-black text-white bg-brand px-3 py-1.5 rounded-lg text-[13px]">{t("{n} credits / target", { n: 9 })}</span>
                 </div>
               </div>
             </div>
@@ -288,28 +289,28 @@ function PricingPageInner() {
       {!isLoading && (
         <div className="mt-12 pt-8 border-t border-border/40 pb-12 flex flex-col items-center">
           <div className="mb-6 text-center">
-            <h2 className="text-lg font-bold tracking-tight text-foreground">Pertanyaan yang Sering Diajukan</h2>
+            <h2 className="text-lg font-bold tracking-tight text-foreground">{t("Frequently Asked Questions")}</h2>
           </div>
           <div className="w-full max-w-2xl flex flex-col text-[13.5px]">
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
               <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">1</span>
               <div>
-                <h4 className="font-bold text-foreground mb-1.5">Apakah kredit bisa hangus?</h4>
-                <p className="text-muted-foreground leading-relaxed">Tidak. Kredit yang kamu beli tidak memiliki masa kedaluwarsa dan akan tetap ada di akunmu selama akun aktif.</p>
+                <h4 className="font-bold text-foreground mb-1.5">{t("Do credits expire?")}</h4>
+                <p className="text-muted-foreground leading-relaxed">{t("No. Credits you purchase do not have an expiry date and will remain in your account as long as it is active.")}</p>
               </div>
             </div>
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
               <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">2</span>
               <div>
-                <h4 className="font-bold text-foreground mb-1.5">Metode bayar yang didukung?</h4>
-                <p className="text-muted-foreground leading-relaxed">QRIS (scan via GoPay, OVO, DANA, ShopeePay, atau aplikasi bank apapun), Transfer Virtual Account (BCA, Mandiri, BNI, BRI, Permata), dan Kartu Kredit/Debit Visa/Mastercard.</p>
+                <h4 className="font-bold text-foreground mb-1.5">{t("What payment methods are supported?")}</h4>
+                <p className="text-muted-foreground leading-relaxed">{t("QRIS (scan via GoPay, OVO, DANA, ShopeePay, or any banking app), Virtual Account Transfer (BCA, Mandiri, BNI, BRI, Permata), and Credit/Debit Card Visa/Mastercard.")}</p>
               </div>
             </div>
             <div className="py-5 border-b border-border/40 last:border-0 flex items-start gap-4">
               <span className="inline-block text-3xl tracking-tighter font-black bg-clip-text text-transparent bg-gradient-to-br from-foreground to-brand select-none shrink-0 mt-0.5">3</span>
               <div>
-                <h4 className="font-bold text-foreground mb-1.5">Apakah ada biaya tersembunyi?</h4>
-                <p className="text-muted-foreground leading-relaxed">Tidak, harga paket yang tertera di atas sudah final. Tidak ada tambahan biaya tersembunyi seperti pajak tambahan saat checkout.</p>
+                <h4 className="font-bold text-foreground mb-1.5">{t("Are there hidden fees?")}</h4>
+                <p className="text-muted-foreground leading-relaxed">{t("No, the package price shown above is final. There are no additional hidden fees such as extra taxes at checkout.")}</p>
               </div>
             </div>
           </div>
@@ -320,7 +321,7 @@ function PricingPageInner() {
       <Dialog open={showPaymentModal} onOpenChange={(open) => { if (!open) setShowPaymentModal(false) }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-[16px] font-bold">Pilih Metode Pembayaran</DialogTitle>
+            <DialogTitle className="text-[16px] font-bold">{t("Select Payment Method")}</DialogTitle>
           </DialogHeader>
           {selectedPack && (
             <PaymentMethodSelector

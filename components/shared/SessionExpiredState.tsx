@@ -1,7 +1,10 @@
+"use client"
+
 import { RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { session } from "@/lib/session"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface Props {
   currentStage: "match" | "craft" | "polish" | "launch" | "pulse"
@@ -17,6 +20,7 @@ const STAGE_LABELS: Record<Props["currentStage"], string> = {
 
 export function SessionExpiredState({ currentStage }: Props) {
   const router = useRouter()
+  const { t } = useLanguage()
 
   function handleStartOver() {
     session.clearActiveTarget()
@@ -29,11 +33,9 @@ export function SessionExpiredState({ currentStage }: Props) {
         <RotateCcw className="w-8 h-8 text-muted-foreground" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-lg font-semibold text-foreground">Sesi tidak ditemukan</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("Session not found")}</h2>
         <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-          Data pipeline <strong>{STAGE_LABELS[currentStage]}</strong> tidak tersedia di
-          tab atau browser ini. Ini biasanya terjadi karena halaman dibuka di tab baru
-          atau browser di-refresh.
+          {t("Pipeline data for {stage} is not available in this tab or browser. This usually happens when the page is opened in a new tab or the browser was refreshed.", { stage: STAGE_LABELS[currentStage] })}
         </p>
       </div>
       <div className="space-y-2 w-full max-w-xs">
@@ -41,13 +43,13 @@ export function SessionExpiredState({ currentStage }: Props) {
           onClick={handleStartOver}
           className="w-full rounded-full bg-brand text-white hover:bg-brand/90"
         >
-          Mulai Recon Baru
+          {t("Start New Recon")}
         </Button>
         <button
           onClick={() => router.push("/research-library")}
           className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
         >
-          Kembali ke Research Library
+          {t("Back to Research Library")}
         </button>
       </div>
     </div>

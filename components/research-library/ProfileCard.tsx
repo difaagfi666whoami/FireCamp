@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { CampaignProgress } from "./CampaignProgress"
 import { formatDate } from "@/lib/utils"
 import { cn } from "@/lib/utils"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface ProfileCardProps {
   company: any
@@ -15,6 +16,7 @@ interface ProfileCardProps {
 
 export function ProfileCard({ company, onDelete }: ProfileCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const { t } = useLanguage()
 
   return (
     <div className="bg-white border border-border/60 rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md hover:border-border">
@@ -37,24 +39,24 @@ export function ProfileCard({ company, onDelete }: ProfileCardProps) {
             <button
               onClick={() => setConfirmDelete(true)}
               className="p-1.5 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors shrink-0"
-              title="Hapus profil"
+              title={t("Delete profile")}
             >
               <Trash2 className="w-4 h-4"  strokeWidth={1.5} />
             </button>
           ) : (
             <div className="flex items-center gap-1.5 shrink-0 bg-red-50 border border-red-200 rounded-lg px-2 py-1">
-              <span className="text-[11.5px] font-bold text-red-700 mr-1">Hapus?</span>
+              <span className="text-[11.5px] font-bold text-red-700 mr-1">{t("Delete?")}</span>
               <button
                 onClick={() => onDelete(company.id)}
                 className="p-1 rounded text-red-600 hover:bg-red-100 transition-colors"
-                title="Ya, hapus"
+                title={t("Confirm delete")}
               >
                 <Check className="w-3.5 h-3.5"  strokeWidth={1.5} />
               </button>
               <button
                 onClick={() => setConfirmDelete(false)}
                 className="p-1 rounded text-muted-foreground hover:bg-muted transition-colors"
-                title="Batal"
+                title={t("Cancel")}
               >
                 <X className="w-3.5 h-3.5"  strokeWidth={1.5} />
               </button>

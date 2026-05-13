@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation"
 import { AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { flags } from "@/lib/config/feature-flags"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export function OutOfCreditsModal() {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
+  const { t } = useLanguage()
 
   useEffect(() => {
     const handler = () => setIsOpen(true)
@@ -30,12 +32,12 @@ export function OutOfCreditsModal() {
         </div>
 
         <h2 className="text-xl font-bold tracking-tight text-foreground mb-2">
-          Kredit Habis
+          {t("Credits Depleted")}
         </h2>
         <p className="text-[14px] text-muted-foreground leading-relaxed mb-8">
           {billingActive
-            ? "Operasi ini membutuhkan kredit AI, tapi saldo akunmu tidak mencukupi. Silakan lakukan top-up kredit untuk melanjutkan."
-            : "Operasi ini membutuhkan kredit AI, tapi saldo Early Access kamu sudah habis. Beri tahu kami jika kamu butuh tambahan kredit."}
+            ? t("This operation requires AI credits, but your account balance is insufficient. Please top up credits to continue.")
+            : t("This operation requires AI credits, but your Early Access balance is depleted. Let us know if you need more credits.")}
         </p>
 
         <div className="flex items-center gap-3">
@@ -44,7 +46,7 @@ export function OutOfCreditsModal() {
             className="flex-1 rounded-full font-semibold"
             onClick={() => setIsOpen(false)}
           >
-            Batal
+            {t("Cancel")}
           </Button>
           <Button
             className="flex-1 rounded-full font-semibold bg-brand hover:bg-brand/90 text-white"
@@ -57,7 +59,7 @@ export function OutOfCreditsModal() {
               }
             }}
           >
-            {billingActive ? "Beli Kredit →" : "Kirim Masukan →"}
+            {billingActive ? t("Buy Credits →") : t("Send Feedback →")}
           </Button>
         </div>
       </div>

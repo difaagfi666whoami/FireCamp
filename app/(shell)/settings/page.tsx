@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { getUserProfile, saveUserProfile } from "@/lib/api/profile"
 import { Loader2 } from "lucide-react"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface FormState {
   workspaceName: string
@@ -24,6 +25,7 @@ const EMPTY_FORM: FormState = {
 }
 
 export default function SettingsPage() {
+  const { t } = useLanguage()
   const [form, setForm]         = useState<FormState>(EMPTY_FORM)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving]   = useState(false)
@@ -60,10 +62,9 @@ export default function SettingsPage() {
     setIsSaving(false)
 
     if (error) {
-      toast.error("Gagal menyimpan profil")
+      toast.error(t("Failed to save profile"))
     } else {
-      toast.success("Profil berhasil disimpan")
-      // Notify sidebar (and anything else listening) so workspace_name updates without a reload.
+      toast.success(t("Profile saved successfully"))
       window.dispatchEvent(new Event("campfire_profile_changed"))
     }
   }
@@ -72,9 +73,9 @@ export default function SettingsPage() {
     <div className="p-8 max-w-2xl mx-auto space-y-8 animate-in fade-in duration-500">
       {/* Header */}
       <div className="border-b pb-6 border-border/40">
-        <h1 className="text-2xl font-bold tracking-tight">Pengaturan</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("Settings (title)")}</h1>
         <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
-          Kelola identitas pengirim dan workspace kamu.
+          {t("Manage your sender identity and workspace.")}
         </p>
       </div>
 
@@ -82,7 +83,7 @@ export default function SettingsPage() {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground animate-in fade-in">
           <Loader2 className="w-7 h-7 animate-spin" strokeWidth={1.5} />
-          <p className="text-[14px] font-medium">Memuat profil...</p>
+          <p className="text-[14px] font-medium">{t("Loading profile...")}</p>
         </div>
       )}
 
@@ -92,7 +93,7 @@ export default function SettingsPage() {
           {/* Workspace */}
           <div className="space-y-2">
             <Label htmlFor="workspaceName" className="font-semibold text-sm">
-              Nama Tim / Workspace
+              {t("Team / Workspace Name")}
             </Label>
             <Input
               id="workspaceName"
@@ -107,7 +108,7 @@ export default function SettingsPage() {
           {/* Sender name */}
           <div className="space-y-2">
             <Label htmlFor="senderName" className="font-semibold text-sm">
-              Nama Pengirim <span className="text-danger">*</span>
+              {t("Sender Name")} <span className="text-danger">*</span>
             </Label>
             <Input
               id="senderName"
@@ -123,7 +124,7 @@ export default function SettingsPage() {
           {/* Sender title */}
           <div className="space-y-2">
             <Label htmlFor="senderTitle" className="font-semibold text-sm">
-              Jabatan <span className="text-danger">*</span>
+              {t("Job Title")} <span className="text-danger">*</span>
             </Label>
             <Input
               id="senderTitle"
@@ -139,8 +140,8 @@ export default function SettingsPage() {
           {/* Signature */}
           <div className="space-y-2">
             <Label htmlFor="signature" className="font-semibold text-sm">
-              Signature{" "}
-              <span className="font-normal text-muted-foreground">(opsional)</span>
+              {t("Signature")}{" "}
+              <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
             </Label>
             <Textarea
               id="signature"
@@ -161,10 +162,10 @@ export default function SettingsPage() {
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" strokeWidth={1.5} />
-                Menyimpan...
+                {t("Saving...")}
               </>
             ) : (
-              "Simpan Perubahan"
+              t("Save Changes")
             )}
           </Button>
         </form>

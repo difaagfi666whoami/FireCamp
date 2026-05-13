@@ -1,106 +1,170 @@
+"use client"
+
 import Link from "next/link"
-import { Flame } from "lucide-react"
-
-const PIPELINE_STEPS = [
-  { num: "01", name: "Recon",  desc: "Profil mendalam dari URL perusahaan target" },
-  { num: "02", name: "Match",  desc: "Cocokkan pain point ke produk terbaik kamu" },
-  { num: "03", name: "Craft",  desc: "AI menyusun 3 email campaign yang tajam" },
-  { num: "04", name: "Polish", desc: "Edit dan finalisasi draft sebelum dikirim" },
-  { num: "05", name: "Launch", desc: "Jadwalkan dan kirim ke inbox target" },
-  { num: "06", name: "Pulse",  desc: "Pantau open rate, reply, dan performa campaign" },
-]
-
-const VALUE_PROPS = [
-  {
-    num: "01",
-    statement: "Bukan sekadar template email.",
-    body: "Campfire memahami konteks bisnis target — pain point, sinyal berita, dan posisi kompetitor — lalu menyusun pesan yang relevan secara operasional.",
-    tag: "AI-powered Recon",
-  },
-  {
-    num: "02",
-    statement: "Eksekusi, bukan sekadar rencana.",
-    body: "Dari riset ke pengiriman dalam satu sistem. Tidak ada handoff antar tools, tidak ada data yang hilang, tidak ada langkah yang terlewat.",
-    tag: "End-to-end Pipeline",
-  },
-  {
-    num: "03",
-    statement: "Terstruktur sejak awal, bukan setelah berantakan.",
-    body: "Setiap campaign punya profil, trail, dan analytics. Tim kamu tahu apa yang sedang dikerjakan, siapa yang mengerjakan, dan apa hasilnya.",
-    tag: "Full Visibility",
-  },
-]
-
-const STATS = [
-  { value: "6 tahap",   label: "Pipeline lengkap dari riset ke analytics" },
-  { value: "1 URL",     label: "Cukup URL perusahaan untuk memulai" },
-  { value: "3 email",   label: "Campaign terstruktur per target, siap kirim" },
-  { value: "Real-time", label: "Tracking open rate dan reply langsung di dashboard" },
-]
+import { Flame, Languages } from "lucide-react"
+import { AuroraCanvas } from "@/components/landing/AuroraCanvas"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function LandingPage() {
+  const { lang, setLang, t } = useLanguage()
+
+  const PIPELINE_STEPS = [
+    { num: "01", name: "Recon",  desc: t("Deep company profile from target URL") },
+    { num: "02", name: "Match",  desc: t("Match pain points to your best product") },
+    { num: "03", name: "Craft",  desc: t("AI composes 3 sharp email campaigns") },
+    { num: "04", name: "Polish", desc: t("Edit and finalize drafts before sending") },
+    { num: "05", name: "Launch", desc: t("Schedule and send to target inbox") },
+    { num: "06", name: "Pulse",  desc: t("Track open rate, replies, and campaign performance") },
+  ]
+
+  const VALUE_PROPS = [
+    {
+      num: "01",
+      statement: t("Not just email templates."),
+      body: t("Campfire understands the target's business context — pain points, news signals, and competitor positioning — then composes operationally relevant messages."),
+      tag: "AI-powered Recon",
+    },
+    {
+      num: "02",
+      statement: t("Execution, not just planning."),
+      body: t("From research to delivery in one system. No handoffs between tools, no lost data, no missed steps."),
+      tag: "End-to-end Pipeline",
+    },
+    {
+      num: "03",
+      statement: t("Structured from the start, not after it falls apart."),
+      body: t("Every campaign has a profile, trail, and analytics. Your team knows what's being worked on, who's working on it, and what the results are."),
+      tag: "Full Visibility",
+    },
+  ]
+
+  const STATS = [
+    { value: t("6 stages"),   label: t("Complete pipeline from research to analytics") },
+    { value: "1 URL",          label: t("Just one company URL to get started") },
+    { value: t("3 emails"),   label: t("Structured campaign per target, ready to send") },
+    { value: "Real-time",      label: t("Track open rate and replies live on dashboard") },
+  ]
+
   return (
     <div className="bg-[#F5F3EF] text-[#0D1A14]">
+
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#F5F3EF]/90 backdrop-blur-sm border-b border-[#0D1A14]/10">
         <div className="grid grid-cols-3 items-center px-6 lg:px-16 h-16">
-          {/* Left — intentionally empty */}
           <div />
-
-          {/* Center */}
           <div className="flex items-center justify-center gap-2">
             <Flame size={16} color="#0F6E56" />
-            <span className="text-sm tracking-tight text-[#0D1A14] font-black">
-              campfire
-            </span>
+            <span className="text-sm tracking-tight text-[#0D1A14] font-black">campfire</span>
           </div>
-
-          {/* Right */}
           <div className="flex items-center justify-end gap-5">
+            {/* EN | ID toggle */}
+            <button
+              onClick={() => setLang(lang === "id" ? "en" : "id")}
+              className="flex items-center gap-1.5 text-[12.5px] font-semibold text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors"
+            >
+              <Languages size={14} strokeWidth={1.8} />
+              <span>{lang === "id" ? "EN" : "ID"}</span>
+            </button>
             <Link
               href="/login"
               className="text-sm tracking-[0.04em] text-[#0D1A14]/50 hover:text-[#0D1A14] transition-colors"
             >
-              Masuk
+              {t("Sign In")}
             </Link>
             <a
               href="#contact"
               className="text-sm tracking-[0.04em] font-semibold px-5 py-2 rounded-full border border-[#0D1A14] hover:bg-[#0D1A14] hover:text-[#F5F3EF] transition-all"
             >
-              Minta Akses →
+              {t("Request Access →")}
             </a>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-24 pb-16 px-6 lg:px-16">
-        <p className="text-xs tracking-widest text-[#0D1A14]/50 uppercase mb-8">Platform Outreach B2B</p>
+      {/* Hero — aurora canvas clipped to first viewport only */}
+      <section
+        className="relative overflow-hidden"
+        style={{ height: "100vh", cursor: "crosshair" }}
+      >
+        <AuroraCanvas />
 
-        <h1 className="font-black tracking-tighter text-[#0D1A14] leading-none" style={{ fontSize: "clamp(4rem, 10vw, 9rem)" }}>
-          Riset. Cocokkan.
-        </h1>
-        <h1 className="font-black tracking-tighter text-[#0D1A14] leading-none" style={{ fontSize: "clamp(4rem, 10vw, 9rem)" }}>
-          <span className="bg-[#C8EDE0] px-4 py-1 inline-block -rotate-1">Kirim.</span>
-        </h1>
+        {/* Hero content */}
+        <div
+          className="absolute inset-0 z-[5] flex flex-col justify-center pointer-events-none"
+          style={{ padding: "100px 6vw 60px" }}
+        >
+          <div style={{ maxWidth: 1500, margin: "0 auto", width: "100%" }}>
+            <p
+              className="uppercase text-[#8a948e] mb-7"
+              style={{ fontFamily: "var(--font-geist-mono)", fontSize: 12, letterSpacing: "0.18em", fontWeight: 500 }}
+            >
+              {t("B2B Outreach Platform")}
+            </p>
 
-        <p className="text-xl text-[#0D1A14]/60 mt-6 max-w-lg font-normal">
-          Dari satu URL perusahaan ke inbox prospek — dalam 6 langkah terstruktur.
-        </p>
+            <h1
+              className="font-extrabold text-[#0D1A14] leading-none m-0 mb-9"
+              style={{
+                fontSize: "clamp(56px, 11vw, 168px)",
+                letterSpacing: "-0.045em",
+                maxWidth: "13ch",
+              }}
+            >
+              {t("Research. Match.")}{" "}
+              <span
+                className="inline-block bg-[#C8EDE0] align-top"
+                style={{ padding: "0.04em 0.14em 0.10em", marginTop: "0.10em", lineHeight: 0.95 }}
+              >
+                {t("Send.")}
+              </span>
+            </h1>
 
-        <div className="flex flex-wrap items-center gap-4 mt-10">
-          <Link
-            href="/login"
-            className="rounded-full bg-[#0F6E56] text-white px-8 py-3 text-base font-semibold hover:bg-[#0F6E56]/90 transition-all"
-          >
-            Masuk ke Campfire →
-          </Link>
-          <a
-            href="#how-it-works"
-            className="rounded-full border border-[#0D1A14]/30 px-8 py-3 text-base text-[#0D1A14] hover:bg-[#0D1A14]/5 transition-all"
-          >
-            Lihat cara kerjanya ↓
-          </a>
+            <p
+              className="text-[#4a5a52] font-normal m-0 mb-9"
+              style={{ fontSize: "clamp(16px, 1.4vw, 20px)", lineHeight: 1.5, maxWidth: "36ch" }}
+            >
+              {t("From one company URL to prospect inbox — in 6 structured steps.")}
+            </p>
+
+            <div className="flex gap-3 flex-wrap items-center pointer-events-auto">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 transition-all"
+                style={{
+                  padding: "16px 26px",
+                  borderRadius: 999,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  background: "#0F6E56",
+                  color: "#F5F3EF",
+                  boxShadow: "0 6px 20px rgba(15,110,86,0.28), inset 0 1px 0 rgba(255,255,255,0.18)",
+                  textDecoration: "none",
+                }}
+              >
+                {t("Sign in to Campfire")}
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14M13 5l7 7-7 7"/>
+                </svg>
+              </Link>
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center gap-2 transition-all hover:bg-[rgba(13,26,20,0.05)]"
+                style={{
+                  padding: "16px 26px",
+                  borderRadius: 999,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: "#0D1A14",
+                  border: "1px solid rgba(13,26,20,0.22)",
+                  textDecoration: "none",
+                }}
+              >
+                {t("See how it works")}
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12l7 7 7-7"/>
+                </svg>
+              </a>
+            </div>
+          </div>
         </div>
 
       </section>
@@ -135,9 +199,9 @@ export default function LandingPage() {
         />
 
         <div className="relative z-10">
-          <p className="text-xs tracking-widest text-[#C9963E] uppercase">Cara Kerja</p>
+          <p className="text-xs tracking-widest text-[#C9963E] uppercase">{t("How It Works")}</p>
           <h2 className="text-4xl lg:text-6xl font-black tracking-tighter mt-4 text-[#F5F3EF] max-w-2xl">
-            Satu pipeline. Enam langkah. Tanpa improvisasi.
+            {t("One pipeline. Six steps. No improvisation.")}
           </h2>
 
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mt-12">
@@ -211,27 +275,27 @@ export default function LandingPage() {
           }}
         />
         <div className="relative z-10">
-        <p className="text-xs tracking-widest text-[#C8EDE0] uppercase mb-6">Mulai Sekarang</p>
-        <h2 className="text-5xl lg:text-8xl font-black tracking-tighter text-[#F5F3EF] leading-none">
-          Outreach yang benar-benar dioperasikan.
-        </h2>
-        <p className="text-[#F5F3EF]/60 mt-6 max-w-xl mx-auto text-base leading-relaxed">
-          Campfire dirancang untuk tim yang tidak punya waktu untuk berimprovisasi. Terstruktur, tajam, dan siap dijalankan.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4 mt-10">
-          <Link
-            href="/login"
-            className="rounded-full bg-[#C8EDE0] text-[#0D1A14] px-10 py-4 text-lg font-bold hover:bg-[#C8EDE0]/90 transition-all"
-          >
-            Masuk ke Campfire →
-          </Link>
-          <a
-            href="mailto:difaagfi1998@gmail.com"
-            className="rounded-full border border-[#F5F3EF]/30 text-[#F5F3EF] px-10 py-4 text-lg hover:bg-[#F5F3EF]/5 transition-all"
-          >
-            Hubungi Tim →
-          </a>
-        </div>
+          <p className="text-xs tracking-widest text-[#C8EDE0] uppercase mb-6">{t("Get Started")}</p>
+          <h2 className="text-5xl lg:text-8xl font-black tracking-tighter text-[#F5F3EF] leading-none">
+            {t("Outreach that's actually operated.")}
+          </h2>
+          <p className="text-[#F5F3EF]/60 mt-6 max-w-xl mx-auto text-base leading-relaxed">
+            {t("Campfire is built for teams that don't have time to improvise. Structured, sharp, and ready to run.")}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-10">
+            <Link
+              href="/login"
+              className="rounded-full bg-[#C8EDE0] text-[#0D1A14] px-10 py-4 text-lg font-bold hover:bg-[#C8EDE0]/90 transition-all"
+            >
+              {t("Sign in to Campfire →")}
+            </Link>
+            <a
+              href="mailto:difaagfi1998@gmail.com"
+              className="rounded-full border border-[#F5F3EF]/30 text-[#F5F3EF] px-10 py-4 text-lg hover:bg-[#F5F3EF]/5 transition-all"
+            >
+              {t("Contact the Team →")}
+            </a>
+          </div>
         </div>
       </section>
 

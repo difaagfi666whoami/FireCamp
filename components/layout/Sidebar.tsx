@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 import {
   BookOpen, Search, Crosshair, Wand2, CheckSquare,
   Rocket, BarChart2, Flame, Building2, X, LogOut, Settings, FlaskConical,
-  Sparkles,
+  Languages,
 } from "lucide-react"
 import { isMockMode, setDemoMode } from "@/lib/demoMode"
 import { cn } from "@/lib/utils"
@@ -15,6 +15,7 @@ import { getUserProfile } from "@/lib/api/profile"
 import { getBalance } from "@/lib/api/credits"
 import { flags } from "@/lib/config/feature-flags"
 import { useEffect, useState } from "react"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const PIPELINE_STEPS = [
   { href: "/recon",   label: "Recon",   icon: Search,      step: 1 },
@@ -41,6 +42,7 @@ const EMPTY_PROGRESS: StageProgress = {
 export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const { lang, setLang, t } = useLanguage()
   const [activeCompany, setActiveCompany] = useState<string | null>(null)
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
@@ -155,7 +157,7 @@ export function Sidebar() {
         <span className="font-bold text-[15px] tracking-tight text-foreground">Campfire</span>
       </Link>
 
-      {/* Target Aktif */}
+      {/* Active Target */}
       {activeCompany && (
         <div className="mx-1 mb-2 rounded-xl bg-brand/5 border border-brand/20 overflow-hidden">
           <button
@@ -163,7 +165,7 @@ export function Sidebar() {
             className="px-3 pt-2 pb-1.5 text-left w-full hover:bg-brand/10 transition-colors cursor-pointer"
           >
             <p className="text-[10px] font-bold text-brand/70 uppercase tracking-widest mb-0.5">
-              Target Aktif
+              {t("Active Target")}
             </p>
             <div className="flex items-center gap-1.5">
               <Building2 className="w-3 h-3 text-brand shrink-0"  strokeWidth={1.5} />
@@ -175,14 +177,14 @@ export function Sidebar() {
             className="w-full flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-semibold text-brand/60 hover:text-brand hover:bg-brand/10 transition-colors border-t border-brand/10"
           >
             <X className="w-3 h-3"  strokeWidth={1.5} />
-            Ganti Target
+            {t("Change Target")}
           </button>
         </div>
       )}
 
-      {/* Perpustakaan */}
+      {/* Library */}
       <p className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-1">
-        Perpustakaan
+        {t("Library")}
       </p>
       <Link
         href="/research-library"
@@ -194,7 +196,7 @@ export function Sidebar() {
         )}
       >
         <BookOpen className="w-4 h-4 shrink-0"  strokeWidth={1.5} />
-        Research Library
+        {t("Research Library")}
       </Link>
 
       {/* Divider */}
@@ -202,7 +204,7 @@ export function Sidebar() {
 
       {/* Pipeline */}
       <p className="text-[10.5px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-1">
-        Pipeline
+        {t("Pipeline")}
       </p>
 
       {resolvedSteps.map(({ href, label, icon: Icon, step, done }) => {
@@ -228,7 +230,7 @@ export function Sidebar() {
             <span className="flex-1">{label}</span>
             {done && (
               <span
-                title="Tahap ini sudah selesai"
+                title={t("This stage has been completed")}
                 className={cn(
                   "w-1.5 h-1.5 rounded-full shrink-0",
                   active ? "bg-white" : "bg-success"
@@ -242,9 +244,9 @@ export function Sidebar() {
       {/* Divider */}
       <div className="border-t border-border/50 my-3 mx-1" />
 
-      {/* Credit balance + Beli Credits — billing-gated.
+      {/* Credit balance + Buy Credits — billing-gated.
           When BILLING_ACTIVE is false (Early Access), show a non-clickable
-          badge with the current balance instead of a "Beli Kredit" CTA. */}
+          badge with the current balance instead of a "Buy Credits" CTA. */}
       {flags.BILLING_ACTIVE ? (
         <Link
           href="/pricing"
@@ -261,7 +263,7 @@ export function Sidebar() {
               pathname === "/pricing" ? "text-white" : "text-brand"
             )}
           >
-            Beli Kredit
+            {t("Buy Credits")}
           </p>
           <span className={cn(
             "text-[14px] leading-none",
@@ -276,7 +278,7 @@ export function Sidebar() {
             Early Access
           </p>
           <span className="text-[12px] font-semibold tabular-nums text-brand">
-            {creditBalance ?? 0} kredit
+            {t("{count} Credits", { count: creditBalance ?? 0 })}
           </span>
         </div>
       )}
@@ -292,7 +294,7 @@ export function Sidebar() {
         )}
       >
         <FlaskConical className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-        {demoMode ? "Mode Demo: Aktif" : "Mode Demo"}
+        {demoMode ? t("Demo Mode: Active") : t("Demo Mode")}
       </button>
 
       {/* Guide */}
@@ -306,7 +308,7 @@ export function Sidebar() {
         )}
       >
         <BookOpen className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-        Panduan
+        {t("Guide")}
       </Link>
 
       {/* Settings */}
@@ -320,8 +322,18 @@ export function Sidebar() {
         )}
       >
         <Settings className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-        Pengaturan
+        {t("Settings")}
       </Link>
+
+      {/* EN | ID Language Toggle */}
+      <button
+        onClick={() => setLang(lang === "id" ? "en" : "id")}
+        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-colors text-muted-foreground hover:bg-muted hover:text-foreground w-full"
+      >
+        <Languages className="w-4 h-4 shrink-0" strokeWidth={1.5} />
+        <span className="flex-1 text-left">EN | ID</span>
+        <span className="text-xs font-bold text-brand">{lang.toUpperCase()}</span>
+      </button>
 
       {/* Spacer */}
       <div className="flex-1" />
@@ -355,7 +367,7 @@ export function Sidebar() {
           {/* Logout */}
           <button
             onClick={handleLogout}
-            title="Keluar"
+            title={t("Log Out")}
             className="shrink-0 p-1 rounded-md text-muted-foreground/60 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />

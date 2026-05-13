@@ -14,6 +14,7 @@ import { session } from "@/lib/session"
 import { saveCampaignSchedule } from "@/lib/api/launch"
 import { updateCompanyProgress } from "@/lib/api/recon"
 import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 type Mode = "ai" | "manual"
 
@@ -56,6 +57,7 @@ function generateDefaultSchedule(): ScheduleItem[] {
 
 export default function LaunchPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [mode, setMode] = useState<Mode>("ai")
   const [isActive, setIsActive] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
@@ -111,10 +113,10 @@ export default function LaunchPage() {
       markStageDone("launch")
       setSchedule(dataToSave)
       setIsActive(true)
-      toast.success("Campaign berhasil diaktifkan! Pantau progres di halaman Pulse.")
+      toast.success(t("Campaign activated! Monitor progress on the Pulse page."))
     } catch (err: any) {
-      toast.error("Gagal meluncurkan automation", {
-        description: err.message ?? "Koneksi ke database gagal.",
+      toast.error(t("Failed to launch automation"), {
+        description: err.message ?? t("Database connection failed."),
       })
     } finally {
       setIsActivating(false)
@@ -136,7 +138,7 @@ export default function LaunchPage() {
       <span className="text-foreground font-semibold">Launch</span>
     </div>
   )
-  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 5 dari 6</span>
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">{t("Step {step} of {total}", { step: 5, total: 6 })}</span>
 
   if (!isSessionLoaded) {
     return (
@@ -145,7 +147,7 @@ export default function LaunchPage() {
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
-          <p className="text-[14px] font-medium">Memuat data sesi...</p>
+          <p className="text-[14px] font-medium">{t("Loading session data...")}</p>
         </div>
       </div>
     )
@@ -163,15 +165,13 @@ export default function LaunchPage() {
       <div className="flex items-start justify-between border-b pb-6 border-border/40">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 5 dari 6</span>
+            {stepBadge}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mt-2">Launch — Automation Setup</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">{t("Launch — Automation Setup")}</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium max-w-lg">
-            Pilih mode pengiriman dan aktifkan campaign untuk{" "}
-            {companyName
-              ? <span className="font-bold text-foreground">{companyName}</span>
-              : <span className="text-muted-foreground italic">memuat...</span>
-            }.
+            {t("Choose delivery mode and activate campaign for {name}.", {
+              name: companyName || "…",
+            })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -189,14 +189,14 @@ export default function LaunchPage() {
             className="shadow-sm font-semibold text-[13.5px]"
           >
             <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-            Kembali
+            {t("Back")}
           </Button>
           {isActive && (
             <Button
               onClick={() => router.push("/pulse")}
               className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]"
             >
-              Lihat Pulse
+              {t("View Pulse")}
               <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
             </Button>
           )}
@@ -206,7 +206,7 @@ export default function LaunchPage() {
       {/* Mode Selector */}
       <div className="space-y-2">
         <h2 className="font-bold text-[13px] text-muted-foreground uppercase tracking-wider">
-          Pilih Mode Pengiriman
+          {t("Choose Delivery Mode")}
         </h2>
         <ModeSelector mode={mode} onChange={(m) => { setMode(m); setIsActive(false) }} />
       </div>
@@ -238,15 +238,15 @@ export default function LaunchPage() {
               <Rocket className="w-5 h-5"  strokeWidth={1.5} />
             </div>
             <div>
-              <p className="font-bold text-[16px] text-foreground tracking-tight">Campaign diluncurkan!</p>
-              <p className="text-[13.5px] text-muted-foreground font-medium">Pantau open rate, click, dan reply di Pulse.</p>
+              <p className="font-bold text-[16px] text-foreground tracking-tight">{t("Campaign launched!")}</p>
+              <p className="text-[13.5px] text-muted-foreground font-medium">{t("Track open rate, clicks, and replies in Pulse.")}</p>
             </div>
           </div>
           <Button
             onClick={() => router.push("/pulse")}
             className="bg-brand hover:bg-brand/90 text-white shadow-sm font-bold rounded-xl px-6 h-12 text-[14.5px]"
           >
-            Buka Pulse
+            {t("Open Pulse")}
             <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
           </Button>
         </div>

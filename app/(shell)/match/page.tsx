@@ -10,6 +10,7 @@ import { ProductCatalogTab } from "./components/ProductCatalogTab"
 import { session } from "@/lib/session"
 import { PageHelp } from "@/components/ui/PageHelp"
 import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function MatchPage() {
   const router = useRouter()
@@ -18,6 +19,7 @@ export default function MatchPage() {
   const [companyId, setCompanyId] = useState<string>("")
   const [sessionChecked, setSessionChecked] = useState(false)
   const [hasSessionData, setHasSessionData] = useState(true)
+  const { t } = useLanguage()
 
   useEffect(() => {
     const profile = session.getReconProfile()
@@ -68,16 +70,14 @@ export default function MatchPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">
-              Langkah 2 dari 6
+              {t("Step {step} of {total}", { step: 2, total: 6 })}
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight mt-2">Product Matching</h1>
           <p className="text-muted-foreground mt-1 text-[14.5px] font-medium">
-            Cocokkan produk terbaik dengan pain points{" "}
-            {companyName && (
-              <span className="font-bold text-foreground">{companyName}</span>
-            )}
-            .
+            {companyName
+              ? t("Match the best product to the pain points of {name}.", { name: companyName })
+              : t("Match the best product to the pain points of {name}.", { name: "" })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -107,13 +107,13 @@ export default function MatchPage() {
             value="matching"
             className="rounded-none border-b-[3px] border-transparent px-4 pb-3 pt-2 text-[15.5px] font-bold text-muted-foreground hover:text-foreground data-[state=active]:border-brand data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all"
           >
-            Analisis Pencocokan
+            {t("Matching Analysis")}
           </TabsTrigger>
           <TabsTrigger
             value="catalog"
             className="rounded-none border-b-[3px] border-transparent px-4 pb-3 pt-2 text-[15.5px] font-bold text-muted-foreground hover:text-foreground data-[state=active]:border-brand data-[state=active]:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none transition-all"
           >
-            Katalog Produk
+            {t("Product Catalog")}
           </TabsTrigger>
         </TabsList>
 

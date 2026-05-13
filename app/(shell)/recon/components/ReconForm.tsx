@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface ReconFormProps {
   onGenerate: (url: string) => void
@@ -12,6 +13,7 @@ interface ReconFormProps {
 }
 
 export function ReconForm({ onGenerate, isLoading }: ReconFormProps) {
+  const { t } = useLanguage()
   const [url, setUrl] = useState("")
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function ReconForm({ onGenerate, isLoading }: ReconFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!url || !url.includes(".")) {
-      toast.error("Masukkan URL perusahaan yang valid")
+      toast.error(t("Enter a valid company URL"))
       return
     }
     onGenerate(url)
@@ -45,7 +47,7 @@ export function ReconForm({ onGenerate, isLoading }: ReconFormProps) {
         />
       </div>
       <Button type="submit" disabled={isLoading || !url} className="w-full sm:w-auto h-11 px-8 rounded-xl font-bold bg-brand hover:bg-brand/90 text-white">
-        Generate Profil
+        {t("Generate Profile")}
       </Button>
     </form>
   )

@@ -20,15 +20,7 @@ import { Campaign } from "@/types/craft.types"
 import { toast } from "sonner"
 import { PageHelp } from "@/components/ui/PageHelp"
 import { SessionExpiredState } from "@/components/shared/SessionExpiredState"
-
-const CRAFTING_STEPS = [
-  "Menganalisis profil perusahaan & pain points...",
-  "Memuat produk yang matched dan reasoning...",
-  "Menyusun Email 1 — Ice-breaker...",
-  "Menyusun Email 2 — Pain-focused follow-up...",
-  "Menyusun Email 3 — Urgency & close...",
-  "Finalisasi campaign plan & reasoning..."
-]
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 const SESSION_KEY = "campfire_craft_done"
 
@@ -37,6 +29,16 @@ const IS_LIVE = sq(process.env.NEXT_PUBLIC_USE_MOCK ?? "true") !== "true"
 
 export default function CraftPage() {
   const router = useRouter()
+  const { t } = useLanguage()
+
+  const CRAFTING_STEPS = [
+    t("Analyzing company profile & pain points..."),
+    t("Loading matched product and reasoning..."),
+    t("Composing Email 1 — Ice-breaker..."),
+    t("Composing Email 2 — Pain-focused follow-up..."),
+    t("Composing Email 3 — Urgency & close..."),
+    t("Finalizing campaign plan & reasoning..."),
+  ]
 
   const [hasStarted, setHasStarted] = useState(false)
   const [isCrafting, setIsCrafting] = useState(false)
@@ -149,8 +151,8 @@ export default function CraftPage() {
         )
 
       if (resolvedCampaign !== null && !valid) {
-        toast.error("AI mengembalikan campaign kosong.", {
-          description: "Respons AI invalid / terpotong. Silakan coba generate ulang.",
+        toast.error(t("AI returned an empty campaign."), {
+          description: t("AI response was invalid / truncated. Please try regenerating."),
         })
         resolvedCampaign = null
       }
@@ -192,7 +194,7 @@ export default function CraftPage() {
         const selectedId      = session.getSelectedProductId()
 
         if (!selectedId) {
-          toast.error("Produk tidak ditemukan.", { description: "Kembali ke Match dan pilih produk terlebih dahulu." })
+          toast.error(t("Product not found."), { description: t("Go back to Match and select a product first.") })
           resolvedCampaign = null
           settle()
           return
@@ -267,7 +269,7 @@ export default function CraftPage() {
         if (!fullProductMatch) {
           const catalog = await getProductById(selectedId)
           if (!catalog) {
-            toast.error("Produk tidak ditemukan.", { description: "Kembali ke Match dan pilih produk terlebih dahulu." })
+            toast.error(t("Product not found."), { description: t("Go back to Match and select a product first.") })
             resolvedCampaign = null
             settle()
             return
@@ -288,7 +290,7 @@ export default function CraftPage() {
         resolvedCampaign = campaign
         settle()
       } catch (e) {
-        toast.error("AI Campaign Craft gagal.", { description: e instanceof Error ? e.message : "Error" })
+        toast.error(t("AI Campaign Craft failed."), { description: e instanceof Error ? e.message : "Error" })
         resolvedCampaign = null
         settle()
       }
@@ -332,7 +334,7 @@ export default function CraftPage() {
     </div>
   )
 
-  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">Langkah 3 dari 6</span>
+  const stepBadge = <span className="text-[11.5px] font-bold uppercase tracking-wider text-brand bg-brand-light px-2.5 py-1 rounded-full">{t("Step {step} of {total}", { step: 3, total: 6 })}</span>
 
   // ─── Render: belum ada profil (masih loading dari sessionStorage / tidak ada) ─────────
 
@@ -343,7 +345,7 @@ export default function CraftPage() {
         <div className="flex items-center">{stepBadge}</div>
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-muted-foreground">
           <Loader2 className="w-5 h-5 animate-spin text-brand"  strokeWidth={1.5} />
-          <p className="text-[14px] font-medium">Memuat data sesi...</p>
+          <p className="text-[14px] font-medium">{t("Loading session data...")}</p>
         </div>
       </div>
     )
@@ -365,15 +367,15 @@ export default function CraftPage() {
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Generate Email Campaign</h3>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">{t("Generate Email Campaign")}</h3>
             <p className="text-[13px] text-muted-foreground font-medium mb-1">
               Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
             </p>
             <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              AI akan menyusun 3 email sequence yang dipersonalisasi berdasarkan pain points dan produk yang telah dipilih.
+              {t("AI will compose 3 personalized email sequences based on pain points and the selected product.")}
             </p>
             <Button onClick={handleStartCrafting} className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold">
-              Mulai Generate Campaign
+              {t("Start Generating Campaign")}
             </Button>
           </div>
         </div>
@@ -395,9 +397,9 @@ export default function CraftPage() {
               <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full animate-ping opacity-75"></div>
               <div className="absolute top-1 right-1 w-3.5 h-3.5 bg-brand rounded-full border-2 border-white"></div>
             </div>
-            <h2 className="text-[22px] font-bold tracking-tight mb-2">AI Campaign Crafter</h2>
+            <h2 className="text-[22px] font-bold tracking-tight mb-2">{t("AI Campaign Crafter")}</h2>
             <p className="text-muted-foreground text-center text-[14.5px] max-w-sm">
-              Menyusun sekuens email yang highly-personalized berdasarkan hasil analisis dan matching.
+              {t("Composing highly-personalized email sequences based on analysis and matching results.")}
             </p>
           </div>
           <LoadingSteps steps={CRAFTING_STEPS} currentStep={currentStep} />
@@ -426,18 +428,18 @@ export default function CraftPage() {
             <div className="bg-brand/10 p-5 rounded-full mb-6">
               <Bot className="w-8 h-8 text-brand" strokeWidth={1.5} />
             </div>
-            <h3 className="text-[17px] font-bold mb-1 tracking-tight">Belum ada campaign valid</h3>
+            <h3 className="text-[17px] font-bold mb-1 tracking-tight">{t("No valid campaign yet")}</h3>
             <p className="text-[13px] text-muted-foreground font-medium mb-4">
               Target: <span className="font-bold text-foreground">{companyProfile.name}</span>
             </p>
             <p className="text-center text-muted-foreground mb-8 text-[13px] leading-relaxed">
-              Generate sebelumnya gagal atau kosong. Coba generate ulang sekarang.
+              {t("Previous generation failed or was empty. Try regenerating now.")}
             </p>
             <Button
               onClick={() => { sessionStorage.removeItem(SESSION_KEY); setRealCampaign(null); setHasStarted(true); setIsCrafting(true); setCurrentStep(0) }}
               className="w-full bg-brand hover:bg-brand/90 text-white rounded-xl font-semibold"
             >
-              Generate Ulang Campaign
+              {t("Regenerate Campaign")}
             </Button>
           </div>
         </div>
@@ -457,14 +459,13 @@ export default function CraftPage() {
           <div className="flex items-center gap-2 mb-1">
             {stepBadge}
           </div>
-          <h1 className="text-2xl font-bold tracking-tight mt-2">Campaign Plan Draft</h1>
+          <h1 className="text-2xl font-bold tracking-tight mt-2">{t("Campaign Plan Draft")}</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
-            Draft email yang digenerate khusus untuk{" "}
-            <span className="font-bold text-foreground">
-              {(!campaign.targetCompany || campaign.targetCompany === "N/A")
-                ? (companyProfile?.name ?? "perusahaan target")
-                : campaign.targetCompany}
-            </span>.
+            {t("Email draft generated specifically for {name}.", {
+              name: (!campaign.targetCompany || campaign.targetCompany === "N/A")
+                ? (companyProfile?.name ?? "")
+                : campaign.targetCompany,
+            })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -478,10 +479,10 @@ export default function CraftPage() {
           />
           <Button variant="outline" onClick={() => router.push("/match")} className="shadow-sm font-semibold text-[13.5px]">
             <ArrowLeft className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-            Kembali
+            {t("Back")}
           </Button>
           <Button onClick={() => router.push("/polish")} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
-            Lanjut ke Polish
+            {t("Continue to Editor (Polish)")}
             <ArrowRight className="w-4 h-4 ml-2"  strokeWidth={1.5} />
           </Button>
         </div>
@@ -491,7 +492,7 @@ export default function CraftPage() {
 
       <div className="space-y-6 pt-2">
         <h2 className="text-[19px] font-bold tracking-tight border-b pb-3 border-border/60">
-          Sequence Email (3 Draft)
+          {t("Email Sequence (3 Drafts)")}
         </h2>
         <div className="space-y-6">
           {campaign.emails.map((email: any) => (
@@ -511,7 +512,7 @@ export default function CraftPage() {
           size="lg"
           className="w-full sm:w-auto bg-brand hover:bg-brand/90 text-white shadow-md font-bold text-[15px] h-12 px-8 rounded-xl"
         >
-          Lanjutkan ke Editor (Polish)
+          {t("Continue to Editor (Polish)")}
           <ArrowRight className="w-5 h-5 ml-2"  strokeWidth={1.5} />
         </Button>
       </div>

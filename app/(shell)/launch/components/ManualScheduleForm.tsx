@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import type { ScheduleItem } from "../page"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 interface ManualScheduleFormProps {
   defaultSchedule: ScheduleItem[]
@@ -20,6 +21,7 @@ function toDateTime(date: string, time: string): Date | null {
 }
 
 export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, onActivate }: ManualScheduleFormProps) {
+  const { t } = useLanguage()
   const [rows, setRows] = useState<ScheduleItem[]>(
     defaultSchedule.map(s => ({ ...s }))
   )
@@ -44,7 +46,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
     const prev = toDateTime(rows[index - 1].date, rows[index - 1].time)
     if (!curr || !prev) return null
     if (curr <= prev) {
-      return `Email ${index + 1} harus dijadwalkan setelah Email ${index}`
+      return t("Email {n} must be scheduled after Email {prev}", { n: index + 1, prev: index })
     }
     return null
   }
@@ -54,35 +56,35 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
   const allFilled = rows.every(r => r.date && r.time)
 
   const getDynamicLabel = (currentIndex: number) => {
-    if (currentIndex === 0) return "Hari ke-1"
+    if (currentIndex === 0) return t("Day 1")
     const curr = toDateTime(rows[currentIndex].date, rows[currentIndex].time)
     const first = toDateTime(rows[0].date, rows[0].time)
-    if (!curr || !first) return "Menunggu tanggal"
-    
+    if (!curr || !first) return t("Waiting for date")
+
     const currDay = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate())
     const firstDay = new Date(first.getFullYear(), first.getMonth(), first.getDate())
     const diffDays = Math.round((currDay.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays <= 0) {
-      if (currentIndex > 0 && curr > first) return "Hari yang sama"
-      return "Jadwal mundur" // handled by row error visually
+      if (currentIndex > 0 && curr > first) return t("Same day")
+      return t("Same day")
     }
-    return `Hari ke-${diffDays + 1}`
+    return t("Day {n}", { n: diffDays + 1 })
   }
 
   const handleSave = async () => {
     if (hasErrors || !allFilled) {
-      toast.error("Periksa kembali jadwal — ada konflik waktu atau field yang kosong.")
+      toast.error(t("Please check the schedule — there are time conflicts or empty fields."))
       return
     }
     // Recompute dayLabel + scheduledDay from actual dates before saving
     const firstDate = new Date(rows[0].date + "T00:00:00")
     const finalRows = rows.map((r, i) => {
-      if (i === 0) return { ...r, dayLabel: "Hari ke-1", scheduledDay: 1 }
+      if (i === 0) return { ...r, dayLabel: t("Day 1"), scheduledDay: 1 }
       const currDate = new Date(r.date + "T00:00:00")
       const diffDays = Math.round((currDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24))
       const day = diffDays + 1
-      return { ...r, dayLabel: `Hari ke-${day}`, scheduledDay: day }
+      return { ...r, dayLabel: t("Day {n}", { n: day }), scheduledDay: day }
     })
     await onActivate(finalRows)
   }
@@ -92,7 +94,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
       {/* Form rows */}
       <div className="space-y-4">
         <h3 className="font-bold text-[13px] text-muted-foreground uppercase tracking-wider">
-          Atur Jadwal Manual
+          {t("Set Manual Schedule")}
         </h3>
 
         {rows.map((row, index) => (
@@ -119,7 +121,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
               {isActive && (
                 <span className="ml-auto inline-flex items-center gap-1.5 text-[11.5px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-full">
                   <CheckCircle2 className="w-3 h-3"  strokeWidth={1.5} />
-                  Terjadwal
+                  {t("Scheduled")}
                 </span>
               )}
             </div>
@@ -131,7 +133,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
                   htmlFor={`schedule-date-${row.emailNumber}`}
                   className="text-[12px] font-semibold text-muted-foreground block"
                 >
-                  Tanggal Kirim
+                  {t("Send Date")}
                 </label>
                 <input
                   id={`schedule-date-${row.emailNumber}`}
@@ -156,7 +158,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
                   htmlFor={`schedule-time-${row.emailNumber}`}
                   className="text-[12px] font-semibold text-muted-foreground block"
                 >
-                  Jam Kirim
+                  {t("Send Time")}
                 </label>
                 <input
                   id={`schedule-time-${row.emailNumber}`}
@@ -194,7 +196,7 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
           className="w-full bg-brand hover:bg-brand/90 text-white font-bold h-12 rounded-xl text-[15px] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isActivating ? <Loader2 className="w-4 h-4 mr-2 animate-spin"  strokeWidth={1.5} /> : <CalendarDays className="w-4 h-4 mr-2"  strokeWidth={1.5} />}
-          {isActivating ? "Mengaktifkan..." : "Simpan Jadwal & Aktifkan"}
+          {isActivating ? t("Activating...") : t("Save Schedule & Activate")}
         </Button>
       ) : (
         <div className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
@@ -202,9 +204,9 @@ export function ManualScheduleForm({ defaultSchedule, isActive, isActivating, on
             <CheckCircle2 className="w-5 h-5"  strokeWidth={1.5} />
           </div>
           <div>
-            <p className="font-bold text-[14.5px] text-emerald-800">Jadwal tersimpan & aktif!</p>
+            <p className="font-bold text-[14.5px] text-emerald-800">{t("Schedule saved & active!")}</p>
             <p className="text-[12.5px] text-emerald-700 mt-0.5">
-              Campaign akan dikirim sesuai jadwal yang kamu tentukan.
+              {t("Campaign will be sent according to your schedule.")}
             </p>
           </div>
         </div>

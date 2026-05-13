@@ -9,9 +9,11 @@ import { getResearchLibrary, deleteCompanyProfile, LibraryEntry } from "@/lib/ap
 import { session } from "@/lib/session"
 import { toast } from "sonner"
 import { PageHelp } from "@/components/ui/PageHelp"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 export default function ResearchLibraryPage() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [profiles, setProfiles]   = useState<LibraryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError]         = useState<string | null>(null)
@@ -27,14 +29,13 @@ export default function ResearchLibraryPage() {
       .catch(e => {
         const msg = e instanceof Error ? e.message : "Unknown error"
         setError(msg)
-        toast.error("Gagal memuat Research Library.", { description: msg })
+        toast.error(t("Failed to load Research Library."), { description: msg })
       })
       .finally(() => setIsLoading(false))
   }, [])
 
   const handleDelete = async (id: string) => {
     const targetToDelete = profiles.find(p => p.id === id)
-    // Optimistic update — hapus dari UI dulu
     setProfiles(prev => prev.filter(p => p.id !== id))
     try {
       await deleteCompanyProfile(id)
@@ -47,11 +48,10 @@ export default function ResearchLibraryPage() {
       ) {
         session.clearActiveTarget()
       }
-      toast.success("Profil dihapus.")
+      toast.success(t("Profile deleted."))
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error"
-      toast.error("Gagal menghapus profil.", { description: msg })
-      // Rollback: re-fetch supaya state konsisten dengan DB
+      toast.error(t("Failed to delete profile."), { description: msg })
       getResearchLibrary().then(setProfiles).catch(() => null)
     }
   }
@@ -63,7 +63,7 @@ export default function ResearchLibraryPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Research Library</h1>
           <p className="text-muted-foreground mt-1.5 text-[14.5px] font-medium">
-            Semua riset perusahaan tersimpan di satu tempat.
+            {t("All your company research, in one place.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ export default function ResearchLibraryPage() {
           />
           <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white shadow-sm font-semibold text-[13.5px]">
             <Plus className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-            Recon Baru
+            {t("New Recon")}
           </Button>
         </div>
       </div>
@@ -86,7 +86,7 @@ export default function ResearchLibraryPage() {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-24 gap-4 text-muted-foreground animate-in fade-in">
           <Loader2 className="w-7 h-7 animate-spin"  strokeWidth={1.5} />
-          <p className="text-[14px] font-medium">Memuat research library...</p>
+          <p className="text-[14px] font-medium">{t("Loading research library...")}</p>
         </div>
       )}
 
@@ -95,7 +95,7 @@ export default function ResearchLibraryPage() {
         <div className="flex flex-col items-center justify-center py-20">
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 max-w-sm text-center">
             <AlertCircle className="w-8 h-8 text-red-500"  strokeWidth={1.5} />
-            <p className="font-bold text-[15px] text-red-800">Gagal memuat data</p>
+            <p className="font-bold text-[15px] text-red-800">{t("Failed to load data")}</p>
             <p className="text-[13px] text-red-700">{error}</p>
             <Button
               onClick={() => {
@@ -106,13 +106,13 @@ export default function ResearchLibraryPage() {
                   .catch(e => {
                     const msg = e instanceof Error ? e.message : "Unknown error"
                     setError(msg)
-                    toast.error("Gagal memuat Research Library.", { description: msg })
+                    toast.error(t("Failed to load Research Library."), { description: msg })
                   })
                   .finally(() => setIsLoading(false))
               }}
               variant="outline" size="sm" className="mt-1 rounded-xl"
             >
-              Coba Lagi
+              {t("Try Again")}
             </Button>
           </div>
         </div>
@@ -131,13 +131,13 @@ export default function ResearchLibraryPage() {
             <div className="p-5 bg-muted rounded-full mb-5">
               <BookOpen className="w-8 h-8 text-muted-foreground"  strokeWidth={1.5} />
             </div>
-            <h3 className="font-bold text-[17px] text-foreground mb-2">Belum ada riset tersimpan</h3>
+            <h3 className="font-bold text-[17px] text-foreground mb-2">{t("No research saved yet")}</h3>
             <p className="text-muted-foreground text-[14px] max-w-xs mb-6">
-              Mulai dengan melakukan Recon terhadap target perusahaan pertama kamu.
+              {t("Start by running Recon on your first target company.")}
             </p>
             <Button onClick={handleReconBaru} className="bg-brand hover:bg-brand/90 text-white font-semibold">
               <Plus className="w-4 h-4 mr-2"  strokeWidth={1.5} />
-              Recon Baru
+              {t("New Recon")}
             </Button>
           </div>
         )

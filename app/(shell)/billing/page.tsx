@@ -6,15 +6,7 @@ import { ArrowLeft, ArrowUpRight, ArrowDownLeft, Gift, RotateCcw } from "lucide-
 import { Button } from "@/components/ui/button"
 import { getBalance, getTransactions, formatRupiah, CreditTransaction } from "@/lib/api/credits"
 import { flags } from "@/lib/config/feature-flags"
-
-// ─── Type config ────────────────────────────────────────────────────────────
-
-const TX_META: Record<string, { label: string; color: string; icon: typeof ArrowUpRight }> = {
-  purchase: { label: "Top-Up",    color: "text-brand",   icon: ArrowUpRight },
-  grant:    { label: "Bonus",     color: "text-brand",   icon: Gift },
-  debit:    { label: "Pemakaian", color: "text-danger",  icon: ArrowDownLeft },
-  refund:   { label: "Refund",    color: "text-info",    icon: RotateCcw },
-}
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("id-ID", {
@@ -29,8 +21,16 @@ function formatDate(iso: string): string {
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function BillingHistoryPage() {
+  const { t } = useLanguage()
   const router = useRouter()
   const [balance, setBalance] = useState<number | null>(null)
+
+  const TX_META: Record<string, { label: string; color: string; icon: typeof ArrowUpRight }> = {
+    purchase: { label: t("Top-Up"),   color: "text-brand",   icon: ArrowUpRight },
+    grant:    { label: t("Bonus"),    color: "text-brand",   icon: Gift },
+    debit:    { label: t("Usage"),    color: "text-danger",  icon: ArrowDownLeft },
+    refund:   { label: t("Refund"),   color: "text-info",    icon: RotateCcw },
+  }
   const [transactions, setTransactions] = useState<CreditTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
@@ -49,9 +49,9 @@ export default function BillingHistoryPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Riwayat Transaksi</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("Transaction History")}</h1>
           <p className="text-[13.5px] text-muted-foreground mt-1">
-            Catatan lengkap semua aktivitas kredit di akunmu.
+            {t("Complete record of all credit activity in your account.")}
           </p>
         </div>
         {flags.BILLING_ACTIVE && (
@@ -62,7 +62,7 @@ export default function BillingHistoryPage() {
             onClick={() => router.push("/pricing")}
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
-            Kembali ke Pricing
+            {t("Back to Pricing")}
           </Button>
         )}
       </div>
@@ -70,9 +70,9 @@ export default function BillingHistoryPage() {
       {/* Balance card — Top-Up button is billing-gated. */}
       <div className="rounded-2xl border border-brand/30 bg-brand/5 p-6 mb-8 flex items-center justify-between">
         <div>
-          <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wider">Saldo Saat Ini</p>
+          <p className="text-[13px] text-muted-foreground font-medium uppercase tracking-wider">{t("Current Balance")}</p>
           <p className="text-3xl font-black text-brand mt-1">
-            {balance !== null ? `${balance} kredit` : "—"}
+            {balance !== null ? t("{balance} credits", { balance }) : "—"}
           </p>
         </div>
         {flags.BILLING_ACTIVE ? (
@@ -80,7 +80,7 @@ export default function BillingHistoryPage() {
             className="rounded-full font-semibold bg-brand hover:bg-brand/90 text-white"
             onClick={() => router.push("/pricing")}
           >
-            Top-Up Kredit →
+            {t("Top-Up Credits →")}
           </Button>
         ) : (
           <span className="text-[11.5px] font-bold uppercase tracking-widest text-brand/70 px-3 py-1.5 rounded-full bg-white/60 border border-brand/20">
@@ -93,23 +93,23 @@ export default function BillingHistoryPage() {
       {isLoading ? (
         <div className="py-16 text-center">
           <div className="inline-block w-6 h-6 border-2 border-brand/30 border-t-brand rounded-full animate-spin" />
-          <p className="text-[13.5px] text-muted-foreground mt-3">Memuat riwayat transaksi...</p>
+          <p className="text-[13.5px] text-muted-foreground mt-3">{t("Loading transaction history...")}</p>
         </div>
       ) : transactions.length === 0 ? (
         <div className="py-16 text-center border border-border/40 rounded-2xl bg-white">
           <p className="text-muted-foreground text-[14px]">
             {flags.BILLING_ACTIVE
-              ? "Belum ada transaksi. Mulai dengan membeli paket kredit."
-              : "Belum ada transaksi. Kredit Early Access akan muncul di sini ketika kamu mulai menggunakan pipeline."}
+              ? t("No transactions yet. Start by purchasing a credit pack.")
+              : t("No transactions yet. Early Access credits will appear here when you start using the pipeline.")}
           </p>
         </div>
       ) : (
         <div className="border border-border/40 rounded-2xl bg-white overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_auto_auto] gap-4 px-6 py-3 border-b border-border/40 bg-surface text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">
-            <span>Deskripsi</span>
-            <span className="text-right w-24">Kredit</span>
-            <span className="text-right w-40">Waktu</span>
+            <span>{t("Description")}</span>
+            <span className="text-right w-24">{t("Credits")}</span>
+            <span className="text-right w-40">{t("Time")}</span>
           </div>
 
           {/* Rows */}
