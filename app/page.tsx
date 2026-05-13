@@ -55,12 +55,24 @@ export default function LandingPage() {
           <div className="flex items-center">
             <button
               onClick={() => setLang(lang === "id" ? "en" : "id")}
-              className="flex items-center gap-1 text-[12px] font-bold px-2 py-1.5 rounded-md hover:bg-[#0D1A14]/5 transition-colors"
               aria-label="Switch language"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-md hover:bg-[#0D1A14]/5 transition-colors"
             >
-              <span className={lang === "en" ? "text-[#0D1A14]" : "text-[#0D1A14]/35"}>EN</span>
-              <span className="text-[#0D1A14]/25 mx-0.5">|</span>
-              <span className={lang === "id" ? "text-[#0D1A14]" : "text-[#0D1A14]/35"}>ID</span>
+              <span
+                className="text-[12px] font-bold tracking-wide transition-colors"
+                style={{ color: lang === "en" ? "#0D1A14" : "rgba(13,26,20,0.3)" }}
+              >
+                EN
+              </span>
+              <span className="text-[11px] font-normal mx-0.5" style={{ color: "rgba(13,26,20,0.2)" }}>
+                |
+              </span>
+              <span
+                className="text-[12px] font-bold tracking-wide transition-colors"
+                style={{ color: lang === "id" ? "#0D1A14" : "rgba(13,26,20,0.3)" }}
+              >
+                ID
+              </span>
             </button>
           </div>
 
