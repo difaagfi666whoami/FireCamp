@@ -120,9 +120,11 @@ async def run_match(payload: MatchRequest, user_id: str = Depends(get_current_us
     except RuntimeError as exc:
         msg = str(exc)
         logger.error("[POST /api/match] run_matching error | company=%r: %s", profile.name, msg)
+        await credits_service.grant(user_id, OpCost.MATCH, f"Refund Match gagal: {profile.name}", tx_type="refund")
         raise HTTPException(status_code=502, detail=msg) from exc
     except Exception as exc:
         logger.exception("[POST /api/match] unexpected error | company=%r", profile.name)
+        await credits_service.grant(user_id, OpCost.MATCH, f"Refund Match error: {profile.name}", tx_type="refund")
         raise HTTPException(
             status_code=500,
             detail="Terjadi kesalahan internal saat menjalankan pencocokan produk.",

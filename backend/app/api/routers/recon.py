@@ -482,6 +482,9 @@ async def recon_pro(req: ProReconRequest, user_id: str = Depends(get_current_use
         result = await run_tavily_research(query)
     except Exception as exc:
         logger.error("[recon_pro] Tavily research failed: %s", exc)
+        await credits_service.grant(
+            user_id, OpCost.RECON_PRO, f"Refund Recon Pro gagal: {query[:80]}", tx_type="refund"
+        )
         raise HTTPException(status_code=502, detail=f"Tavily Research gagal: {exc}")
 
     content: str = result["content"]
@@ -553,6 +556,9 @@ async def recon_pro(req: ProReconRequest, user_id: str = Depends(get_current_use
             resp.raise_for_status()
     except Exception as exc:
         logger.error("[recon_pro] Supabase insert failed: %s", exc)
+        await credits_service.grant(
+            user_id, OpCost.RECON_PRO, f"Refund Recon Pro insert gagal: {query[:80]}", tx_type="refund"
+        )
         raise HTTPException(status_code=502, detail=f"Gagal menyimpan laporan: {exc}")
 
     if extracted:

@@ -38,21 +38,21 @@ export async function generateCampaign(
       window.dispatchEvent(new Event("campfire_out_of_credits"))
     }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
-    // Log payload + error detail agar 422 Pydantic bisa didiagnosa di DevTools
+    // Always log full Pydantic detail to console for dev debugging.
     console.error("[Campfire/craft] POST /api/craft failed", {
       status:  res.status,
       detail:  err?.detail,
       error:   err,
       payload: body,
     })
+    // User-facing message: never expose schema paths or internal validation
+    // detail. Show a generic message and rely on the console log for triage.
     const detailMsg =
-      typeof err?.detail === "string"
+      typeof err?.detail === "string" && !Array.isArray(err.detail)
         ? err.detail
-        : Array.isArray(err?.detail)
-        ? err.detail
-            .map((d: any) => `${(d.loc || []).join(".")}: ${d.msg}`)
-            .join(" | ")
-        : `HTTP ${res.status}`
+        : res.status === 422
+        ? "Payload tidak valid. Coba ulangi langkah Match."
+        : `Gagal membuat campaign (HTTP ${res.status}).`
     throw new Error(detailMsg)
   }
 
@@ -234,12 +234,13 @@ export async function regenerateEmailTone(req: RewriteRequestPayload): Promise<R
       window.dispatchEvent(new Event("campfire_out_of_credits"))
     }
     const err = await res.json().catch(() => ({ detail: "Unknown error" }))
+    console.error("[Campfire/craft] POST /api/craft/rewrite failed", { status: res.status, detail: err?.detail })
     const detailMsg =
-      typeof err?.detail === "string"
+      typeof err?.detail === "string" && !Array.isArray(err.detail)
         ? err.detail
-        : Array.isArray(err?.detail)
-        ? err.detail.map((d: any) => `${(d.loc || []).join(".")}: ${d.msg}`).join(" | ")
-        : `HTTP ${res.status}`
+        : res.status === 422
+        ? "Payload tidak valid. Coba pilih tone lain."
+        : `Gagal merombak tone (HTTP ${res.status}).`
     throw new Error(detailMsg)
   }
 

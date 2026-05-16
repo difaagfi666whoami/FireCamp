@@ -390,6 +390,20 @@ async def rewrite_email_tone_async(
     if not settings.OPENAI_API_KEY:
         raise RuntimeError("OPENAI_API_KEY belum diset di .env.local")
 
+    # ── Input hardening ──────────────────────────────────────────────────────
+    # Validate tone against the allowed enum so an attacker can't inject
+    # arbitrary text into the rewrite instruction. Truncate the freeform
+    # fields to bound prompt size (defense against prompt-injection bloat).
+    ALLOWED_TONES = {"profesional", "friendly", "direct", "storytelling"}
+    if new_tone not in ALLOWED_TONES:
+        raise RuntimeError(
+            f"Tone tidak valid. Pilih salah satu: {', '.join(sorted(ALLOWED_TONES))}."
+        )
+    target_company     = (target_company or "").strip()[:200]
+    original_subject   = (original_subject or "").strip()[:300]
+    original_body      = (original_body or "").strip()[:4000]
+    campaign_reasoning = (campaign_reasoning or "").strip()[:2000]
+
     client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
     user_prompt = f"""\

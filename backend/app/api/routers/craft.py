@@ -74,9 +74,11 @@ async def generate_craft(payload: CraftRequest, user_id: str = Depends(get_curre
     except RuntimeError as exc:
         msg = str(exc)
         logger.error("[POST /api/craft] error | %s", msg)
+        await credits_service.grant(user_id, OpCost.CRAFT, f"Refund Craft gagal: {payload.companyProfile.name}", tx_type="refund")
         raise HTTPException(status_code=502, detail=msg) from exc
     except Exception as exc:
         logger.exception("[POST /api/craft] unexpected error")
+        await credits_service.grant(user_id, OpCost.CRAFT, f"Refund Craft error: {payload.companyProfile.name}", tx_type="refund")
         raise HTTPException(
             status_code=500,
             detail="Terjadi kesalahan internal saat membuat campaign.",
@@ -142,9 +144,11 @@ async def regenerate_craft_tone(payload: RewriteRequest, user_id: str = Depends(
     except RuntimeError as exc:
         msg = str(exc)
         logger.error("[POST /api/craft/rewrite] error | %s", msg)
+        await credits_service.grant(user_id, OpCost.POLISH, f"Refund Polish gagal: {payload.targetCompany}", tx_type="refund")
         raise HTTPException(status_code=502, detail=msg) from exc
     except Exception as exc:
         logger.exception("[POST /api/craft/rewrite] unexpected error")
+        await credits_service.grant(user_id, OpCost.POLISH, f"Refund Polish error: {payload.targetCompany}", tx_type="refund")
         raise HTTPException(
             status_code=500,
             detail="Terjadi kesalahan internal saat merombak tone email.",

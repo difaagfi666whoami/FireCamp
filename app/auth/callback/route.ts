@@ -2,10 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { flags } from "@/lib/config/feature-flags"
 
+// Whitelist `next` to same-origin relative paths only. Rejects:
+//   - protocol-relative URLs ("//evil.com")
+//   - absolute URLs ("https://evil.com")
+//   - empty / non-string values
+function sanitizeNext(raw: string | null): string {
+  if (!raw) return "/research-library"
+  if (!raw.startsWith("/")) return "/research-library"
+  if (raw.startsWith("//")) return "/research-library"
+  if (raw.startsWith("/\\")) return "/research-library"
+  return raw
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/research-library"
+  const next = sanitizeNext(searchParams.get("next"))
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=AuthFailed`)
