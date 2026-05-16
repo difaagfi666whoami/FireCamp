@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Shader Wallpapers</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #05060a; display: flex; align-items: center; justify-content: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+    #__bundler_loading { position: fixed; bottom: 20px; right: 20px; font: 13px/1.4 -apple-system, BlinkMacSystemFont, sans-serif; color: #666; background: #fff; padding: 8px 14px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.12); z-index: 10000; }
+    #__bundler_thumbnail { position: fixed; inset: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #05060a; z-index: 9999; }
+    #__bundler_thumbnail svg { width: 100%; height: 100%; object-fit: contain; }
+    #__bundler_placeholder { color: #999; font-size: 14px; }
+  </style>
+  <noscript>
+    <style>#__bundler_loading { display: none; }</style>
+    <div style="position:fixed;bottom:12px;left:12px;font:13px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:#999;background:rgba(255,255,255,0.9);padding:6px 12px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,0.08);z-index:10000;">
+      This page requires JavaScript to display.
+    </div>
+  </noscript>
+</head>
+<body>
+  <div id="__bundler_thumbnail">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="g" cx="50%" cy="50%" r="60%">
+          <stop offset="0%" stop-color="#7ad3ff" stop-opacity="0.9"></stop>
+          <stop offset="55%" stop-color="#ae5cff" stop-opacity="0.55"></stop>
+          <stop offset="100%" stop-color="#05060a" stop-opacity="0"></stop>
+        </radialGradient>
+      </defs>
+      <rect width="1200" height="800" fill="#05060a"></rect>
+      <circle cx="600" cy="400" r="320" fill="url(#g)"></circle>
+      <circle cx="600" cy="400" r="120" fill="none" stroke="#f4f5f7" stroke-opacity="0.6" stroke-width="2"></circle>
+      <circle cx="600" cy="400" r="6" fill="#f4f5f7"></circle>
+    </svg>
+  </div>
+  <div id="__bundler_loading">Unpacking...</div>
+
+  <script>
+    
+document.addEventListener('DOMContentLoaded', async function() {
+  const loading = document.getElementById('__bundler_loading');
+  function setStatus(msg) { if (loading) loading.textContent = msg; }
+
+  // Error sink persists across replaceWith since it's on window, not the DOM.
+  window.addEventListener('error', function(e) {
+    var p = document.body || document.documentElement;
+    var d = document.getElementById('__bundler_err') || p.appendChild(document.createElement('div'));
+    d.id = '__bundler_err';
+    d.style.cssText = 'position:fixed;bottom:12px;left:12px;right:12px;font:12px/1.4 ui-monospace,monospace;background:#2a1215;color:#ff8a80;padding:10px 14px;border-radius:8px;border:1px solid #5c2b2e;z-index:99999;white-space:pre-wrap;max-height:40vh;overflow:auto';
+    d.textContent = (d.textContent ? d.textContent + String.fromCharCode(10) : '') +
+      '[bundle] ' + (e.message || e.type) +
+      (e.filename ? ' (' + e.filename.slice(0, 60) + ':' + e.lineno + ')' : '');
+  }, true);
+
+  try {
+    const manifestEl = document.querySelector('script[type="__bundler/manifest"]');
+    const templateEl = document.querySelector('script[type="__bundler/template"]');
+    if (!manifestEl || !templateEl) {
+      setStatus('Error: missing bundle data');
+      console.error('[bundler] Missing script tags — manifestEl:', !!manifestEl, 'templateEl:', !!templateEl);
+      return;
+    }
+
+    const manifest = JSON.parse(manifestEl.textContent);
+    let template = JSON.parse(templateEl.textContent);
+
+    const uuids = Object.keys(manifest);
+    setStatus('Unpacking ' + uuids.length + ' assets...');
+
+    const blobUrls = {};
+    await Promise.all(uuids.map(async (uuid) => {
+      const entry = manifest[uuid];
+      try {
+        const binaryStr = atob(entry.data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+
+        let finalBytes = bytes;
+        if (entry.compressed) {
+          if (typeof DecompressionStream !== 'undefined') {
+            const ds = new DecompressionStream('gzip');
+            const writer = ds.writable.getWriter();
+            const reader = ds.readable.getReader();
+            writer.write(bytes);
+            writer.close();
+            const chunks = [];
+            let totalLen = 0;
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              chunks.push(value);
+              totalLen += value.length;
+            }
+            finalBytes = new Uint8Array(totalLen);
+            let offset = 0;
+            for (const chunk of chunks) { finalBytes.set(chunk, offset); offset += chunk.length; }
+          } else {
+            console.warn('DecompressionStream not available, asset ' + uuid + ' may not render');
+          }
+        }
+
+        blobUrls[uuid] = URL.createObjectURL(new Blob([finalBytes], { type: entry.mime }));
+      } catch (err) {
+        console.error('Failed to decode asset ' + uuid + ':', err);
+        blobUrls[uuid] = URL.createObjectURL(new Blob([], { type: entry.mime }));
+      }
+    }));
+
+    const extResEl = document.querySelector('script[type="__bundler/ext_resources"]');
+    const extResources = extResEl ? JSON.parse(extResEl.textContent) : [];
+    const resourceMap = {};
+    for (const entry of extResources) {
+      if (blobUrls[entry.uuid]) resourceMap[entry.id] = blobUrls[entry.uuid];
+    }
+
+    setStatus('Rendering...');
+    for (const uuid of uuids) template = template.split(uuid).join(blobUrls[uuid]);
+
+    // Strip integrity + crossorigin — blob URLs from a file:// document inherit
+    // a null origin, so crossorigin forces a CORS fetch that SRI then rejects.
+    // The manifest bytes are ours; SRI protects against CDN compromise, not this.
+    template = template.replace(/\s+integrity="[^"]*"/gi, '').replace(/\s+crossorigin="[^"]*"/gi, '');
+
+    const resourceScript = '<script>window.__resources = ' +
+      JSON.stringify(resourceMap).split('</' + 'script>').join('<\\/' + 'script>') +
+      ';</' + 'script>';
+    // Inject after <head> so the DOCTYPE stays first; prepending the script
+    // would push the parser into quirks mode. DOMParser always emits a <head>
+    // (synthesizing one if the source HTML omitted it) but may carry
+    // attributes through, so match the full opening tag. slice() rather than
+    // replace() keeps us clear of $-pattern substitution in resourceScript.
+    const headOpen = template.match(/<head[^>]*>/i);
+    if (headOpen) {
+      const i = headOpen.index + headOpen[0].length;
+      template = template.slice(0, i) + resourceScript + template.slice(i);
+    }
+
+    // Parse the template and swap the root element. Scripts inserted via
+    // DOMParser/replaceWith are inert per spec — re-create each with
+    // createElement so they execute, awaiting onload for src scripts to
+    // preserve ordering (React before ReactDOM before Babel before text/babel).
+    const doc = new DOMParser().parseFromString(template, 'text/html');
+    document.documentElement.replaceWith(doc.documentElement);
+    const dead = Array.from(document.scripts);
+    for (const old of dead) {
+      const s = document.createElement('script');
+      for (const a of old.attributes) s.setAttribute(a.name, a.value);
+      s.textContent = old.textContent;
+      // text/babel scripts with a src: fetch and inline. transformScriptTags
+      // does XHR against the src, but blob:null/ from a file:// origin is
+      // silently dropped. Inlining makes it a plain inline babel script,
+      // which transformScriptTags handles unconditionally.
+      if ((s.type === 'text/babel' || s.type === 'text/jsx') && s.src) {
+        const r = await fetch(s.src);
+        s.textContent = await r.text();
+        s.removeAttribute('src');
+      }
+      const p = s.src ? new Promise(function(r) { s.onload = s.onerror = r; }) : null;
+      old.replaceWith(s);
+      if (p) await p;
+    }
+    // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
+    // which fired before we swapped the document. Trigger manually if present.
+    if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
+      window.Babel.transformScriptTags();
+    }
+  } catch (err) {
+    setStatus('Error unpacking: ' + err.message);
+    console.error('Bundle unpack error:', err);
+  }
+});
+
+  </script>
+
+  <script type="__bundler/manifest">
+{}
+  </script>
+
+  <script type="__bundler/ext_resources">
+[]
+  </script>
+
+  <script type="__bundler/template">
+"<!DOCTYPE html>\n<html lang=\"en\"><head>\n<meta charset=\"utf-8\">\n<title>Shader Wallpapers<\u002Ftitle>\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<style>\n  :root {\n    --ink: #f4f5f7;\n    --ink-dim: rgba(244,245,247,0.55);\n    --ink-mute: rgba(244,245,247,0.32);\n    --chrome-bg: rgba(14,16,22,0.55);\n    --chrome-border: rgba(255,255,255,0.08);\n    --chrome-hover: rgba(255,255,255,0.06);\n    --chrome-active: rgba(255,255,255,0.14);\n    --mono: ui-monospace, \"JetBrains Mono\", \"SF Mono\", Menlo, Consolas, monospace;\n    --sans: \"Inter\", ui-sans-serif, system-ui, -apple-system, \"Helvetica Neue\", sans-serif;\n  }\n  * { box-sizing: border-box; }\n  html, body { margin: 0; padding: 0; height: 100%; background: #05060a; color: var(--ink); font-family: var(--sans); overflow: hidden; cursor: crosshair; }\n  canvas#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }\n\n  /* ---------- Top label ---------- */\n  .meta {\n    position: fixed; top: 28px; left: 32px; z-index: 5;\n    display: flex; flex-direction: column; gap: 4px;\n    pointer-events: none;\n    font-family: var(--mono);\n    font-size: 11px;\n    letter-spacing: 0.14em;\n    text-transform: uppercase;\n    color: var(--ink-dim);\n    text-shadow: 0 1px 12px rgba(0,0,0,0.5);\n  }\n  .meta .num { color: var(--ink); font-size: 56px; line-height: 1; letter-spacing: -0.03em; font-family: var(--sans); font-weight: 300; text-transform: none; }\n  .meta .title { color: var(--ink); font-size: 13px; letter-spacing: 0.22em; }\n  .meta .sub { max-width: 320px; line-height: 1.5; text-transform: none; letter-spacing: 0.01em; font-family: var(--sans); font-size: 12px; color: var(--ink-dim); }\n\n  /* ---------- Bottom status bar ---------- */\n  .status {\n    position: fixed; bottom: 24px; left: 32px; right: 32px; z-index: 5;\n    display: flex; align-items: center; justify-content: space-between;\n    pointer-events: none;\n    font-family: var(--mono);\n    font-size: 10px;\n    letter-spacing: 0.18em;\n    text-transform: uppercase;\n    color: var(--ink-mute);\n  }\n  .status .group { display: flex; gap: 24px; align-items: center; }\n  .status .k { color: var(--ink-dim); }\n  .status .v { color: var(--ink); }\n  .status .dot { width: 6px; height: 6px; border-radius: 50%; background: #6ce39a; box-shadow: 0 0 8px #6ce39a; display: inline-block; margin-right: 8px; vertical-align: middle; }\n\n  /* ---------- Right rail switcher ---------- */\n  .rail {\n    position: fixed; right: 24px; top: 50%; transform: translateY(-50%); z-index: 6;\n    display: flex; flex-direction: column; gap: 10px;\n    background: var(--chrome-bg);\n    backdrop-filter: blur(20px) saturate(140%);\n    -webkit-backdrop-filter: blur(20px) saturate(140%);\n    border: 1px solid var(--chrome-border);\n    border-radius: 16px;\n    padding: 12px;\n  }\n  .rail button {\n    appearance: none; border: 1px solid transparent; background: transparent;\n    color: var(--ink-dim);\n    font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;\n    padding: 10px 14px 10px 12px;\n    border-radius: 10px;\n    cursor: pointer;\n    display: flex; align-items: center; gap: 12px;\n    min-width: 180px;\n    transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;\n  }\n  .rail button:hover { background: var(--chrome-hover); color: var(--ink); }\n  .rail button.active { background: var(--chrome-active); color: var(--ink); border-color: rgba(255,255,255,0.16); }\n  .rail button .idx { font-size: 9px; opacity: 0.55; min-width: 14px; }\n  .rail button .name { flex: 1; text-align: left; }\n  .rail button .swatch {\n    width: 14px; height: 14px; border-radius: 4px;\n    background: linear-gradient(135deg, var(--c1, #fff), var(--c2, #888));\n    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12);\n  }\n\n  /* ---------- Hint ---------- */\n  .hint {\n    position: fixed; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 5;\n    font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;\n    color: var(--ink-mute);\n    pointer-events: none;\n    display: flex; gap: 18px;\n    opacity: 0; transition: opacity 0.4s ease;\n  }\n  .hint.show { opacity: 1; }\n  .hint .key {\n    display: inline-block;\n    padding: 3px 6px;\n    border: 1px solid var(--chrome-border);\n    border-radius: 4px;\n    margin-right: 6px;\n    color: var(--ink-dim);\n    background: rgba(255,255,255,0.03);\n  }\n\n  /* ---------- Corner crosshair ticks ---------- */\n  .corner { position: fixed; width: 14px; height: 14px; z-index: 4; pointer-events: none; opacity: 0.4; }\n  .corner::before, .corner::after { content: \"\"; position: absolute; background: var(--ink); }\n  .corner::before { width: 100%; height: 1px; top: 50%; }\n  .corner::after { height: 100%; width: 1px; left: 50%; }\n  .c-tl { top: 24px; left: 24px; } .c-tr { top: 24px; right: 24px; }\n  .c-bl { bottom: 24px; left: 24px; } .c-br { bottom: 24px; right: 24px; }\n\n  @media (max-width: 720px) {\n    .rail { right: 12px; padding: 8px; }\n    .rail button { min-width: 130px; padding: 8px 10px; }\n    .meta { left: 20px; top: 20px; }\n    .meta .num { font-size: 40px; }\n    .status { left: 20px; right: 20px; font-size: 9px; }\n  }\n<\u002Fstyle>\n<\u002Fhead>\n<body>\n  \n  <canvas id=\"stage\"><\u002Fcanvas>\n\n  <div class=\"corner c-tl\"><\u002Fdiv>\n  <div class=\"corner c-tr\"><\u002Fdiv>\n  <div class=\"corner c-bl\"><\u002Fdiv>\n  <div class=\"corner c-br\"><\u002Fdiv>\n\n  <div class=\"meta\">\n    <div>SHADER / <span id=\"metaIdx\">01<\u002Fspan><\u002Fdiv>\n    <div class=\"num\" id=\"metaNum\">01<\u002Fdiv>\n    <div class=\"title\" id=\"metaTitle\">AURORA FIELD<\u002Fdiv>\n    <div class=\"sub\" id=\"metaSub\">A flowing plasma horizon. Cursor bends the field; click to send a pulse.<\u002Fdiv>\n  <\u002Fdiv>\n\n  <div class=\"rail\" id=\"rail\"><\u002Fdiv>\n\n  <div class=\"hint\" id=\"hint\">\n    <span><span class=\"key\">←<\u002Fspan><span class=\"key\">→<\u002Fspan> switch<\u002Fspan>\n    <span><span class=\"key\">CLICK<\u002Fspan> pulse<\u002Fspan>\n    <span><span class=\"key\">SPACE<\u002Fspan> freeze<\u002Fspan>\n  <\u002Fdiv>\n\n  <div class=\"status\">\n    <div class=\"group\">\n      <span><span class=\"dot\"><\u002Fspan><span class=\"k\">LIVE<\u002Fspan><\u002Fspan>\n      <span><span class=\"k\">CURSOR <\u002Fspan><span class=\"v\" id=\"sCur\">0.00, 0.00<\u002Fspan><\u002Fspan>\n      <span><span class=\"k\">PULSE <\u002Fspan><span class=\"v\" id=\"sPulse\">0.00<\u002Fspan><\u002Fspan>\n    <\u002Fdiv>\n    <div class=\"group\">\n      <span><span class=\"k\">FPS <\u002Fspan><span class=\"v\" id=\"sFps\">--<\u002Fspan><\u002Fspan>\n      <span><span class=\"k\">RES <\u002Fspan><span class=\"v\" id=\"sRes\">--<\u002Fspan><\u002Fspan>\n      <span><span class=\"k\">T <\u002Fspan><span class=\"v\" id=\"sT\">0.00s<\u002Fspan><\u002Fspan>\n    <\u002Fdiv>\n  <\u002Fdiv>\n\n<script>\n/* ============================================================\n   Shader Wallpapers — 5 interactive WebGL scenes\n   ============================================================ */\n\nconst SHADERS = [\n  {\n    name: \"AURORA FIELD\",\n    sub: \"A flowing plasma horizon. Cursor bends the field; click to send a pulse.\",\n    swatch: [\"#4cb5ff\", \"#ae5cff\"],\n    frag: `\n      precision highp float;\n      uniform vec2 uRes; uniform float uT; uniform vec2 uMouse; uniform float uPulse; uniform float uClickT;\n      // hash & noise\n      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7)))*43758.5453); }\n      float noise(vec2 p){\n        vec2 i = floor(p), f = fract(p);\n        float a = hash(i), b = hash(i+vec2(1.,0.)), c = hash(i+vec2(0.,1.)), d = hash(i+vec2(1.,1.));\n        vec2 u = f*f*(3.-2.*f);\n        return mix(a,b,u.x) + (c-a)*u.y*(1.-u.x) + (d-b)*u.x*u.y;\n      }\n      float fbm(vec2 p){\n        float v = 0., a = 0.5;\n        for(int i=0;i<5;i++){ v += a*noise(p); p *= 2.03; a *= 0.5; }\n        return v;\n      }\n      void main(){\n        vec2 uv = gl_FragCoord.xy / uRes.xy;\n        vec2 p = uv*2.-1.;\n        p.x *= uRes.x/uRes.y;\n\n        vec2 m = (uMouse*2.-1.); m.x *= uRes.x/uRes.y;\n        float md = length(p - m);\n        float pulse = uPulse * exp(-md*1.8);\n\n        // warp the field toward cursor\n        vec2 q = p;\n        q += 0.5 * (m - p) * exp(-md*1.2) * (0.4 + 0.6*sin(uT*0.7));\n        q.y += 0.15*sin(uT*0.3 + p.x*1.5);\n\n        // layered fbm\n        float n1 = fbm(q*1.2 + vec2(uT*0.08, -uT*0.04));\n        float n2 = fbm(q*2.4 + vec2(-uT*0.05, uT*0.12) + n1*1.4);\n        float n3 = fbm(q*0.6 - vec2(uT*0.02, 0.) + n2);\n\n        // aurora bands - vertical ribbons modulated by noise\n        float band = sin(p.y*2.2 + n2*3.0 + uT*0.4) * 0.5 + 0.5;\n        band = pow(band, 1.6);\n        float ribbon = smoothstep(0.2, 0.95, band) * (0.6 + 0.6*n3);\n        ribbon += 0.6*pulse;\n\n        // colors - deep teal -> violet -> magenta\n        vec3 c1 = vec3(0.06, 0.18, 0.32);   // deep blue\n        vec3 c2 = vec3(0.10, 0.65, 0.85);   // cyan\n        vec3 c3 = vec3(0.55, 0.32, 0.95);   // violet\n        vec3 c4 = vec3(0.95, 0.45, 0.85);   // magenta\n        vec3 col = mix(c1, c2, smoothstep(0.0, 0.5, ribbon));\n        col = mix(col, c3, smoothstep(0.4, 0.85, ribbon));\n        col = mix(col, c4, smoothstep(0.85, 1.1, ribbon + pulse*0.6));\n\n        // vignette + soft glow under cursor\n        col += vec3(0.35, 0.55, 0.95) * exp(-md*3.0) * 0.12;\n        col *= 1.0 - 0.35*length(p)*0.4;\n\n        // film grain\n        col += (hash(uv*uT)-0.5)*0.02;\n\n        gl_FragColor = vec4(col, 1.0);\n      }\n    `\n  },\n  {\n    name: \"LIQUID CHROME\",\n    sub: \"Polished metal with chromatic ripples. Cursor pushes a soft dent; click sends a shockwave.\",\n    swatch: [\"#cfd6e2\", \"#5a6378\"],\n    frag: `\n      precision highp float;\n      uniform vec2 uRes; uniform float uT; uniform vec2 uMouse; uniform float uPulse; uniform float uClickT;\n      float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }\n      float noise(vec2 p){\n        vec2 i=floor(p), f=fract(p);\n        float a=hash(i), b=hash(i+vec2(1,0)), c=hash(i+vec2(0,1)), d=hash(i+vec2(1,1));\n        vec2 u=f*f*(3.-2.*f);\n        return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);\n      }\n      float fbm(vec2 p){ float v=0., a=0.5; for(int i=0;i<5;i++){ v+=a*noise(p); p*=2.0; a*=0.5;} return v; }\n      void main(){\n        vec2 uv = gl_FragCoord.xy / uRes.xy;\n        vec2 p = uv*2.-1.; p.x *= uRes.x/uRes.y;\n        vec2 m = uMouse*2.-1.; m.x *= uRes.x/uRes.y;\n        float md = length(p-m);\n\n        // surface height field\n        float h = 0.0;\n        h += 0.4*fbm(p*1.3 + uT*0.06);\n        h += 0.3*sin(p.x*2.0 + uT*0.3 + fbm(p*0.8));\n        // cursor dent\n        h += -0.6*exp(-md*md*5.5);\n        // click shockwave: expanding ring\n        float ring = sin(md*18.0 - uClickT*8.0) * exp(-md*2.0) * exp(-uClickT*1.4);\n        h += ring * 0.35;\n\n        // surface normal via gradient of h\n        float e = 0.01;\n        float hx = h - (\n            0.4*fbm((p+vec2(e,0))*1.3 + uT*0.06) +\n            0.3*sin((p.x+e)*2.0 + uT*0.3 + fbm((p+vec2(e,0))*0.8)) +\n            -0.6*exp(-length((p+vec2(e,0))-m)*length((p+vec2(e,0))-m)*5.5)\n        );\n        float hy = h - (\n            0.4*fbm((p+vec2(0,e))*1.3 + uT*0.06) +\n            0.3*sin(p.x*2.0 + uT*0.3 + fbm((p+vec2(0,e))*0.8)) +\n            -0.6*exp(-length((p+vec2(0,e))-m)*length((p+vec2(0,e))-m)*5.5)\n        );\n        vec3 n = normalize(vec3(hx, hy, 0.05));\n\n        // base chrome with strong reflections\n        vec3 lightDir = normalize(vec3(0.4, 0.7, 0.6));\n        float diff = clamp(dot(n, lightDir), 0., 1.);\n        float spec = pow(clamp(dot(reflect(-lightDir,n), vec3(0,0,1)),0.,1.), 24.);\n\n        // environment color stripes based on reflected y\n        float env = sin(n.y*8.0 + uT*0.2)*0.5+0.5;\n        vec3 envCol = mix(vec3(0.07,0.09,0.13), vec3(0.85,0.9,1.0), env);\n        envCol = mix(envCol, vec3(0.95,0.7,0.55), smoothstep(0.6,1.0, env)); // warm highlight band\n\n        // chromatic aberration on highlights\n        float ca = spec;\n        vec3 col = envCol * (0.55 + 0.55*diff);\n        col += vec3(1.0, 0.96, 0.92) * spec * 1.4;\n        col += vec3(0.4, 0.7, 1.0) * ca * 0.25;\n\n        // pulse glow\n        col += vec3(0.8,0.9,1.0) * abs(ring) * 0.8;\n\n        // vignette\n        col *= 1.0 - 0.28*length(p)*0.5;\n\n        gl_FragColor = vec4(col, 1.0);\n      }\n    `\n  },\n  {\n    name: \"VORONOI CELLS\",\n    sub: \"A living mosaic of cells. Cursor attracts the nearest points; click ripples through the lattice.\",\n    swatch: [\"#ffb86b\", \"#ff5a6e\"],\n    frag: `\n      precision highp float;\n      uniform vec2 uRes; uniform float uT; uniform vec2 uMouse; uniform float uPulse; uniform float uClickT;\n      vec2 hash2(vec2 p){\n        p = vec2(dot(p,vec2(127.1,311.7)), dot(p,vec2(269.5,183.3)));\n        return fract(sin(p)*43758.5453);\n      }\n      void main(){\n        vec2 uv = gl_FragCoord.xy / uRes.xy;\n        vec2 p = (uv*2.-1.); p.x *= uRes.x/uRes.y;\n        vec2 m = uMouse*2.-1.; m.x *= uRes.x/uRes.y;\n\n        vec2 scaled = p * 5.0;\n        vec2 i = floor(scaled);\n        vec2 f = fract(scaled);\n\n        float d1 = 8.0, d2 = 8.0;\n        vec2 cellPt = vec2(0.);\n        for(int y=-1;y<=1;y++){\n          for(int x=-1;x<=1;x++){\n            vec2 g = vec2(float(x), float(y));\n            vec2 o = hash2(i+g);\n            o = 0.5 + 0.5*sin(uT*0.6 + 6.2831*o);\n            vec2 pt = g + o - f;\n\n            // attract toward cursor\n            vec2 worldPt = (i+g+o) / 5.0;\n            worldPt.x *= uRes.y/uRes.x; // unscale aspect for distance\n            float mdist = length(((i+g+o)/5.0)*vec2(2.,2.) - vec2(1.,1.) - m); // rough\n            // simpler: pull cell point toward mouse direction in cell-local space\n            vec2 cellWorld = (i+g+o)/5.0*2.0-1.0;\n            cellWorld.x *= uRes.x/uRes.y;\n            vec2 dir = m - cellWorld;\n            float dl = length(dir);\n            float pull = exp(-dl*1.4) * 0.4;\n            pt += normalize(dir+1e-5) * pull;\n\n            float d = length(pt);\n            if(d < d1){ d2 = d1; d1 = d; cellPt = i+g; }\n            else if(d < d2){ d2 = d; }\n          }\n        }\n\n        // edge distance (gap between two nearest)\n        float edge = d2 - d1;\n\n        // cell color from hash\n        vec3 cellHash = vec3(hash2(cellPt), hash2(cellPt+13.7).x);\n        // warm palette: amber -> coral -> magenta -> deep plum\n        vec3 a = vec3(0.99, 0.72, 0.32);\n        vec3 b = vec3(0.99, 0.35, 0.43);\n        vec3 c = vec3(0.62, 0.18, 0.55);\n        vec3 dCol = vec3(0.18, 0.07, 0.22);\n        float t = fract(cellHash.x + uT*0.04);\n        vec3 col = mix(a,b,smoothstep(0.,0.4,t));\n        col = mix(col, c, smoothstep(0.4,0.75,t));\n        col = mix(col, dCol, smoothstep(0.75,1.0,t));\n        col *= 0.4 + 0.6*cellHash.y;\n\n        // click shockwave through lattice\n        float md = length(p - m);\n        float ring = sin(md*10.0 - uClickT*6.0) * exp(-md*1.5) * exp(-uClickT*1.0);\n        col += vec3(1.0, 0.95, 0.85) * abs(ring) * 0.5;\n\n        // dark edges between cells\n        float edgeMask = smoothstep(0.0, 0.06, edge);\n        col *= 0.15 + 0.85*edgeMask;\n\n        // subtle glow near cursor\n        col += vec3(1.0, 0.85, 0.7) * exp(-md*3.0) * 0.18;\n\n        // vignette\n        col *= 1.0 - 0.3*length(p)*0.55;\n\n        gl_FragColor = vec4(col, 1.0);\n      }\n    `\n  },\n  {\n    name: \"STARFIELD WARP\",\n    sub: \"A volumetric tunnel of stars. Tilt it with your cursor; click to jump to lightspeed.\",\n    swatch: [\"#0a1a3a\", \"#7ad3ff\"],\n    frag: `\n      precision highp float;\n      uniform vec2 uRes; uniform float uT; uniform vec2 uMouse; uniform float uPulse; uniform float uClickT;\n      float hash(vec3 p){ return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453); }\n\n      // star at layer\n      float stars(vec2 uv, float scale, float density){\n        vec2 g = uv*scale;\n        vec2 i = floor(g);\n        vec2 f = fract(g) - 0.5;\n        float h = hash(vec3(i, scale));\n        if(h < 1.0 - density) return 0.0;\n        vec2 off = (vec2(hash(vec3(i+1.0,scale)), hash(vec3(i+3.0,scale))) - 0.5) * 0.7;\n        float d = length(f - off);\n        float r = 0.02 + 0.04*hash(vec3(i+7.0,scale));\n        float s = smoothstep(r, 0.0, d);\n        // twinkle\n        s *= 0.5 + 0.5*sin(uT*2.0 + h*30.0);\n        return s;\n      }\n\n      void main(){\n        vec2 uv = gl_FragCoord.xy / uRes.xy;\n        vec2 p = uv*2.-1.; p.x *= uRes.x/uRes.y;\n        vec2 m = uMouse*2.-1.;\n\n        // tilt offset: parallax centered at mouse\n        float boost = 1.0 + 4.0 * uPulse;\n\n        vec3 col = vec3(0.0);\n        // background nebula\n        float neb = 0.0;\n        neb += 0.4 * sin(p.x*1.5 + uT*0.1);\n        neb += 0.4 * sin(p.y*1.7 - uT*0.07);\n        vec3 nebCol = mix(vec3(0.02,0.03,0.08), vec3(0.18,0.08,0.32), 0.5+0.5*neb);\n        nebCol = mix(nebCol, vec3(0.05,0.15,0.35), smoothstep(-1.,1.,neb*0.7));\n        col += nebCol * 0.7;\n\n        // multiple parallax star layers\n        for(int i=0;i<6;i++){\n          float fi = float(i);\n          float layer = fi + 1.0;\n          float speed = (0.05 + fi*0.06) * boost;\n          vec2 puv = p;\n          // tilt toward cursor: parallax shift increases per layer\n          puv -= m * (0.04 * layer);\n          // motion along z (warp): scale outward from center\n          float zoom = 1.0 + speed*uT*0.2;\n          puv = puv / mix(1.0, zoom, 0.0); // base\n          // streak when warping\n          vec2 streakDir = normalize(p + 1e-4);\n          float streakLen = uPulse * (0.05 + 0.06*layer);\n          float s = 0.0;\n          for(int k=0;k<4;k++){\n            float fk = float(k)/3.0;\n            vec2 sp = puv - streakDir * streakLen * fk;\n            s += stars(sp + vec2(uT*speed*0.4, -uT*speed*0.2), 6.0 + layer*2.0, 0.04) * (1.0 - fk*0.6);\n          }\n          vec3 sc = mix(vec3(0.8,0.9,1.0), vec3(1.0,0.85,0.7), fract(layer*0.37));\n          col += sc * s * (0.4 + 0.15*layer);\n        }\n\n        // central glow (warp core)\n        float md = length(p - m*0.5);\n        col += vec3(0.45,0.7,1.0) * exp(-md*2.5) * (0.15 + 0.6*uPulse);\n\n        // shockwave on click\n        float md2 = length(p - m);\n        float ring = sin(md2*12.0 - uClickT*10.0) * exp(-md2*1.5) * exp(-uClickT*1.4);\n        col += vec3(0.6,0.85,1.0) * abs(ring) * 0.8;\n\n        // vignette\n        col *= 1.0 - 0.35*length(p)*0.55;\n        gl_FragColor = vec4(col, 1.0);\n      }\n    `\n  },\n  {\n    name: \"GRADIENT MESH\",\n    sub: \"A silken gradient with magnetic pull. Cursor warps the mesh; click drops a color bomb.\",\n    swatch: [\"#ff7ab8\", \"#7ce5ff\"],\n    frag: `\n      precision highp float;\n      uniform vec2 uRes; uniform float uT; uniform vec2 uMouse; uniform float uPulse; uniform float uClickT;\n      vec3 palette(float t){\n        // smooth pastel: peach -> rose -> lavender -> mint -> sky\n        vec3 a = vec3(1.0, 0.78, 0.62);\n        vec3 b = vec3(0.95, 0.52, 0.72);\n        vec3 c = vec3(0.62, 0.55, 0.95);\n        vec3 d = vec3(0.55, 0.92, 0.85);\n        vec3 e = vec3(0.48, 0.78, 1.0);\n        t = fract(t);\n        if(t<0.25) return mix(a,b,t/0.25);\n        if(t<0.5)  return mix(b,c,(t-0.25)/0.25);\n        if(t<0.75) return mix(c,d,(t-0.5)/0.25);\n        return mix(d,e,(t-0.75)/0.25);\n      }\n      // magnetic field from a set of moving anchor points\n      vec2 warp(vec2 p, float t, vec2 m){\n        vec2 a1 = vec2(sin(t*0.21)*0.6, cos(t*0.17)*0.5);\n        vec2 a2 = vec2(cos(t*0.13)*0.7, sin(t*0.27)*0.6);\n        vec2 a3 = vec2(sin(t*0.09 + 1.5)*0.5, cos(t*0.23+2.0)*0.7);\n        vec2 d1 = p - a1; vec2 d2 = p - a2; vec2 d3 = p - a3; vec2 dm = p - m;\n        vec2 v = vec2(0.);\n        v += normalize(d1+1e-4) * 0.12 / (0.2 + dot(d1,d1));\n        v += normalize(d2+1e-4) * -0.10 / (0.2 + dot(d2,d2));\n        v += normalize(d3+1e-4) * 0.08 / (0.2 + dot(d3,d3));\n        // cursor as a strong attractor that swirls\n        float md = length(dm)+1e-4;\n        vec2 perp = vec2(-dm.y, dm.x) / md;\n        v += (-dm/md) * 0.18 * exp(-md*1.2);\n        v += perp * 0.18 * exp(-md*1.5);\n        return v;\n      }\n      void main(){\n        vec2 uv = gl_FragCoord.xy / uRes.xy;\n        vec2 p = uv*2.-1.; p.x *= uRes.x/uRes.y;\n        vec2 m = uMouse*2.-1.; m.x *= uRes.x/uRes.y;\n\n        // integrate flow a few steps for silky look\n        vec2 q = p;\n        for(int i=0;i<4;i++){ q += warp(q, uT, m) * 0.25; }\n\n        float t = 0.5 + 0.5*sin(q.x*1.2 + q.y*0.8 + uT*0.15);\n        t += 0.25*sin(length(q-m)*3.0 - uT*0.4);\n        vec3 col = palette(t);\n\n        // soft pulse from click — color bomb\n        float md = length(p - m);\n        float bomb = exp(-md*md*4.0) * uPulse;\n        vec3 bombCol = palette(uClickT*0.3 + 0.6);\n        col = mix(col, bombCol, bomb*0.7);\n\n        // very subtle grain to keep it silky-not-banded\n        float gr = fract(sin(dot(uv*uRes, vec2(12.9898,78.233)))*43758.5453);\n        col += (gr-0.5)*0.012;\n\n        // soft inner glow at cursor\n        col += vec3(1.0)*exp(-md*4.5)*0.08;\n        // vignette\n        col *= 1.0 - 0.22*length(p)*0.5;\n\n        gl_FragColor = vec4(col, 1.0);\n      }\n    `\n  }\n];\n\n/* ---------------- WebGL plumbing ---------------- */\nconst canvas = document.getElementById('stage');\nconst gl = canvas.getContext('webgl', { antialias: false, premultipliedAlpha: false });\nif(!gl){ document.body.innerHTML = '<div style=\"color:#fff;padding:40px;font-family:monospace\">WebGL not supported.<\u002Fdiv>'; throw new Error('no webgl'); }\n\nconst vertSrc = `\n  attribute vec2 a_pos;\n  void main(){ gl_Position = vec4(a_pos, 0.0, 1.0); }\n`;\n\nfunction compile(type, src){\n  const s = gl.createShader(type);\n  gl.shaderSource(s, src);\n  gl.compileShader(s);\n  if(!gl.getShaderParameter(s, gl.COMPILE_STATUS)){\n    console.error(gl.getShaderInfoLog(s), src);\n    throw new Error('shader compile error');\n  }\n  return s;\n}\nfunction makeProgram(fragSrc){\n  const v = compile(gl.VERTEX_SHADER, vertSrc);\n  const f = compile(gl.FRAGMENT_SHADER, fragSrc);\n  const p = gl.createProgram();\n  gl.attachShader(p, v); gl.attachShader(p, f);\n  gl.bindAttribLocation(p, 0, 'a_pos');\n  gl.linkProgram(p);\n  if(!gl.getProgramParameter(p, gl.LINK_STATUS)){\n    console.error(gl.getProgramInfoLog(p));\n    throw new Error('link error');\n  }\n  return p;\n}\n\n// Fullscreen triangle\nconst buf = gl.createBuffer();\ngl.bindBuffer(gl.ARRAY_BUFFER, buf);\ngl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);\ngl.enableVertexAttribArray(0);\ngl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);\n\n// Pre-compile all programs and cache uniform locations\nconst programs = SHADERS.map(s => {\n  const prog = makeProgram(s.frag);\n  return {\n    prog,\n    u: {\n      uRes: gl.getUniformLocation(prog, 'uRes'),\n      uT: gl.getUniformLocation(prog, 'uT'),\n      uMouse: gl.getUniformLocation(prog, 'uMouse'),\n      uPulse: gl.getUniformLocation(prog, 'uPulse'),\n      uClickT: gl.getUniformLocation(prog, 'uClickT'),\n    }\n  };\n});\n\n/* ---------------- State ---------------- */\nconst state = {\n  idx: 0,\n  mouse: [0.5, 0.5],\n  mouseTarget: [0.5, 0.5],\n  pulse: 0.0,\n  clickT: 99.0,\n  startT: performance.now(),\n  lastT: performance.now(),\n  paused: false,\n  pausedAt: 0,\n  pausedOffset: 0,\n};\n\nfunction resize(){\n  const dpr = Math.min(window.devicePixelRatio || 1, 2);\n  const w = Math.floor(window.innerWidth * dpr);\n  const h = Math.floor(window.innerHeight * dpr);\n  if(canvas.width !== w || canvas.height !== h){\n    canvas.width = w; canvas.height = h;\n    gl.viewport(0,0,w,h);\n  }\n}\nwindow.addEventListener('resize', resize);\nresize();\n\nwindow.addEventListener('pointermove', (e) => {\n  state.mouseTarget[0] = e.clientX / window.innerWidth;\n  state.mouseTarget[1] = 1.0 - (e.clientY / window.innerHeight);\n});\nwindow.addEventListener('pointerdown', (e) => {\n  state.pulse = 1.0;\n  state.clickT = 0.0;\n});\n\nwindow.addEventListener('keydown', (e) => {\n  if(e.key === 'ArrowRight'){ select((state.idx + 1) % SHADERS.length); }\n  else if(e.key === 'ArrowLeft'){ select((state.idx - 1 + SHADERS.length) % SHADERS.length); }\n  else if(e.key >= '1' && e.key <= '5'){ select(parseInt(e.key,10)-1); }\n  else if(e.code === 'Space'){ e.preventDefault(); togglePause(); }\n});\n\nfunction togglePause(){\n  state.paused = !state.paused;\n  if(state.paused){ state.pausedAt = performance.now(); }\n  else { state.pausedOffset += performance.now() - state.pausedAt; }\n}\n\n/* ---------------- Rail UI ---------------- */\nconst rail = document.getElementById('rail');\nSHADERS.forEach((s, i) => {\n  const b = document.createElement('button');\n  b.innerHTML = `<span class=\"idx\">0${i+1}<\u002Fspan><span class=\"name\">${s.name}<\u002Fspan><span class=\"swatch\" style=\"--c1:${s.swatch[0]};--c2:${s.swatch[1]}\"><\u002Fspan>`;\n  b.addEventListener('click', () => select(i));\n  rail.appendChild(b);\n});\n\nfunction select(i){\n  state.idx = i;\n  [...rail.children].forEach((c, k) => c.classList.toggle('active', k===i));\n  const s = SHADERS[i];\n  document.getElementById('metaTitle').textContent = s.name;\n  document.getElementById('metaSub').textContent = s.sub;\n  const num = String(i+1).padStart(2,'0');\n  document.getElementById('metaNum').textContent = num;\n  document.getElementById('metaIdx').textContent = `${num} / ${String(SHADERS.length).padStart(2,'0')}`;\n}\nselect(0);\n\n// hint flashes briefly on load\nconst hint = document.getElementById('hint');\nsetTimeout(()=>hint.classList.add('show'), 400);\nsetTimeout(()=>hint.classList.remove('show'), 5200);\n\n/* ---------------- Status updaters ---------------- */\nconst sCur = document.getElementById('sCur');\nconst sPulse = document.getElementById('sPulse');\nconst sFps = document.getElementById('sFps');\nconst sRes = document.getElementById('sRes');\nconst sT = document.getElementById('sT');\nlet fpsAcc = 0, fpsN = 0, fpsLast = performance.now();\n\n/* ---------------- Render loop ---------------- */\nfunction render(now){\n  const dt = Math.min(0.05, (now - state.lastT)/1000);\n  state.lastT = now;\n\n  // smooth mouse\n  state.mouse[0] += (state.mouseTarget[0] - state.mouse[0]) * Math.min(1, dt*8);\n  state.mouse[1] += (state.mouseTarget[1] - state.mouse[1]) * Math.min(1, dt*8);\n\n  // decay pulse and advance click timer\n  state.pulse *= Math.exp(-dt*1.6);\n  state.clickT += dt;\n\n  const t = state.paused\n    ? (state.pausedAt - state.startT - state.pausedOffset)/1000\n    : (now - state.startT - state.pausedOffset)/1000;\n\n  resize();\n  const { prog, u } = programs[state.idx];\n  gl.useProgram(prog);\n  gl.uniform2f(u.uRes, canvas.width, canvas.height);\n  gl.uniform1f(u.uT, t);\n  gl.uniform2f(u.uMouse, state.mouse[0], state.mouse[1]);\n  gl.uniform1f(u.uPulse, state.pulse);\n  gl.uniform1f(u.uClickT, state.clickT);\n\n  gl.drawArrays(gl.TRIANGLES, 0, 3);\n\n  // status text (throttled)\n  fpsN++;\n  if(now - fpsLast > 400){\n    const fps = Math.round((fpsN*1000)/(now-fpsLast));\n    sFps.textContent = fps;\n    sRes.textContent = `${canvas.width}×${canvas.height}`;\n    fpsN = 0; fpsLast = now;\n  }\n  sCur.textContent = `${(state.mouse[0]*2-1).toFixed(2)}, ${(state.mouse[1]*2-1).toFixed(2)}`;\n  sPulse.textContent = state.pulse.toFixed(2);\n  sT.textContent = `${t.toFixed(2)}s`;\n\n  requestAnimationFrame(render);\n}\nrequestAnimationFrame(render);\n<\u002Fscript>\n\n\n<\u002Fbody><\u002Fhtml>"
+  </script>
+</body>
+</html>

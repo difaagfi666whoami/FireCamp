@@ -32,7 +32,7 @@ import re
 import uuid
 from datetime import datetime, timezone
 from urllib.parse import urlparse
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -54,6 +54,7 @@ from app.services import (
 from app.core.config import settings
 from app.core.auth import get_current_user
 from app.core.billing import OpCost
+from app.core.rate_limit import enforce as rate_limit
 from app.services import credits_service
 from app.services.openai_service import extract_from_tavily_report
 from app.services.tavily_research_service import run_tavily_research
@@ -415,6 +416,10 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
             detail=f"Format URL tidak valid: '{url}'. Contoh yang benar: https://example.com",
         )
 
+    # Rate limit BEFORE credit debit so a 429 doesn't cost the user.
+    # 20 Recons per hour per user is generous for normal use but caps spend.
+    await rate_limit(user_id, bucket="recon", max_events=20, window_seconds=3600)
+
     # Debit credits BEFORE running expensive AI pipeline. Free=1, Pro=5.
     cost = OpCost.RECON_PRO if payload.mode == ReconMode.pro else OpCost.RECON_FREE
     if not await credits_service.debit(user_id, cost, f"Recon {payload.mode.value}: {url}"):
@@ -447,25 +452,24 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
 # ─── Pro Mode endpoint ────────────────────────────────────────────────────────
 
 class ProReconRequest(BaseModel):
-    query:   str                       # free-form: URL only, or URL + research directives
-    user_id: Optional[str] = None
+    query: str  # free-form: URL only, or URL + research directives
 
 
 @router.post("/recon/pro")
-async def recon_pro(req: ProReconRequest, auth_user: str = Depends(get_current_user)):
+async def recon_pro(req: ProReconRequest, user_id: str = Depends(get_current_user)):
     """
     Pro Mode: call Tavily Research API directly, save markdown report to Supabase.
     Returns company_id for redirect to /recon/[id].
+
+    Identity is taken EXCLUSIVELY from the validated JWT (Depends), never from
+    the request body — preventing cross-user data poisoning / credit drain.
     """
     query = req.query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Query tidak boleh kosong")
 
-    # Pro mode requires valid user_id
-    user_id = getattr(req, "user_id", auth_user) or auth_user
-    user_id = user_id.strip() if isinstance(user_id, str) else ""
-    if not user_id:
-        raise HTTPException(status_code=401, detail="user_id wajib disertakan. Silakan login ulang.")
+    # Pro mode is the most expensive operation — cap tighter than Free.
+    await rate_limit(user_id, bucket="recon_pro", max_events=10, window_seconds=3600)
 
     # Pro mode = 5 credits, debit upfront
     if not await credits_service.debit(user_id, OpCost.RECON_PRO, f"Recon Pro: {query[:80]}"):

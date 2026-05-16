@@ -52,12 +52,12 @@ export async function GET(req: NextRequest) {
     // Fetch emails using the View which already handles joins to target contact
     const { data: viewEmails, error: fetchErr } = await sb
       .from("v_pending_emails")
-      .select("email_id, target_email, subject, body, scheduled_date, scheduled_time")
+      .select("email_id, user_id, target_email, subject, body, scheduled_date, scheduled_time")
       .limit(100)
 
     if (fetchErr) {
       console.error("[Cron/dispatch] fetch error:", fetchErr)
-      return NextResponse.json({ error: fetchErr.message }, { status: 500 })
+      return NextResponse.json({ error: "internal" }, { status: 500 })
     }
 
     // JS-side Evaluation to handle localized Jakarta comparison precisely
@@ -71,6 +71,29 @@ export async function GET(req: NextRequest) {
 
     if (!emails || emails.length === 0) {
       return NextResponse.json({ dispatched: 0 })
+    }
+
+    // Batch-fetch verified user email settings to avoid N+1 queries
+    const userIds = Array.from(new Set(emails.map((e: Record<string, unknown>) => e.user_id as string).filter(Boolean)))
+    let emailSettingsMap = new Map<string, { from_name: string; from_email: string; domain_status: string }>()
+    if (userIds.length > 0) {
+      const { data: userSettings } = await sb
+        .from("user_email_settings")
+        .select("user_id, from_name, from_email, domain_status")
+        .in("user_id", userIds)
+        .eq("domain_status", "verified")
+      if (userSettings) {
+        emailSettingsMap = new Map(
+          (userSettings as Record<string, unknown>[]).map((s) => [
+            s.user_id as string,
+            {
+              from_name:     (s.from_name as string) ?? "",
+              from_email:    (s.from_email as string) ?? "",
+              domain_status: (s.domain_status as string) ?? "unverified",
+            }
+          ])
+        )
+      }
     }
 
     let dispatched = 0
@@ -95,7 +118,10 @@ export async function GET(req: NextRequest) {
         }
 
         // Build reply-to with +addressing so inbound replies carry campaign_email_id
-        const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Campfire <noreply@campfire.app>"
+        const userEmailSetting = emailSettingsMap.get((email as Record<string, unknown>).user_id as string ?? "")
+        const fromEmail = (userEmailSetting?.domain_status === "verified" && userEmailSetting.from_email)
+          ? `${userEmailSetting.from_name} <${userEmailSetting.from_email}>`
+          : (process.env.RESEND_FROM_EMAIL ?? "Campfire <noreply@campfire.web.id>")
         const replyDomain = process.env.RESEND_INBOUND_DOMAIN ?? ""
         const replyTo = replyDomain
           ? `reply+${email.email_id}@${replyDomain}`
@@ -154,6 +180,6 @@ export async function GET(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("[Cron/dispatch] fatal:", msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: "internal" }, { status: 500 })
   }
 }

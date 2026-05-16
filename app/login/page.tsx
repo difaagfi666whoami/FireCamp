@@ -12,8 +12,6 @@ import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 type State = "idle" | "loading" | "success" | "error"
 
-const IS_DEV = process.env.NODE_ENV === "development"
-
 export default function LoginPage() {
   const router = useRouter()
   const { t } = useLanguage()
@@ -166,18 +164,6 @@ export default function LoginPage() {
                 <p className="text-xs text-[#0D1A14]/40 text-center mt-6">
                   {t("No access yet? Contact the Campfire team.")}
                 </p>
-
-                {IS_DEV && (
-                  <div className="border-t border-[#0D1A14]/10 pt-4">
-                    <button
-                      type="button"
-                      onClick={() => { window.location.href = "/research-library" }}
-                      className="w-full text-xs text-[#0D1A14]/40 hover:text-[#0D1A14]/70 transition-colors py-2 rounded-lg hover:bg-[#0D1A14]/5"
-                    >
-                      [DEV] Masuk tanpa auth →
-                    </button>
-                  </div>
-                )}
               </form>
             )}
           </div>

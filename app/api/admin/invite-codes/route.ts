@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[admin/invite-codes] list failed:", error)
+    return NextResponse.json({ error: "Gagal memuat invite codes." }, { status: 500 })
   }
   return NextResponse.json({ codes: data ?? [] })
 }

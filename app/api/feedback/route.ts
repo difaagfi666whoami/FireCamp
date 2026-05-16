@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { checkRateLimit } from "@/lib/rateLimit"
 
 const VALID_SENTIMENTS = new Set(["positive", "neutral", "negative"])
 
@@ -27,6 +28,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
 
+  const rl = checkRateLimit(`feedback:${user.id}`, 10, 10 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "rate_limited" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    )
+  }
+
   const userAgent = req.headers.get("user-agent")?.slice(0, 500) ?? null
 
   // Insert through the user-scoped client so RLS verifies user_id = auth.uid().
@@ -39,7 +48,8 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error("[feedback] insert failed:", error)
+    return NextResponse.json({ error: "Gagal menyimpan feedback." }, { status: 500 })
   }
   return NextResponse.json({ ok: true })
 }

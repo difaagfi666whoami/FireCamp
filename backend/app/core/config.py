@@ -63,14 +63,15 @@ class Settings(BaseSettings):
         "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "HUNTER_API_KEY",
         "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "NEXT_PUBLIC_APP_URL",
         "XENDIT_SECRET_KEY", "XENDIT_WEBHOOK_TOKEN",
+        "OPENAI_API_KEY", "TAVILY_API_KEY", "SERPER_API_KEY", "JINA_API_KEY",
         mode="before",
     )
     @classmethod
     def strip_quotes(cls, v: object) -> str:
-        """Strip surrounding quotes dari value .env.local."""
+        """Strip surrounding quotes dan whitespace dari value env."""
         s = str(v).strip()
         if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
-            return s[1:-1]
+            return s[1:-1].strip()
         return s
 
     @field_validator("NEXT_PUBLIC_USE_MOCK", mode="before")

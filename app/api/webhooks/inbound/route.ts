@@ -265,6 +265,25 @@ async function layer3DbFallback(
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  // Resend Inbound Routing supports custom headers — configure a shared secret
+  // in the Resend dashboard so we can reject spoofed inbound payloads.
+  // Without this, anyone on the internet could POST fake "reply" events and
+  // skew engagement metrics for any campaign_email_id they can guess.
+  const expectedToken = process.env.RESEND_INBOUND_TOKEN
+  if (!expectedToken) {
+    console.error("[Webhook/inbound] Missing RESEND_INBOUND_TOKEN env var")
+    return NextResponse.json({ error: "Inbound webhook not configured" }, { status: 500 })
+  }
+  const presented =
+    req.headers.get("x-resend-inbound-token") ??
+    req.headers.get("x-webhook-token") ??
+    ""
+  if (presented !== expectedToken) {
+    console.warn("[Webhook/inbound] token mismatch — possible spoofed request")
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   let payload: ResendInboundEvent
   try {
     payload = await req.json()
@@ -334,7 +353,7 @@ export async function POST(req: NextRequest) {
 
     if (rpcErr) {
       console.error("[Webhook/inbound] increment_email_replies error:", rpcErr)
-      return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+      return NextResponse.json({ error: "internal" }, { status: 500 })
     }
 
     // 2. Update JSONB timeline on campaign_analytics
@@ -349,6 +368,6 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("[Webhook/inbound] fatal:", msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: "internal" }, { status: 500 })
   }
 }

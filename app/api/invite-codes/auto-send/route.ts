@@ -3,6 +3,7 @@ import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient as createUserClient } from "@/lib/supabase/server"
 import { Resend } from "resend"
 import { randomBytes } from "crypto"
+import { checkRateLimit } from "@/lib/rateLimit"
 
 const ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
 
@@ -79,6 +80,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 })
   }
 
+  // Each call may send an email + write a DB row. Cap at 5 / hour / user to
+  // prevent abuse of the Resend mailing pool.
+  const rl = checkRateLimit(`invite-auto-send:${user.id}`, 5, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Terlalu banyak permintaan. Coba lagi dalam ${rl.retryAfterSeconds} detik.` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    )
+  }
+
   // `force` = true means the user explicitly clicked "Kirim ulang".
   // Without it, skip re-sending if this user already has an auto-generated code
   // (prevents duplicate emails when the auth redirect double-mounts the page).
@@ -131,7 +142,8 @@ export async function POST(req: NextRequest) {
       if (!error) {
         inserted = true
       } else if (!/duplicate|unique/i.test(error.message)) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error("[auto-send] insert failed:", error)
+        return NextResponse.json({ error: "Gagal membuat kode. Coba lagi." }, { status: 500 })
       }
     }
 

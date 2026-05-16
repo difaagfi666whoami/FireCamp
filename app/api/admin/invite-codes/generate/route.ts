@@ -55,7 +55,8 @@ export async function POST(req: NextRequest) {
         codes.push(code)
         inserted = true
       } else if (!/duplicate|unique/i.test(error.message)) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error("[admin/invite-codes/generate] insert failed:", error)
+        return NextResponse.json({ error: "Gagal membuat kode undangan." }, { status: 500 })
       }
     }
     if (!inserted) {

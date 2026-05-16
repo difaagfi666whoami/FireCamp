@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { getUserProfile, saveUserProfile } from "@/lib/api/profile"
+import { EmailDomainSection } from "./components/EmailDomainSection"
 import { Loader2 } from "lucide-react"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 
@@ -89,6 +90,7 @@ export default function SettingsPage() {
 
       {/* Form */}
       {!isLoading && (
+        <>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Workspace */}
           <div className="space-y-2">
@@ -169,6 +171,18 @@ export default function SettingsPage() {
             )}
           </Button>
         </form>
+
+        {/* Email domain section */}
+        <div className="space-y-4 pt-2">
+          <div className="border-t pt-6 border-border/40">
+            <h2 className="text-base font-semibold tracking-tight">Domain Email Pengirim</h2>
+            <p className="text-muted-foreground mt-1 text-[13.5px]">
+              Kirim campaign dari alamat email domain perusahaan kamu sendiri.
+            </p>
+          </div>
+          <EmailDomainSection />
+        </div>
+        </>
       )}
     </div>
   )

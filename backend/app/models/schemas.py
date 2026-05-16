@@ -192,10 +192,13 @@ class CompanyProfile(BaseModel):
 # ── Request / Response payloads ────────────────────────────────────────────────
 
 class ReconRequest(BaseModel):
-    """POST /api/recon — request body dari Frontend."""
-    url:     str
-    mode:    ReconMode = ReconMode.free
-    user_id: Optional[str] = None
+    """POST /api/recon — request body dari Frontend.
+
+    Note: user_id is NOT accepted from the body. Identity is derived from the
+    JWT via get_current_user dependency to prevent cross-user impersonation.
+    """
+    url:  str
+    mode: ReconMode = ReconMode.free
 
 
 class ReconResponse(CompanyProfile):

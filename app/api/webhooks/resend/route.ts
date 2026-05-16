@@ -120,13 +120,14 @@ export async function POST(req: NextRequest) {
       })
       if (error) {
         console.error("[Webhook/resend] handle_email_bounced error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ error: "internal" }, { status: 500 })
       }
       console.warn(`[Webhook/resend] BOUNCE detected for campaign_email_id: ${campaignEmailId}`)
       return NextResponse.json({ ok: true, event: eventType, action: "bounced" })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      return NextResponse.json({ error: msg }, { status: 500 })
+      console.error("[Webhook/resend] bounce fatal:", msg)
+      return NextResponse.json({ error: "internal" }, { status: 500 })
     }
   }
 
@@ -138,13 +139,14 @@ export async function POST(req: NextRequest) {
       })
       if (error) {
         console.error("[Webhook/resend] handle_email_complained error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ error: "internal" }, { status: 500 })
       }
       console.warn(`[Webhook/resend] SPAM COMPLAINT for campaign_email_id: ${campaignEmailId}`)
       return NextResponse.json({ ok: true, event: eventType, action: "complained" })
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      return NextResponse.json({ error: msg }, { status: 500 })
+      console.error("[Webhook/resend] complained fatal:", msg)
+      return NextResponse.json({ error: "internal" }, { status: 500 })
     }
   }
 
@@ -177,7 +179,7 @@ export async function POST(req: NextRequest) {
 
     if (rpcErr) {
       console.error(`[Webhook/resend] ${rpcName} error:`, rpcErr)
-      return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+      return NextResponse.json({ error: "internal" }, { status: 500 })
     }
 
     // 2. Update JSONB timeline on campaign_analytics
@@ -232,6 +234,6 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error("[Webhook/resend] fatal:", msg)
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: "internal" }, { status: 500 })
   }
 }

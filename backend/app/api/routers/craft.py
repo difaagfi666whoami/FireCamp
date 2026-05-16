@@ -15,6 +15,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.core.auth import get_current_user
 
 from app.core.billing import OpCost
+from app.core.rate_limit import enforce as rate_limit
 from app.models.schemas import CraftRequest, CraftResponse, RewriteRequest, RewriteResponse
 from app.services import craft_service, credits_service
 from app.services.token_writer import write_token
@@ -49,6 +50,9 @@ async def generate_craft(payload: CraftRequest, user_id: str = Depends(get_curre
             status_code=400,
             detail="Profil perusahaan tidak memiliki pain points. Jalankan Recon terlebih dahulu.",
         )
+
+    # Rate limit before credit debit so a 429 doesn't cost the user.
+    await rate_limit(user_id, bucket="craft", max_events=15, window_seconds=3600)
 
     # Craft = 2 credits per call
     if not await credits_service.debit(user_id, OpCost.CRAFT, f"Craft: {payload.companyProfile.name}"):
@@ -109,6 +113,9 @@ async def regenerate_craft_tone(payload: RewriteRequest, user_id: str = Depends(
     """
     POST /api/craft/rewrite
     """
+    # Rate limit before credit debit so a 429 doesn't cost the user.
+    await rate_limit(user_id, bucket="polish", max_events=30, window_seconds=3600)
+
     # Rewrite = 1 credit per call (POLISH cost)
     if not await credits_service.debit(user_id, OpCost.POLISH, f"Polish rewrite: {payload.targetCompany}"):
         raise HTTPException(

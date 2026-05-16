@@ -52,7 +52,8 @@ export async function GET(req: NextRequest) {
   // ── Users ──────────────────────────────────────────────────────────
   const usersRes = await sb.auth.admin.listUsers({ perPage: 1000 })
   if (usersRes.error) {
-    return NextResponse.json({ error: usersRes.error.message }, { status: 500 })
+    console.error("[admin/usage-stats] listUsers failed:", usersRes.error)
+    return NextResponse.json({ error: "Gagal memuat data admin." }, { status: 500 })
   }
   const allUsers = usersRes.data.users
   const userEmailMap = new Map<string, string>(

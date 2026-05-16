@@ -22,6 +22,7 @@ from app.models.schemas import (
     ProductCatalogItem,
 )
 from app.core.billing import OpCost
+from app.core.rate_limit import enforce as rate_limit
 from app.services import openai_service, credits_service
 from app.services.supabase_client import fetch_table
 from app.services.token_writer import write_token
@@ -98,6 +99,9 @@ async def run_match(payload: MatchRequest, user_id: str = Depends(get_current_us
             status_code=503,
             detail="Katalog produk kosong. Pastikan sudah ada produk di Supabase tabel 'products'.",
         )
+
+    # Rate limit before credit debit so a 429 doesn't cost the user.
+    await rate_limit(user_id, bucket="match", max_events=30, window_seconds=3600)
 
     # Match = 1 credit per call
     if not await credits_service.debit(user_id, OpCost.MATCH, f"Match: {profile.name}"):

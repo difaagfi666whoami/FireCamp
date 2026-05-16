@@ -2,32 +2,34 @@ import { NextRequest, NextResponse } from "next/server"
 import { updateSession } from "@/lib/supabase/middleware"
 import { flags } from "@/lib/config/feature-flags"
 
-const PROTECTED_PREFIXES = [
-  "/research-library",
-  "/recon",
-  "/match",
-  "/craft",
-  "/polish",
-  "/launch",
-  "/pulse",
-  "/settings",
-  "/pricing",
-  "/billing",
-  "/auth/redeem-invite",
-]
+// Default-deny model: everything routed through this middleware requires
+// authentication unless it matches one of these PUBLIC entries. Adding a new
+// route is automatically protected — no risk of forgetting to add it to a
+// PROTECTED_PREFIXES list.
+const PUBLIC_PATHS = new Set<string>([
+  "/",                  // marketing landing
+  "/login",
+  "/auth/callback",     // handled by route handler under app/auth/callback (it's in the api/ exclusion below for safety)
+  "/auth/confirm",
+])
 
 const ADMIN_UI_PREFIXES = ["/admin"]
 
-function isProtectedPath(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  )
+function isPublicPath(pathname: string): boolean {
+  if (PUBLIC_PATHS.has(pathname)) return true
+  // Public Next.js asset / image paths
+  if (pathname.startsWith("/_next/")) return true
+  if (pathname.startsWith("/favicon")) return true
+  return false
 }
 
 // Paths that require auth but are exempt from the Phase 5 invite gate —
 // we don't want to redirect users *away* from the redemption page itself.
 function isInviteGateExempt(pathname: string): boolean {
-  return pathname === "/auth/redeem-invite"
+  return (
+    pathname === "/auth/redeem-invite" ||
+    pathname === "/onboarding"
+  )
 }
 
 function isAdminUIPath(pathname: string): boolean {
@@ -39,7 +41,12 @@ function isAdminUIPath(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (process.env.NEXT_PUBLIC_AUTH_DEV_BYPASS === "true") {
+  // Dev bypass only works in non-production builds — never in prod, even if
+  // someone forgets to flip the env var.
+  if (
+    process.env.NEXT_PUBLIC_AUTH_DEV_BYPASS === "true" &&
+    process.env.NODE_ENV !== "production"
+  ) {
     return NextResponse.next()
   }
 
@@ -83,7 +90,9 @@ export async function middleware(request: NextRequest) {
   // updateSession keeps the Supabase session alive by refreshing cookies
   const { supabase, user, response } = await updateSession(request)
 
-  if (!isProtectedPath(pathname)) {
+  // Default-deny: explicitly public paths pass through; everything else
+  // requires authentication.
+  if (isPublicPath(pathname)) {
     return response
   }
 
