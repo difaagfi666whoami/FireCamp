@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
+import { Resend } from "resend"
 
 // ---------------------------------------------------------------------------
-// Inbound Reply Webhook — Resend Inbound Routing
+// Inbound Reply Webhook — Resend Webhook (event: email.received)
 //
-// Handles incoming email replies and attributes them to campaigns using a
-// 3-Layer Defense Mechanism:
+// Receives Svix-signed webhook deliveries from Resend. The signature is
+// verified against RESEND_WEBHOOK_SECRET (same secret used by the engagement
+// webhook). Only `email.received` events are processed for reply attribution
+// — every other event type is acknowledged without action so this URL can
+// safely be subscribed to "all events" in the Resend dashboard.
 //
+// Reply attribution uses a 3-Layer Defense:
 //   Layer 1 (Plus-Address): Parse +{campaign_email_id} from the To header.
 //   Layer 2 (Header Trace): Match In-Reply-To header against stored message IDs.
 //   Layer 3 (DB Fallback):  Look up sender email in contacts table heuristically.
-//
-// On successful match, increments reply metrics via RPC and updates timeline.
 // ---------------------------------------------------------------------------
 
 const stripQ = (v: string) => v.replace(/^(['"])(.*)\1$/, "$2").trim()
@@ -23,6 +26,12 @@ function buildSupabase() {
     throw new Error("Missing SUPABASE env vars for inbound webhook")
   }
   return createClient(supabaseUrl, supabaseServiceKey)
+}
+
+function getResendClient() {
+  const key = process.env.RESEND_API_KEY
+  if (!key) throw new Error("RESEND_API_KEY is not set")
+  return new Resend(key)
 }
 
 // ---------------------------------------------------------------------------
@@ -265,33 +274,48 @@ async function layer3DbFallback(
 // ---------------------------------------------------------------------------
 
 export async function POST(req: NextRequest) {
-  // ── Auth guard ──────────────────────────────────────────────────────────────
-  // Resend Inbound Routing supports custom headers — configure a shared secret
-  // in the Resend dashboard so we can reject spoofed inbound payloads.
-  // Without this, anyone on the internet could POST fake "reply" events and
-  // skew engagement metrics for any campaign_email_id they can guess.
-  const expectedToken = process.env.RESEND_INBOUND_TOKEN
-  if (!expectedToken) {
-    console.error("[Webhook/inbound] Missing RESEND_INBOUND_TOKEN env var")
-    return NextResponse.json({ error: "Inbound webhook not configured" }, { status: 500 })
+  // ── Auth guard: Svix signature verification ──────────────────────────────
+  // Resend signs every webhook delivery with Svix. This route uses its own
+  // signing secret (RESEND_INBOUND_WEBHOOK_SECRET) — distinct from the
+  // engagement webhook secret — so the two webhooks can be rotated
+  // independently. We MUST verify against the raw body bytes — JSON.parse
+  // would change whitespace/ordering and break the HMAC.
+  const webhookSecret = process.env.RESEND_INBOUND_WEBHOOK_SECRET
+  if (!webhookSecret) {
+    console.error("[Webhook/inbound] Missing RESEND_INBOUND_WEBHOOK_SECRET env var")
+    return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 })
   }
-  const presented =
-    req.headers.get("x-resend-inbound-token") ??
-    req.headers.get("x-webhook-token") ??
-    ""
-  if (presented !== expectedToken) {
-    console.warn("[Webhook/inbound] token mismatch — possible spoofed request")
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const rawBody = await req.text()
+  const svixId = req.headers.get("svix-id")
+  const svixTimestamp = req.headers.get("svix-timestamp")
+  const svixSignature = req.headers.get("svix-signature")
+
+  if (!svixId || !svixTimestamp || !svixSignature) {
+    return NextResponse.json({ error: "Missing signature headers" }, { status: 400 })
   }
 
   let payload: ResendInboundEvent
   try {
-    payload = await req.json()
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 })
+    const resend = getResendClient()
+    payload = resend.webhooks.verify({
+      payload: rawBody,
+      headers: { id: svixId, timestamp: svixTimestamp, signature: svixSignature },
+      webhookSecret,
+    }) as unknown as ResendInboundEvent
+  } catch (err) {
+    console.error("[Webhook/inbound] signature verification failed:", err)
+    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 })
   }
 
-  // Resend inbound may wrap in { data: ... } or send flat
+  // Only process inbound email events. All other event types this URL is
+  // subscribed to are acknowledged silently.
+  if (payload.type && payload.type !== "email.received") {
+    return NextResponse.json({ ok: true, skipped: true, event: payload.type })
+  }
+
+  // Resend's email.received event wraps the email in `data`. Fall back to the
+  // legacy flat shape just in case (e.g. Inbound Routing testing).
   const email: InboundEmailPayload = payload.data ?? {
     from: payload.from ?? "",
     to: payload.to ?? "",
