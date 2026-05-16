@@ -175,9 +175,9 @@ export default function SettingsPage() {
         {/* Email domain section */}
         <div className="space-y-4 pt-2">
           <div className="border-t pt-6 border-border/40">
-            <h2 className="text-base font-semibold tracking-tight">Domain Email Pengirim</h2>
+            <h2 className="text-base font-semibold tracking-tight">{t("Domain Email Pengirim")}</h2>
             <p className="text-muted-foreground mt-1 text-[13.5px]">
-              Kirim campaign dari alamat email domain perusahaan kamu sendiri.
+              {t("Kirim campaign dari alamat email domain perusahaan kamu sendiri.")}
             </p>
           </div>
           <EmailDomainSection />

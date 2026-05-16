@@ -25,10 +25,12 @@ import {
   type UserEmailSettings,
   type DnsRecord,
 } from "@/lib/api/emailSettings"
+import { useLanguage } from "@/lib/i18n/LanguageContext"
 
 // ─── Copy to clipboard button ─────────────────────────────────────────────────
 
 function CopyButton({ text }: { text: string }) {
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const handleCopy = async () => {
     await navigator.clipboard.writeText(text)
@@ -39,7 +41,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       onClick={handleCopy}
       className="p-1.5 rounded hover:bg-muted transition-colors"
-      title="Salin"
+      title={t("Salin")}
       type="button"
     >
       {copied
@@ -53,24 +55,25 @@ function CopyButton({ text }: { text: string }) {
 // ─── Domain status badge ──────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: UserEmailSettings["domainStatus"] }) {
+  const { t } = useLanguage()
   if (status === "verified") return (
     <Badge className="bg-success/10 text-success border-success/20 text-xs font-medium">
-      <CheckCircle2 className="w-3 h-3 mr-1" /> Domain Aktif
+      <CheckCircle2 className="w-3 h-3 mr-1" /> {t("Domain Aktif")}
     </Badge>
   )
   if (status === "pending") return (
     <Badge className="bg-warning/10 text-warning border-warning/20 text-xs font-medium">
-      <Clock className="w-3 h-3 mr-1" /> Menunggu Verifikasi
+      <Clock className="w-3 h-3 mr-1" /> {t("Menunggu Verifikasi")}
     </Badge>
   )
   if (status === "failed") return (
     <Badge className="bg-danger/10 text-danger border-danger/20 text-xs font-medium">
-      <AlertCircle className="w-3 h-3 mr-1" /> Verifikasi Gagal
+      <AlertCircle className="w-3 h-3 mr-1" /> {t("Verifikasi Gagal")}
     </Badge>
   )
   return (
     <Badge variant="secondary" className="text-xs font-medium">
-      Belum Dikonfigurasi
+      {t("Belum Dikonfigurasi")}
     </Badge>
   )
 }
@@ -78,11 +81,12 @@ function StatusBadge({ status }: { status: UserEmailSettings["domainStatus"] }) 
 // ─── DNS records table ────────────────────────────────────────────────────────
 
 function DnsRecordsTable({ records }: { records: DnsRecord[] }) {
+  const { t } = useLanguage()
   return (
     <div className="rounded-xl border border-border/40 overflow-hidden mt-4">
       <div className="bg-muted/40 px-4 py-2.5 border-b border-border/40">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          DNS Records — Tambahkan di domain registrar kamu
+          {t("DNS Records — Tambahkan di domain registrar kamu")}
         </p>
       </div>
       <div className="divide-y divide-border/30">
@@ -94,11 +98,11 @@ function DnsRecordsTable({ records }: { records: DnsRecord[] }) {
               </span>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">NAMA / HOST</p>
+              <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">{t("NAMA / HOST")}</p>
               <p className="font-mono text-foreground break-all">{record.name}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">VALUE / KONTEN</p>
+              <p className="text-[10px] text-muted-foreground mb-0.5 font-medium">{t("VALUE / KONTEN")}</p>
               <p className="font-mono text-foreground break-all">{record.value}</p>
             </div>
             <CopyButton text={record.value} />
@@ -107,7 +111,7 @@ function DnsRecordsTable({ records }: { records: DnsRecord[] }) {
       </div>
       <div className="bg-muted/20 px-4 py-2.5 border-t border-border/40">
         <p className="text-[11px] text-muted-foreground">
-          💡 DNS propagasi memakan waktu 5–30 menit. Klik &quot;Cek Verifikasi&quot; setelah menambahkan semua records.
+          {t("DNS propagation tip")}
         </p>
       </div>
     </div>
@@ -125,6 +129,7 @@ interface ConfirmDialogProps {
 }
 
 function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }: ConfirmDialogProps) {
+  const { t } = useLanguage()
   const [open, setOpen] = useState(false)
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -135,7 +140,7 @@ function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }:
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <DialogClose render={<Button variant="outline" />}>Batal</DialogClose>
+          <DialogClose render={<Button variant="outline" />}>{t("Batal")}</DialogClose>
           <Button
             className="bg-danger hover:bg-danger/90 text-white"
             onClick={() => { setOpen(false); onConfirm() }}
@@ -151,6 +156,7 @@ function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }:
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function EmailDomainSection() {
+  const { t } = useLanguage()
   const [settings, setSettings]         = useState<UserEmailSettings | null>(null)
   const [isLoading, setIsLoading]       = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -182,14 +188,14 @@ export function EmailDomainSection() {
     setIsSubmitting(false)
 
     if (!result.success) {
-      toast.error(result.error ?? "Gagal mendaftarkan domain")
+      toast.error(result.error ?? t("Gagal mendaftarkan domain"))
       return
     }
 
     const updated = await getEmailSettings()
     setSettings(updated)
     setShowForm(false)
-    toast.success("Domain berhasil didaftarkan! Tambahkan DNS records di bawah.")
+    toast.success(t("Domain berhasil didaftarkan!"))
   }
 
   const handleVerify = async () => {
@@ -198,7 +204,7 @@ export function EmailDomainSection() {
     setIsVerifying(false)
 
     if (!result.success) {
-      toast.error(result.error ?? "Verifikasi gagal")
+      toast.error(result.error ?? t("Verifikasi gagal"))
       return
     }
 
@@ -206,24 +212,24 @@ export function EmailDomainSection() {
     setSettings(updated)
 
     if (result.status === "verified") {
-      toast.success("Domain berhasil diverifikasi! Email akan dikirim dari domain kamu.")
+      toast.success(t("Domain berhasil diverifikasi!"))
     } else if (result.status === "failed") {
-      toast.error("Verifikasi gagal. Pastikan DNS records sudah benar.")
+      toast.error(t("Verifikasi gagal. Pastikan DNS records sudah benar."))
     } else {
-      toast.info("DNS records belum terverifikasi. Tunggu beberapa menit lagi.")
+      toast.info(t("DNS records belum terverifikasi."))
     }
   }
 
   const handleRemove = async () => {
     const result = await removeDomain()
     if (!result.success) {
-      toast.error(result.error ?? "Gagal menghapus domain")
+      toast.error(result.error ?? t("Gagal menghapus domain"))
       return
     }
     setSettings(null)
     setFromName("")
     setFromEmail("")
-    toast.success("Domain berhasil dihapus. Email akan menggunakan domain default Campfire.")
+    toast.success(t("Domain berhasil dihapus."))
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -231,7 +237,7 @@ export function EmailDomainSection() {
   if (isLoading) return (
     <div className="flex items-center gap-2 py-8 text-muted-foreground">
       <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
-      <span className="text-sm">Memuat konfigurasi email...</span>
+      <span className="text-sm">{t("Memuat konfigurasi email...")}</span>
     </div>
   )
 
@@ -245,11 +251,11 @@ export function EmailDomainSection() {
       {/* Current status */}
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold">Status Domain Pengirim</p>
+          <p className="text-sm font-semibold">{t("Status Domain Pengirim")}</p>
           <p className="text-xs text-muted-foreground">
             {isVerified
-              ? `Email dikirim dari: ${settings!.fromEmail}`
-              : "Email dikirim dari domain default Campfire (campfire.web.id)"
+              ? t("Email sent from: {email}", { email: settings!.fromEmail })
+              : t("Email dikirim dari domain default Campfire (campfire.web.id)")
             }
           </p>
         </div>
@@ -262,9 +268,9 @@ export function EmailDomainSection() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-success mt-0.5 shrink-0" strokeWidth={1.5} />
             <div>
-              <p className="text-sm font-semibold text-success">Domain Aktif</p>
+              <p className="text-sm font-semibold text-success">{t("Domain Aktif")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Semua campaign berikutnya akan dikirim atas nama{" "}
+                {t("All future campaigns will be sent as")}{" "}
                 <span className="font-mono font-medium">{settings!.fromName} &lt;{settings!.fromEmail}&gt;</span>
               </p>
             </div>
@@ -277,18 +283,12 @@ export function EmailDomainSection() {
                 className="text-danger border-danger/30 hover:bg-danger/5 text-xs"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />
-                Hapus Domain
+                {t("Hapus Domain")}
               </Button>
             }
-            title="Hapus konfigurasi domain?"
-            description={
-              <>
-                Domain <strong>{settings?.fromEmail?.split("@")[1]}</strong> akan dihapus dari Resend
-                dan semua campaign berikutnya akan menggunakan domain default Campfire.
-                Tindakan ini tidak bisa dibatalkan.
-              </>
-            }
-            confirmLabel="Ya, Hapus Domain"
+            title={t("Hapus konfigurasi domain?")}
+            description={t("Domain will be removed warning", { domain: settings?.fromEmail?.split("@")[1] ?? "" })}
+            confirmLabel={t("Ya, Hapus Domain")}
             onConfirm={handleRemove}
           />
         </div>
@@ -300,11 +300,9 @@ export function EmailDomainSection() {
           <div className="flex items-start gap-3">
             <Clock className="w-5 h-5 text-warning mt-0.5 shrink-0" strokeWidth={1.5} />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-warning">Menunggu Verifikasi DNS</p>
+              <p className="text-sm font-semibold text-warning">{t("Menunggu Verifikasi DNS")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Tambahkan records di bawah ke DNS manager domain{" "}
-                <strong>{settings.fromEmail?.split("@")[1]}</strong>,
-                lalu klik &quot;Cek Verifikasi&quot;.
+                {t("Add records to DNS manager", { domain: settings.fromEmail?.split("@")[1] ?? "" })}
               </p>
             </div>
           </div>
@@ -317,20 +315,20 @@ export function EmailDomainSection() {
               className="bg-brand hover:bg-brand/90 text-white text-xs"
             >
               {isVerifying
-                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" strokeWidth={1.5} />Mengecek...</>
-                : <><RefreshCw className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />Cek Verifikasi</>
+                ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" strokeWidth={1.5} />{t("Mengecek...")}</>
+                : <><RefreshCw className="w-3.5 h-3.5 mr-1.5" strokeWidth={1.5} />{t("Cek Verifikasi")}</>
               }
             </Button>
             <ConfirmDialog
               trigger={
                 <Button variant="ghost" size="sm" className="text-danger text-xs">
                   <Trash2 className="w-3.5 h-3.5 mr-1" strokeWidth={1.5} />
-                  Batalkan
+                  {t("Batalkan")}
                 </Button>
               }
-              title="Batalkan pendaftaran domain?"
-              description="Konfigurasi domain akan dihapus. Kamu bisa mendaftarkan domain baru kapan saja."
-              confirmLabel="Ya, Batalkan"
+              title={t("Batalkan pendaftaran domain?")}
+              description={t("Konfigurasi domain akan dihapus. Kamu bisa mendaftarkan domain baru kapan saja.")}
+              confirmLabel={t("Ya, Batalkan")}
               onConfirm={handleRemove}
             />
           </div>
@@ -347,19 +345,19 @@ export function EmailDomainSection() {
               size="sm"
               className="text-xs border-brand/30 text-brand hover:bg-brand-light"
             >
-              + Tambah Domain Sendiri
+              {t("Tambah Domain Sendiri")}
             </Button>
           ) : (
             <form onSubmit={handleAddDomain} className="space-y-4 rounded-xl border border-border/40 p-4">
-              <p className="text-sm font-semibold">Daftarkan Domain Pengirim</p>
+              <p className="text-sm font-semibold">{t("Daftarkan Domain Pengirim")}</p>
 
               <div className="space-y-2">
                 <Label htmlFor="fromName" className="text-xs font-semibold">
-                  Nama Pengirim <span className="text-danger">*</span>
+                  {t("Nama Pengirim")} <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="fromName"
-                  placeholder="Contoh: Budi Santoso"
+                  placeholder={t("Contoh: Budi Santoso")}
                   value={fromName}
                   onChange={(e) => setFromName(e.target.value)}
                   required
@@ -370,12 +368,12 @@ export function EmailDomainSection() {
 
               <div className="space-y-2">
                 <Label htmlFor="fromEmail" className="text-xs font-semibold">
-                  Alamat Email Pengirim <span className="text-danger">*</span>
+                  {t("Alamat Email Pengirim")} <span className="text-danger">*</span>
                 </Label>
                 <Input
                   id="fromEmail"
                   type="email"
-                  placeholder="Contoh: budi@pt-maju-jaya.co.id"
+                  placeholder={t("Contoh: budi@pt-maju-jaya.co.id")}
                   value={fromEmail}
                   onChange={(e) => setFromEmail(e.target.value)}
                   required
@@ -384,7 +382,7 @@ export function EmailDomainSection() {
                 />
                 {domain && (
                   <p className="text-[11px] text-muted-foreground">
-                    Domain yang akan didaftarkan: <span className="font-mono font-medium">{domain}</span>
+                    {t("Domain yang akan didaftarkan:")} <span className="font-mono font-medium">{domain}</span>
                   </p>
                 )}
               </div>
@@ -397,8 +395,8 @@ export function EmailDomainSection() {
                   className="bg-brand hover:bg-brand/90 text-white text-xs"
                 >
                   {isSubmitting
-                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" strokeWidth={1.5} />Mendaftarkan...</>
-                    : "Daftarkan Domain"
+                    ? <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" strokeWidth={1.5} />{t("Mendaftarkan...")}</>
+                    : t("Daftarkan Domain")
                   }
                 </Button>
                 <Button
@@ -409,7 +407,7 @@ export function EmailDomainSection() {
                   disabled={isSubmitting}
                   className="text-xs"
                 >
-                  Batal
+                  {t("Batal")}
                 </Button>
               </div>
             </form>
@@ -417,9 +415,10 @@ export function EmailDomainSection() {
 
           <div className="rounded-xl bg-muted/30 border border-border/30 p-3">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Tanpa domain sendiri</strong> — email dikirim dari{" "}
-              <span className="font-mono">noreply@campfire.web.id</span>.
-              Menambahkan domain sendiri meningkatkan kredibilitas email dan deliverability ke inbox prospek.
+              <strong className="text-foreground">{t("Without your own domain")}</strong>{" "}
+              {t("— emails are sent from")}{" "}
+              <span className="font-mono">noreply@campfire.web.id</span>.{" "}
+              {t("Adding your own domain improves email credibility and deliverability to prospect inboxes.")}
             </p>
           </div>
         </>
