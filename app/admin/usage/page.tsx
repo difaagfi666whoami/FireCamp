@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Loader2, RefreshCcw, AlertTriangle, ExternalLink } from "lucide-react"
 
 type Stats = {
@@ -113,7 +114,23 @@ export default function AdminUsagePage() {
 
   return (
     <div className="min-h-screen p-8 bg-[#F5F3EF]">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-6">
+        {/* Nav tabs */}
+        <nav className="flex items-center gap-2 text-[13px] font-semibold">
+          <Link
+            href="/admin/usage"
+            className="px-4 py-1.5 rounded-full bg-foreground text-[#F5F3EF] border border-foreground"
+          >
+            Usage Overview
+          </Link>
+          <Link
+            href="/admin/users"
+            className="px-4 py-1.5 rounded-full bg-white border border-border/60 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Users
+          </Link>
+        </nav>
+
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Admin · Usage</h1>
