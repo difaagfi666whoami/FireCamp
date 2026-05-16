@@ -246,7 +246,7 @@ export default function ReconPage() {
                   <Search className="w-4 h-4 text-muted-foreground"  strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h2 className="font-bold text-[14.5px] text-foreground">Target Company URL</h2>
+                  <h2 className="font-bold text-[14.5px] text-foreground">{t("Target Company URL")}</h2>
                   <p className="text-[12.5px] text-muted-foreground">{t("Enter the target website URL.")}</p>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function ReconPage() {
                   <Search className="w-4 h-4 text-brand"  strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h2 className="font-bold text-[14.5px] text-foreground">Research Query</h2>
+                  <h2 className="font-bold text-[14.5px] text-foreground">{t("Research Query")}</h2>
                   <p className="text-[12.5px] text-muted-foreground">{t("Supports URL only, or URL with specific research direction.")}</p>
                 </div>
               </div>
@@ -268,7 +268,7 @@ export default function ReconPage() {
                 onChange={e => setProQuery(e.target.value)}
                 disabled={isLoading || isAutoSaving}
                 rows={5}
-                placeholder={"Contoh input:\nhttps://www.javaplas.com/\n\nAtau dengan arahan riset spesifik:\nhttps://www.javaplas.com/ cari tahu strategi pricing, target audiens, kompetitor utama, dan kontak eksekutif di bidang marketing."}
+                placeholder={t("Recon Pro placeholder")}
                 className="w-full resize-y rounded-xl border border-border/60 bg-muted/30 px-4 py-4 text-[13.5px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-50 min-h-[140px] leading-relaxed"
               />
 

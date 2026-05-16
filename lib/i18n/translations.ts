@@ -495,6 +495,11 @@ const en = {
   "OR": "OR",
   "Continue with Google": "Continue with Google",
   "No access yet? Contact the Campfire team.": "No access yet? Contact the Campfire team.",
+
+  // ── Recon Page — Pro Mode ─────────────────────────────────────────────────
+  "Target Company URL": "Target Company URL",
+  "Research Query": "Research Query",
+  "Recon Pro placeholder": "Example input:\nhttps://www.javaplas.com/\n\nOr with specific research direction:\nhttps://www.javaplas.com/ find out the pricing strategy, target audience, key competitors, and executive contacts in the marketing field.",
 } as const
 
 const id: Record<keyof typeof en, string> = {
@@ -985,6 +990,11 @@ const id: Record<keyof typeof en, string> = {
   "OR": "ATAU",
   "Continue with Google": "Lanjutkan dengan Google",
   "No access yet? Contact the Campfire team.": "Belum punya akses? Hubungi tim Campfire.",
+
+  // ── Recon Page — Pro Mode ─────────────────────────────────────────────────
+  "Target Company URL": "URL Perusahaan Target",
+  "Research Query": "Kueri Riset",
+  "Recon Pro placeholder": "Contoh input:\nhttps://www.javaplas.com/\n\nAtau dengan arahan riset spesifik:\nhttps://www.javaplas.com/ cari tahu strategi pricing, target audiens, kompetitor utama, dan kontak eksekutif di bidang marketing.",
 }
 
 export type TranslationKey = keyof typeof en
