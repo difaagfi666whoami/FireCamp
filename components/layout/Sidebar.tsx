@@ -4,10 +4,9 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   BookOpen, Search, Crosshair, Wand2, CheckSquare,
-  Rocket, BarChart2, Flame, Building2, X, LogOut, Settings, FlaskConical,
+  Rocket, BarChart2, Flame, Building2, X, LogOut, Settings,
   Languages,
 } from "lucide-react"
-import { isMockMode, setDemoMode } from "@/lib/demoMode"
 import { cn } from "@/lib/utils"
 import { session } from "@/lib/session"
 import { supabase } from "@/lib/supabase/client"
@@ -47,7 +46,6 @@ export function Sidebar() {
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [workspaceName, setWorkspaceName] = useState<string | null>(null)
-  const [demoMode, setDemoModeState] = useState(false)
   const [progress, setProgress] = useState<StageProgress>(EMPTY_PROGRESS)
   const [creditBalance, setCreditBalance] = useState<number | null>(null)
 
@@ -61,7 +59,6 @@ export function Sidebar() {
       setUserEmail(authData?.session?.user?.email ?? null)
       setWorkspaceName(profile?.workspace_name?.trim() || null)
       setCreditBalance(bal)
-      setDemoModeState(isMockMode())
     }
     loadUserData()
 
@@ -117,12 +114,6 @@ export function Sidebar() {
     fetchProgress()
     return () => { cancelled = true }
   }, [activeCompanyId, pathname])
-
-  const handleDemoToggle = () => {
-    const next = !demoMode
-    setDemoMode(next)
-    setDemoModeState(next)
-  }
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -282,20 +273,6 @@ export function Sidebar() {
           </span>
         </div>
       )}
-
-      {/* Demo Mode Toggle */}
-      <button
-        onClick={handleDemoToggle}
-        className={cn(
-          "flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-colors w-full text-left",
-          demoMode
-            ? "bg-amber-50 text-amber-700 hover:bg-amber-100"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-        )}
-      >
-        <FlaskConical className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-        {demoMode ? t("Demo Mode: Active") : t("Demo Mode")}
-      </button>
 
       {/* Guide */}
       <Link
