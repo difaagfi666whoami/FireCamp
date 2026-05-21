@@ -205,8 +205,11 @@ class ReconResponse(CompanyProfile):
     """
     POST /api/recon — response body.
     Identik dengan CompanyProfile; alias ini memperjelas kontrak di router.
+    `cache_hit=True` artinya profil diambil dari recon_cache, bukan dari
+    pipeline AI baru — credit tidak dipotong.
     """
     tokens_used: Optional[int] = None
+    cache_hit:   bool = False
 
 
 # ── Match ──────────────────────────────────────────────────────────────────────

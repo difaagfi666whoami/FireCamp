@@ -55,7 +55,7 @@ from app.core.config import settings
 from app.core.auth import get_current_user
 from app.core.billing import OpCost
 from app.core.rate_limit import enforce as rate_limit
-from app.services import credits_service
+from app.services import credits_service, recon_cache_service
 from app.services.openai_service import extract_from_tavily_report
 from app.services.tavily_research_service import run_tavily_research
 
@@ -420,6 +420,18 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
     # 20 Recons per hour per user is generous for normal use but caps spend.
     await rate_limit(user_id, bucket="recon", max_events=20, window_seconds=3600)
 
+    # CACHE LOOKUP — return early without spending credits if hit.
+    # Cache is global per (normalized_url, mode); the profile is a function of
+    # the target URL, not the requester.
+    cached_profile = await recon_cache_service.get_cached_profile(url, payload.mode.value)
+    if cached_profile is not None:
+        logger.info("[POST /api/recon] CACHE HIT — bypass pipeline & credit debit")
+        return ReconResponse.model_validate({
+            **cached_profile.model_dump(),
+            "tokens_used": 0,
+            "cache_hit":   True,
+        })
+
     # Debit credits BEFORE running expensive AI pipeline. Free=1, Pro=5.
     cost = OpCost.RECON_PRO if payload.mode == ReconMode.pro else OpCost.RECON_FREE
     if not await credits_service.debit(user_id, cost, f"Recon {payload.mode.value}: {url}"):
@@ -430,7 +442,15 @@ async def generate_recon(payload: ReconRequest, user_id: str = Depends(get_curre
 
     try:
         profile, tokens_used = await run_recon_pipeline(url=url, mode=payload.mode)
-        return ReconResponse.model_validate({**profile.model_dump(), "tokens_used": tokens_used})
+        # Persist to cache for the next 7 days (non-fatal on failure).
+        await recon_cache_service.set_cached_profile(
+            url=url, mode=payload.mode.value, profile=profile, token_usage=tokens_used,
+        )
+        return ReconResponse.model_validate({
+            **profile.model_dump(),
+            "tokens_used": tokens_used,
+            "cache_hit":   False,
+        })
 
     except RuntimeError as exc:
         # RuntimeError dari pipeline = error operasional yang sudah ter-log
