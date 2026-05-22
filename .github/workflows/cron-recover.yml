@@ -1,0 +1,22 @@
+name: Campfire — Recover stuck locks (every 30 min)
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  recover:
+    name: Fire /api/cron/recover-stuck-locks
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Call recover-stuck-locks endpoint
+        run: |
+          curl -fsS \
+            --max-time 60 \
+            --retry 2 \
+            --retry-delay 5 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://campfire.web.id/api/cron/recover-stuck-locks

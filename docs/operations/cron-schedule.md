@@ -1,6 +1,32 @@
-# Cron Schedule — Current State + Required Action
+# Cron Schedule — Current State + Active Configuration
 
-## Current state (vercel.json)
+## Active configuration — B2 (GitHub Actions) ✓
+
+Two workflow files trigger the cron endpoints externally, bypassing the
+Vercel Hobby plan's daily-only restriction:
+
+| Workflow | Schedule | Endpoint |
+|---|---|---|
+| `.github/workflows/cron-dispatch.yml` | `*/15 * * * *` | `/api/cron/dispatch` |
+| `.github/workflows/cron-recover.yml` | `*/30 * * * *` | `/api/cron/recover-stuck-locks` |
+
+Both use `CRON_SECRET` stored as a GitHub repository secret
+(Settings → Secrets and variables → Actions → `CRON_SECRET`).
+The value must match `CRON_SECRET` in Vercel's production environment.
+
+`vercel.json` retains its daily `0 0 * * *` dispatch cron as a cold
+fallback — it fires once/day if GitHub Actions is unavailable.
+
+### Setup checklist (one-time)
+
+1. Add `CRON_SECRET` as a GitHub repository secret (same value as in Vercel)
+2. Push `.github/workflows/cron-dispatch.yml` and `cron-recover.yml` to `main`
+3. Verify via GitHub Actions → "Run workflow" button (manual trigger)
+4. Expected response: `{"dispatched":0}` or `{"dispatched":N}` — both are correct
+
+---
+
+## Background — why Vercel cron is daily-only
 
 ```json
 {
@@ -21,8 +47,7 @@ Vercel **Hobby** plan fails at deploy with:
 > Hobby accounts are limited to daily cron jobs. This cron expression
 > (\*/15 \* \* \* \*) would run more than once per day.
 
-So the schedule is intentionally daily until one of the options below is
-chosen.
+---
 
 ## Option A — Vercel Pro ($20/mo)
 
@@ -57,27 +82,10 @@ curl -X POST https://qstash.upstash.io/v2/schedules \
   }'
 ```
 
-### B2. GitHub Actions
+### B2. GitHub Actions — ACTIVE ✓
 
-`.github/workflows/cron.yml`:
-
-```yaml
-name: Campfire dispatcher cron
-on:
-  schedule:
-    - cron: "*/15 * * * *"
-jobs:
-  dispatch:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-               https://campfire.web.id/api/cron/dispatch
-      - run: |
-          curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-               https://campfire.web.id/api/cron/recover-stuck-locks
-        if: github.event_name == 'schedule'
-```
+Two separate workflows with independent schedules. See
+`.github/workflows/cron-dispatch.yml` and `.github/workflows/cron-recover.yml`.
 
 ### B3. Supabase pg_cron
 
@@ -96,7 +104,8 @@ SELECT cron.schedule(
 );
 ```
 
-This requires the `pg_net` extension to be enabled.
+This requires the `pg_net` extension to be enabled in Supabase Dashboard →
+Database → Extensions.
 
 ## Why this matters
 
@@ -111,5 +120,5 @@ granularity.
 |---|---|---|---|
 | A — Vercel Pro | $20/mo | 5 min | Cleanest; cron lives next to code |
 | B1 — QStash | $0 (within 500/day) | 30 min | Most production-ready outside Vercel |
-| B2 — GitHub Actions | $0 | 15 min | Minimal moving parts; depends on GH availability |
+| **B2 — GitHub Actions** | **$0** | **DONE** | **ACTIVE — workflows in .github/workflows/** |
 | B3 — Supabase pg_cron | $0 | 20 min | Closest to data, but requires pg_net extension |

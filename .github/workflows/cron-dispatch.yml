@@ -1,0 +1,22 @@
+name: Campfire — Dispatch cron (every 15 min)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  dispatch:
+    name: Fire /api/cron/dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Call dispatch endpoint
+        run: |
+          curl -fsS \
+            --max-time 120 \
+            --retry 2 \
+            --retry-delay 5 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://campfire.web.id/api/cron/dispatch
