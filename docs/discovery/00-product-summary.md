@@ -94,9 +94,13 @@ Ketika user klik ganti tone, AI melakukan rewrite mempertahankan konteks Challen
 - **AI Automation:** Jadwal otomatis Day 1 → Day 4 → Day 10 (metodologi B2B)
 - **Manual:** User set sendiri tanggal dan jam untuk setiap email
 
-Setelah diaktifkan, Vercel Cron berjalan setiap 15 menit, memeriksa email yang sudah waktunya dikirim, dan mengirimnya via Resend API ke alamat email kontak PIC.
+Setelah diaktifkan, **GitHub Actions cron** berjalan setiap 15 menit, memeriksa email yang sudah waktunya dikirim, dan mengirimnya via Resend API ke alamat email kontak PIC. (Vercel Cron dipakai sebagai daily safety-net dispatch — primary scheduler tetap GitHub Actions karena keterbatasan plan Vercel Hobby.)
 
-**Catatan penting:** Email dikirim dari domain sender yang sudah diverifikasi di Resend. Untuk production, domain harus dikonfigurasi.
+**Catatan penting tentang pengiriman:**
+- Email dikirim dari **domain sender milik user sendiri** (DNS records di-setup user di halaman Settings). Bukan dari domain bersama → reputasi domain tetap milik user.
+- Setiap email otomatis berisi **unsubscribe link** dan **List-Unsubscribe header** (one-click unsubscribe di Gmail/Outlook) sesuai standar CAN-SPAM / GDPR.
+- **Suppression list** otomatis memblokir pengiriman ke alamat yang sudah unsubscribe.
+- **Retry tracking** — email gagal kirim akan otomatis di-retry, lalu masuk dead-letter queue setelah max retries.
 
 ---
 
@@ -133,6 +137,35 @@ Setelah diaktifkan, Vercel Cron berjalan setiap 15 menit, memeriksa email yang s
 
 **Estimasi waktu total (pertama kali):** 10-20 menit dari nol ke campaign aktif.
 **Estimasi waktu setelah familiar:** 5-8 menit per target.
+
+---
+
+## Model Harga & Pembayaran
+
+**Model bisnis:** Pay-as-you-go via kredit. Tidak ada subscription bulanan tetap. User hanya bayar saat AI dijalankan.
+
+**Biaya per operasi:**
+| Operasi | Kredit |
+|---|---|
+| Recon Free | 1 |
+| Recon Pro | 5 |
+| Match | 1 |
+| Craft (3 email) | 2 |
+| Polish rewrite (per tone change) | 1 |
+| Launch + Pulse (kirim + tracking) | 0 |
+
+**Paket kredit:**
+| Paket | Kredit | Harga |
+|---|---|---|
+| Starter | 50 | Rp 100.000 |
+| Growth (recommended) | 200 | Rp 350.000 |
+| Scale | 500 | Rp 750.000 |
+
+**Metode pembayaran:**
+- **Stripe** — kartu kredit / debit internasional
+- **Xendit** — QRIS dan Virtual Account BCA / Mandiri (preferred untuk tim Indonesia, tidak perlu kartu kredit)
+
+User baru otomatis dapat **100 kredit gratis** untuk testing (signup credit grant). Tidak perlu kartu kredit di awal.
 
 ---
 

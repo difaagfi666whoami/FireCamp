@@ -113,6 +113,8 @@
 >
 > "Satu target lengkap dari Recon sampai Campaign Craft butuh sekitar 4 kredit [Recon Free 1 + Match 1 + Craft 2]. Paket paling kecil itu 50 kredit seharga Rp 100.000 — artinya kamu bisa handle ~12 target dengan budget segitu."
 >
+> "Untuk pembayaran kamu bisa pilih: kartu kredit / debit via Stripe, atau **QRIS dan Virtual Account BCA / Mandiri via Xendit** — pakai metode yang paling enak buat tim finance kamu, tidak harus pakai kartu internasional."
+>
 > "Worth it atau tidak tergantung: berapa nilai rata-rata satu deal yang kamu close? Kalau satu deal nilainya Rp 50 juta dan kamu close 1 dari 20 target, Campfire membantu kamu reach target itu lebih cepat dan dengan email yang lebih relevan — ROI-nya bisa dihitung sendiri."
 >
 > "Paling fair: coba dulu untuk 3-5 target. Kalau reply rate-nya naik dan waktu persiapan turun, nilai per kreditnya jelas."
@@ -157,9 +159,13 @@
 >
 > "Data yang Campfire kumpulkan adalah informasi publik — yang sudah ada di internet dan bisa ditemukan siapapun dengan Google. Kami tidak akses data internal perusahaan target, tidak ada scraping yang melanggar TOS."
 >
-> "Data profil yang kamu generate tersimpan di akun kamu sendiri di Campfire, tidak dibagikan ke pengguna lain. Setiap akun data-nya terisolasi."
+> "Data profil yang kamu generate tersimpan di akun kamu sendiri di Campfire, tidak dibagikan ke pengguna lain. Setiap akun data-nya terisolasi — multi-tenancy dengan row-level security di database."
 >
 > "Untuk data kamu sendiri — nama, info tim, signature — tersimpan di database kami dengan enkripsi standar. Kami tidak jual atau bagikan data user ke pihak ketiga."
+>
+> "Dan satu hal yang sering luput dipikirkan: untuk **pengiriman email-nya**, email dikirim dari **domain kamu sendiri** yang sudah kamu verifikasi DNS-nya, bukan dari domain bersama Campfire. Jadi reputasi domain tetap kamu yang kontrol."
+>
+> "Setiap email otomatis ada unsubscribe link dan one-click unsubscribe header sesuai standar CAN-SPAM / GDPR, dan ada suppression list yang mencegah email terkirim ulang ke alamat yang sudah unsubscribe. Jadi kamu tidak akan tidak sengaja spam siapapun."
 
 **Jangan bilang:**
 - "Data 100% aman" — tidak ada yang 100% aman dan ini terdengar dismissive

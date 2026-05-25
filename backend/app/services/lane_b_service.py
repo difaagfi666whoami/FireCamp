@@ -1,7 +1,8 @@
 """
 lane_b_service.py — Contact Discovery via Serper.dev LinkedIn Dorking.
 
-Menggantikan apify_service.py dan apollo_service.py yang terkena paywall.
+Approach: Serper.dev Google dork into LinkedIn public snippets — no LinkedIn
+API, no paid scrapers, no headless browsers.
 
 Strategi:
   1. Kirim query dorking ke Serper: site:linkedin.com/in "company" (CEO OR Director ...)
