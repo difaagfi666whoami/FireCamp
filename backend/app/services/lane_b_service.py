@@ -53,11 +53,6 @@ def _validate_contact_relevance(
     """
     Validasi apakah kontak ini BENAR-BENAR terkait dengan perusahaan target.
     
-    Cek apakah snippet atau title Google menyebut:
-    - Nama perusahaan (atau bagian dari nama)
-    - Domain perusahaan
-    - Variasi nama pendek perusahaan
-    
     Returns:
         True jika kontak relevan dengan perusahaan target, False jika tidak.
     """
@@ -65,15 +60,9 @@ def _validate_contact_relevance(
     snippet = item.get("snippet", "").lower()
     combined = f"{title_text} {snippet}"
 
-    # Buat variasi nama perusahaan untuk pencocokan
     company_lower = company_name.lower()
-    name_words = [w for w in company_lower.split() if len(w) > 2]
-    # Buang kata-kata umum yang tidak membedakan
-    stop_words = {
-        "pt", "tbk", "ltd", "inc", "corp", "indonesia", "persero",
-        "the", "and", "for", "of", "at",
-    }
-    significant_words = [w for w in name_words if w not in stop_words]
+    # Buat short_name dengan menghapus PT, Tbk, dll
+    short_name = re.sub(r"(?i)\b(pt\.?|tbk\.?|ltd\.?|inc\.?|corp\.?|indonesia|persero)\b", "", company_lower).strip()
 
     # Domain tanpa TLD sebagai keyword (paling unik)
     domain_keyword = domain.split(".")[0].lower() if domain else ""
@@ -82,26 +71,20 @@ def _validate_contact_relevance(
     if domain_keyword and len(domain_keyword) > 3 and domain_keyword in combined:
         return True
 
-    # ── PRIORITAS 2: Nama perusahaan lengkap muncul di title (LinkedIn fmt)
-    # Title LinkedIn umum: "Nama - Jabatan - Perusahaan | LinkedIn"
-    # Cek HANYA di title, bukan snippet — snippet bisa menyebut perusahaan
-    # untuk alasan lain (mantan kolega, kompetitor disebut, dst).
-    if company_lower in title_text:
+    # ── PRIORITAS 2: Nama perusahaan (lengkap atau short) muncul di title atau snippet
+    if company_lower in combined:
+        return True
+    
+    if short_name and len(short_name) > 3 and short_name in combined:
         return True
 
     # ── PRIORITAS 3: Title LinkedIn position (segment terakhir) menyebut company
     title_parts = re.split(r"\s*[-–|]\s*", title_text)
     if len(title_parts) >= 3:
         company_part = title_parts[-1].replace("linkedin", "").strip()
-        # Match jika significant word muncul di segment perusahaan title
-        if significant_words and any(w in company_part for w in significant_words):
+        if short_name and len(short_name) > 2 and short_name in company_part:
             return True
-
-    # ── PRIORITAS 4 (lemah, butuh ≥2 match): significant words di snippet
-    # Hanya berlaku jika nama perusahaan punya ≥2 kata unik
-    if len(significant_words) >= 2:
-        match_count = sum(1 for w in significant_words if w in combined)
-        if match_count >= 2:
+        if company_lower in company_part:
             return True
 
     logger.debug(

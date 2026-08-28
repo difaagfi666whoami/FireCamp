@@ -181,7 +181,7 @@ def _deduplicate_articles(articles: list[dict[str, Any]]) -> list[dict[str, Any]
 def _is_relevant_article(article: dict[str, Any], company_name: str, domain: str) -> bool:
     """
     Cek apakah artikel BENAR-BENAR terkait perusahaan target.
-    Return False jika title dan snippet tidak menyebut perusahaan sama sekali.
+    Return False jika title dan snippet tidak menyebut perusahaan secara utuh.
     """
     title = article.get("title", "").lower()
     snippet = article.get("snippet", article.get("description", "")).lower()
@@ -191,21 +191,13 @@ def _is_relevant_article(article: dict[str, Any], company_name: str, domain: str
     short_name = _shorten_company_name(company_name).lower()
     domain_keyword = domain.split(".")[0].lower() if domain else ""
 
-    # Minimal salah satu harus match
+    # Harus match sebagai exact phrase, bukan kata-kata acak yang terpisah
     if company_lower in combined:
         return True
-    if short_name and short_name != company_lower and short_name in combined:
+    if short_name and len(short_name) > 3 and short_name in combined:
         return True
     if domain_keyword and len(domain_keyword) > 3 and domain_keyword in combined:
         return True
-
-    # Cek kata-kata signifikan dari nama perusahaan
-    stop_words = {"pt", "tbk", "ltd", "inc", "corp", "indonesia", "persero", "the", "and", "for", "of"}
-    significant = [w for w in company_lower.split() if len(w) > 2 and w not in stop_words]
-    if len(significant) >= 2:
-        match_count = sum(1 for w in significant if w in combined)
-        if match_count >= 2:
-            return True
 
     return False
 

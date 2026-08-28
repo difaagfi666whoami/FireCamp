@@ -268,7 +268,7 @@ export default function ReconPage() {
                 onChange={e => setProQuery(e.target.value)}
                 disabled={isLoading || isAutoSaving}
                 rows={5}
-                placeholder={t("Recon Pro placeholder")}
+                placeholder={"Contoh input:\nhttps://www.indoinfo.com/"}
                 className="w-full resize-y rounded-xl border border-border/60 bg-muted/30 px-4 py-4 text-[13.5px] text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:opacity-50 min-h-[140px] leading-relaxed"
               />
 
