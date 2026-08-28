@@ -266,9 +266,9 @@ async def search_contacts_serper(
         logger.info("[lane_b] Tier 1+2 kurang dari 2, lanjut Tier 3")
         await process_tier(tier3_query, needed=5)
 
-    # ── Fallback: broad query tanpa validasi jika semua tier kosong ──────────
+    # ── Fallback 1: broad query WITH validation ────────────────────────────────
     if not raw_contacts:
-        logger.warning("[lane_b] Semua tier kosong — coba fallback query luas tanpa validasi")
+        logger.warning("[lane_b] Semua tier kosong — coba fallback query luas DENGAN validasi")
         fallback_query = f'site:linkedin.com/in "{company_name}"'
         fallback_data = await search_serper(fallback_query, endpoint="search", num=8)
         fallback_organic = fallback_data.get("organic", [])
@@ -279,19 +279,46 @@ async def search_contacts_serper(
             if not link or link in seen_urls:
                 continue
             seen_urls.add(link)
+            # WAJIB validasi — jangan terima kontak yang tidak terkait
+            if not _validate_contact_relevance(item, company_name, domain):
+                rejected_count += 1
+                continue
+            if _has_past_employment_signals(item):
+                rejected_count += 1
+                continue
             contact = _build_raw_contact(item, len(raw_contacts))
             if contact is not None:
-                contact["prospectScore"] = 50
-                contact["reasoning"] = (
-                    "Ditemukan dari pencarian luas (low confidence). Harap verifikasi manual."
-                )
                 raw_contacts.append(contact)
-        if raw_contacts:
-            logger.info("[lane_b] Fallback menghasilkan %d kontak (unverified)", len(raw_contacts))
-            return raw_contacts
-        else:
-            logger.warning("[lane_b] Fallback juga kosong untuk company=%r", company_name)
-            return []
+
+    # ── Fallback 2: domain keyword query (lebih unik dari nama perusahaan) ────
+    if not raw_contacts and domain:
+        domain_keyword = domain.split(".")[0]
+        if domain_keyword and len(domain_keyword) > 3:
+            logger.warning("[lane_b] Fallback 1 kosong — coba domain keyword %r", domain_keyword)
+            domain_query = f'site:linkedin.com/in "{domain_keyword}"'
+            domain_data = await search_serper(domain_query, endpoint="search", num=8)
+            domain_organic = domain_data.get("organic", [])
+            for item in domain_organic:
+                if len(raw_contacts) >= 2:
+                    break
+                link = item.get("link", "")
+                if not link or link in seen_urls:
+                    continue
+                seen_urls.add(link)
+                if not _validate_contact_relevance(item, company_name, domain):
+                    rejected_count += 1
+                    continue
+                if _has_past_employment_signals(item):
+                    rejected_count += 1
+                    continue
+                contact = _build_raw_contact(item, len(raw_contacts))
+                if contact is not None:
+                    raw_contacts.append(contact)
+
+    # ── Jika tetap kosong setelah semua fallback → return empty ───────────────
+    if not raw_contacts:
+        logger.warning("[lane_b] Semua fallback kosong untuk company=%r — return empty", company_name)
+        return []
 
     logger.info(
         "[lane_b] Parsed %d valid contacts (rejected %d irrelevant) dari Serper",
@@ -305,13 +332,10 @@ async def search_contacts_serper(
         )
         # Post-filter: buang kontak dengan score terlalu rendah
         scored = [c for c in scored if c.get("prospectScore", 0) >= 55]
-        # Fallback: jika semua diskor < 55, kembalikan raw_contacts tanpa filter
-        if not scored and raw_contacts:
-            logger.warning("[lane_b] Semua skor < 55 — fallback ke raw_contacts dengan score 50")
-            for c in raw_contacts:
-                c.setdefault("prospectScore", 50)
-                c.setdefault("reasoning", f"Ditemukan dari LinkedIn publik — {company_name}")
-            return raw_contacts[:3]
+        # Jika semua diskor < 55 → return empty (bukan fake score 50)
+        if not scored:
+            logger.warning("[lane_b] Semua skor < 55 — return empty (anti-pollution)")
+            return []
         logger.info("[lane_b] score_and_enrich OK | final=%d", len(scored))
         return scored
     except Exception as exc:
@@ -322,3 +346,4 @@ async def search_contacts_serper(
             c.setdefault("prospectScore", 50)
             c.setdefault("reasoning", f"Ditemukan dari LinkedIn publik — {company_name}")
         return raw_contacts
+

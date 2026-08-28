@@ -495,18 +495,11 @@ async def run_lane_c_news(
         )
         raw_articles = [a for a in raw_articles if _is_relevant_article(a, company_name, domain)]
 
-    # ── Strategy 5: CONTEXTUAL SIGNALS (regulatory/competitive yang relevan) ──
-    # Hanya tambahkan jika kita punya named_entities atau industry_hint yang jelas.
-    # JANGAN gunakan generic industry news — lebih baik news kosong daripada off-topic.
-    if not raw_articles and industry_hint and (named_entities or _detect_industry(industry_hint)):
-        logger.info("[lane_c] strategy5_contextual")
-        raw_articles = await _try_contextual_signals(
-            company_name, domain, named_entities or [], industry_hint
-        )
-        if raw_articles:
-            is_industry_news = True
-            # Batasi maksimal 2 item supaya tidak mendominasi
-            raw_articles = raw_articles[:2]
+    # NOTE: Strategy 5 (contextual signals) DIHAPUS pada audit 2026-08-28.
+    # Contextual signals (regulatory, competitive, technology) menghasilkan berita
+    # yang tidak ada koneksi langsung ke perusahaan target (contoh: IndoInfo mendapat
+    # berita generik tentang "AI risks" yang tidak ada hubungannya).
+    # Lebih baik news kosong → UI menampilkan empty state yang informatif.
 
     # NOTE: Strategy 6 (generic industry fallback) DIHAPUS pada audit 2026-04-18.
     # Berita generik seperti "ZTE Day", "Techpreneur 2025" tidak memberikan
