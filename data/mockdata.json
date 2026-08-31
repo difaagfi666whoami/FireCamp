@@ -67,6 +67,17 @@
     "founded": "2015",
     "hq": "Jakarta Selatan, Indonesia",
     "description": "Perusahaan e-commerce dan retail digital terkemuka yang mengelola marketplace B2C dan B2B untuk kategori fashion, elektronik, dan lifestyle dengan lebih dari 2 juta pelanggan aktif di 15 kota besar Indonesia.",
+    "confidenceScore": "HIGH",
+    "salesTriggers": {
+      "reality": "Platform retail digital & e-commerce B2B/B2C terkemuka dengan 2 juta+ pelanggan aktif di 15 kota besar Indonesia.",
+      "bottleneck": "Konversi email campaign hanya 1.2% dan tim marketing masih melakukan segmentasi data manual tanpa sinkronisasi otomatis ke CRM.",
+      "entryHook": "Tawarkan otomatisasi segmentasi AI dan email personalization untuk melipatgandakan open rate dan conversion rate hingga 3.5%."
+    },
+    "verifiedCapabilities": {
+      "coreOfferings": ["Marketplace B2B/B2C", "Digital Retail Fulfillment", "Omnichannel POS"],
+      "verifiedClients": ["Fashion Hub ID", "Elektronik Prima", "Urban Lifestyle"],
+      "hiringSignals": ["Senior CRM Specialist", "Lead Data Analyst", "Frontend Engineer"]
+    },
     "linkedin": {
       "followers": "12.4K",
       "employees": 287,

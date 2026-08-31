@@ -14,6 +14,18 @@ export interface Anomaly {
   evidenceUrl?: string
 }
 
+export interface SalesTriggers {
+  reality: string
+  bottleneck: string
+  entryHook: string
+}
+
+export interface VerifiedCapabilities {
+  coreOfferings: string[]
+  verifiedClients: string[]
+  hiringSignals: string[]
+}
+
 export interface StrategicReport {
   strategicTitle: string
   executiveInsight: string
@@ -22,6 +34,9 @@ export interface StrategicReport {
   strategicRoadmap: string[]
   citations?: Citation[]
   situationalSummary?: string
+  confidenceScore?: 'HIGH' | 'MEDIUM' | 'INFERENCE'
+  salesTriggers?: SalesTriggers
+  verifiedCapabilities?: VerifiedCapabilities
 }
 
 export interface CompanyProfile {
@@ -33,6 +48,9 @@ export interface CompanyProfile {
   founded: string
   hq: string
   description: string
+  confidenceScore?: 'HIGH' | 'MEDIUM' | 'INFERENCE'
+  salesTriggers?: SalesTriggers
+  verifiedCapabilities?: VerifiedCapabilities
   deepInsights?: string[]
   strategicReport?: StrategicReport
   linkedin: {

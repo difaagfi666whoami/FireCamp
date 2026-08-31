@@ -68,6 +68,29 @@ class Anomaly(BaseModel):
     evidenceUrl:  str = ""
 
 
+class SalesTriggers(BaseModel):
+    """3 Sudut Penjualan Kunci (Executive Sales Triggers) — The 3 Sales Triggers."""
+    reality: str = Field(
+        default="",
+        description="The Reality: Model bisnis nyata, produk utama, dan target pasar terbukti dari website target"
+    )
+    bottleneck: str = Field(
+        default="",
+        description="The Bottleneck: Masalah operasional, hambatan skalabilitas, atau gap teknologi konkret yang terbukti dari data"
+    )
+    entryHook: str = Field(
+        default="",
+        description="The Entry Hook: Sudut penawaran terbaik dan alasan kenapa prospek butuh solusi sekarang (Why Now)"
+    )
+
+
+class VerifiedCapabilities(BaseModel):
+    """Bukti Kemampuan & Footprint Terverifikasi dari Website Resmi Target."""
+    coreOfferings: list[str] = Field(default_factory=list, description="Layanan & produk nyata dari subpage /services")
+    verifiedClients: list[str] = Field(default_factory=list, description="Daftar klien atau portofolio nyata dari subpage /clients")
+    hiringSignals: list[str] = Field(default_factory=list, description="Posisi tim yang sedang direkrut dari subpage /careers")
+
+
 class StrategicReport(BaseModel):
     """Laporan intelijen strategis bergaya konsultan BCG/McKinsey."""
     strategicTitle:        str            = ""
@@ -77,6 +100,9 @@ class StrategicReport(BaseModel):
     strategicRoadmap:      list[str]      = []
     citations:             list[Citation] = []
     situationalSummary:    str            = ""
+    confidenceScore:       str            = "HIGH"
+    salesTriggers:         Optional[SalesTriggers] = None
+    verifiedCapabilities:  Optional[VerifiedCapabilities] = None
 
 
 class LinkedInInfo(BaseModel):
@@ -160,11 +186,6 @@ class CompanyProfile(BaseModel):
     """
     Profil lengkap perusahaan target — ini adalah objek utama yang dikembalikan
     endpoint POST /api/recon dan dikirim sebagai input ke /api/match & /api/craft.
-
-    Catatan: campaignProgress, createdAt, cachedAt diabaikan oleh Frontend
-    ketika mengonsumsi respons dari Backend (FE membuat versinya sendiri di DB).
-    Field tersebut tetap dideklarasikan agar schema ini bisa digunakan sebagai
-    input payload di endpoint Match & Craft tanpa perlu model terpisah.
     """
     id:           str
     url:          str
@@ -174,6 +195,9 @@ class CompanyProfile(BaseModel):
     founded:      str  = ""
     hq:           str  = ""
     description:    str  = ""
+    confidenceScore: str = "HIGH"
+    salesTriggers: Optional[SalesTriggers] = None
+    verifiedCapabilities: Optional[VerifiedCapabilities] = None
     deepInsights:   list[str]               = []
     strategicReport: Optional[StrategicReport] = None
     reconMode:      Optional[ReconMode]     = None

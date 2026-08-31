@@ -34,13 +34,31 @@ export function CompanyHeader({ company }: { company: CompanyProfile }) {
         </p>
       </div>
 
-      {(company.painPoints?.length ?? 0) > 0 && (
-        <div className="mb-4">
+      {/* Status & Confidence badges */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {(company.painPoints?.length ?? 0) > 0 && (
           <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full border ${scoreColor}`}>
             Siap untuk outreach: {readinessScore}/100
           </span>
-        </div>
-      )}
+        )}
+
+        {(company.confidenceScore === "HIGH" || sr?.confidenceScore === "HIGH") ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+            Terverifikasi dari Website Resmi
+          </span>
+        ) : (company.confidenceScore === "MEDIUM" || sr?.confidenceScore === "MEDIUM") ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-blue-50 text-blue-800 border-blue-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+            Terverifikasi Profil Publik
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+            Analisis Ekstrapolasi AI
+          </span>
+        )}
+      </div>
 
       {/* Strategic title */}
       {sr?.strategicTitle ? (

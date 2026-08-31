@@ -213,21 +213,25 @@ async def _run_lane_e(company_name: str) -> list[dict[str, Any]]:
 
 # ─── Lane F: Deep Site Crawl (Multi-URL Tavily Extract) ─────────────────────
 
-async def _run_lane_f(canonical_url: str) -> dict[str, Any]:
-    """Lane F Deep Site Crawl — about/products/clients/careers/team pages."""
-    logger.info("[lane_f] START | url=%r", canonical_url)
+async def _run_lane_f(canonical_url: str, homepage_raw: str = "") -> dict[str, Any]:
+    """Lane F Deep Site Crawl — about/services/clients/careers/contact subpages."""
+    logger.info("[lane_f] START | url=%r (homepage_len=%d)", canonical_url, len(homepage_raw))
     try:
-        pages = await lane_f_service.deep_site_crawl(canonical_url)
+        pages = await lane_f_service.deep_site_crawl(canonical_url, homepage_raw_content=homepage_raw)
         logger.info(
-            "[lane_f] OK | about=%s products=%s clients=%s careers=%s team=%s",
-            bool(pages.get("about")), bool(pages.get("products")),
+            "[lane_f] OK | about=%s services=%s clients=%s careers=%s contact=%s (ground_truth_chars=%d)",
+            bool(pages.get("about")), bool(pages.get("services")),
             bool(pages.get("clients")), bool(pages.get("careers")),
-            bool(pages.get("team")),
+            bool(pages.get("contact")),
+            len(pages.get("ground_truth_text", "")),
         )
         return pages
     except Exception as exc:
         logger.warning("[lane_f] FAILED: %s", exc)
-        return {"about": "", "products": "", "clients": "", "careers": "", "team": "", "raw_pages": []}
+        return {
+            "about": "", "services": "", "clients": "", "careers": "", "contact": "",
+            "raw_pages": [], "ground_truth_text": ""
+        }
 
 
 # ─── Lane G: Hunter Company Ground Truth ────────────────────────────────────
@@ -250,9 +254,9 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
     """
     Orkestrator utama Two-Lane Recon Pipeline.
 
-    Step 0  → Tavily /extract homepage (ground truth: nama, domain)
-    Step 1  → asyncio.gather(Lane A, Lane B) — berjalan PARALEL
-    Step 2  → Sonnet synthesize_profile() — final JSON
+    Step 0  → Tavily /extract homepage (ground truth: nama, domain, internal links)
+    Step 1  → asyncio.gather(Lane A..G) — berjalan PARALEL
+    Step 2  → OpenAI synthesize_profile() — final JSON
 
     Args:
         url:  URL website target (bisa dengan atau tanpa schema).
@@ -274,20 +278,20 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
 
     # ── Step 0: Extract homepage ─────────────────────────────────────────────
     company_name: str = domain.split(".")[0].replace("-", " ").title()  # safe default
-    homepage_raw = ""  # konten homepage untuk industry hint
+    homepage_full_raw = ""
     try:
         extract_resp  = await tavily_service.extract([canonical_url])
         extract_items = extract_resp.get("results", [])
         if extract_items:
             company_name = _extract_company_name(extract_items, domain)
-            homepage_raw = extract_items[0].get("raw_content", "")[:500]
-            logger.info("[pipeline] Step0 extract OK | name=%r", company_name)
+            homepage_full_raw = extract_items[0].get("raw_content", "") or ""
+            logger.info("[pipeline] Step0 extract OK | name=%r (raw_len=%d)", company_name, len(homepage_full_raw))
     except Exception as exc:
         # Non-fatal: lanjut dengan domain sebagai fallback name
         logger.warning("[pipeline] Step0 extract FAILED (dilanjutkan): %s", exc)
 
     # Industry hint untuk Lane C (berita industri terkait)
-    industry_hint = homepage_raw
+    industry_hint = homepage_full_raw[:500]
 
     company_context = f"{company_name} ({domain})"
 
@@ -307,7 +311,7 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
             _run_lane_c(company_name, domain, industry_hint),
             _run_lane_d(company_name, domain),
             _run_lane_e(company_name),
-            _run_lane_f(canonical_url),
+            _run_lane_f(canonical_url, homepage_full_raw),
             _run_lane_g(domain),
         )
         lane_a_summary, lane_a_evidence = lane_a_result

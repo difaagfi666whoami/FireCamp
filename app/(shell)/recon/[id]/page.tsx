@@ -11,6 +11,8 @@ import { session } from "@/lib/session"
 import { CompanyProfile } from "@/types/recon.types"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { CompanyHeader } from "../components/CompanyHeader"
+import { SalesTriggersCard } from "../components/SalesTriggersCard"
+import { VerifiedCapabilitiesCard } from "../components/VerifiedCapabilitiesCard"
 import { StrategicMainContent } from "../components/StrategicMainContent"
 import { StrategicSidebar } from "../components/StrategicSidebar"
 import { PainPointList } from "../components/PainPointList"
@@ -144,6 +146,9 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
       {/* Content */}
       {profile.reconMode === 'pro' ? (
         <>
+          <SalesTriggersCard triggers={profile.salesTriggers || profile.strategicReport?.salesTriggers} />
+          <VerifiedCapabilitiesCard capabilities={profile.verifiedCapabilities || profile.strategicReport?.verifiedCapabilities} />
+
           <TavilyReportView
             report={profile.tavilyReport ?? ""}
             companyName={profile.name}
@@ -207,6 +212,8 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-8 space-y-5">
+              <SalesTriggersCard triggers={profile.salesTriggers || profile.strategicReport?.salesTriggers} />
+              <VerifiedCapabilitiesCard capabilities={profile.verifiedCapabilities || profile.strategicReport?.verifiedCapabilities} />
               <StrategicMainContent report={profile.strategicReport} />
               <AnomalySection anomalies={profile.anomalies} />
               <PainPointList painPoints={profile.painPoints} />

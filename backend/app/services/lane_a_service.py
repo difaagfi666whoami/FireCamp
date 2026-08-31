@@ -56,16 +56,14 @@ class GapAnalysis(BaseModel):
 
 class QuerySet(BaseModel):
     reputation_queries: list[str] = Field(
-        description="1-2 query reputasi BISNIS: review klien B2B, case study, testimonial, partnership. "
-                    "JANGAN glassdoor/review karyawan. Contoh: 'site:g2.com \"{company}\"', '\"{company}\" client review'",
-        max_length=2,
+        description="1-2 query reputasi bisnis: review klien B2B, portofolio, testimonial, partnership. "
+                    "Contoh: '\"{company}\" review klien OR portofolio', '\"{company}\" testimonial case study'",
     )
     regulatory_queries: list[str] = Field(
-        description="1-2 query regulasi dan compliance yang relevan untuk industri perusahaan",
-        max_length=2,
+        description="1-2 query kepatuhan & regulasi industri target. "
+                    "Contoh: 'regulasi {industry} Indonesia 2025', '\"{company}\" izin kepatuhan standar'",
     )
     competitive_queries: list[str] = Field(
-        description="1-2 query kompetitor: '{company} vs', '{company} alternative', halaman perbandingan",
         max_length=2,
     )
     financial_queries: list[str] = Field(
@@ -208,13 +206,13 @@ async def _step2_generate_queries(
                     "role": "system",
                     "content": (
                         "Kamu adalah peneliti B2B yang bertugas mengumpulkan sales intelligence untuk tim outbound.\n"
-                        "Kamu HARUS membuat query pencarian untuk SEMUA 6 angle berikut — tidak boleh ada yang kosong:\n\n"
-                        "REPUTATION: Cari reputasi BISNIS dari perspektif klien/partner — contoh: 'site:g2.com \"{company}\"', '\"{company}\" client review testimonial case study'. JANGAN cari glassdoor atau review karyawan — itu BUKAN pain point B2B yang berguna.\n"
-                        "TECH_STACK: Cari job postings dan tool yang digunakan — contoh: '\"{company}\" site:linkedin.com/jobs', '\"{company}\" builtwith'\n"
-                        "REGULATORY: Cari tekanan regulasi untuk industri mereka — contoh: 'OJK regulasi {industry} 2025', '\"{company}\" compliance'\n"
-                        "COMPETITIVE: Cari perbandingan dengan kompetitor — contoh: '\"{company}\" vs', '\"{company}\" alternative', '\"{company}\" competitor'\n"
-                        "FINANCIAL: Cari sinyal finansial — contoh: '\"{company}\" funding', 'site:crunchbase.com \"{company}\"', '\"{company}\" revenue'\n"
-                        "CUSTOMER_VOICE: Cari review pelanggan — contoh: 'site:g2.com \"{company}\"', '\"{company}\" testimonial case study'\n"
+                        "Kamu HARUS membuat query pencarian adaptif untuk SEMUA 5 angle berikut — tidak boleh ada yang kosong:\n\n"
+                        "REPUTATION: Cari reputasi bisnis nyata (klien, portofolio, testimonial, partnership) — contoh: '\"{company}\" review klien OR portofolio', '\"{company}\" testimonial case study'. JANGAN cari review karyawan internal (Glassdoor/Jobstreet review).\n"
+                        "TECH_STACK: Cari teknologi & tools yang digunakan — contoh: '\"{company}\" builtwith OR stackshare', '\"{company}\" tech stack OR developer'\n"
+                        "REGULATORY: Cari kepatuhan/regulasi industri target — contoh: 'regulasi {industry} Indonesia 2025', '\"{company}\" compliance izin standar'\n"
+                        "COMPETITIVE: Cari perbandingan dengan kompetitor — contoh: '\"{company}\" vs', '\"{company}\" alternatif', '\"{company}\" kompetitor'\n"
+                        "FINANCIAL: Cari sinyal pertumbuhan bisnis — contoh: '\"{company}\" pendanaan OR funding', '\"{company}\" ekspansi OR omset OR klien baru'\n"
+                        "CUSTOMER_VOICE: Cari kepuasan pelanggan & studi kasus — contoh: '\"{company}\" studi kasus', '\"{company}\" client success story'\n"
                     ),
                 },
                 {
@@ -241,11 +239,11 @@ async def _step2_generate_queries(
     except Exception as exc:
         logger.warning("[lane_a] Step2 generate_queries FAILED | error=%s", exc)
         return QuerySet(
-            reputation_queries=[f"'{company_name}' client review testimonial"],
-            regulatory_queries=[f"'{company_name}' regulasi compliance"],
-            competitive_queries=[f"'{company_name}' vs competitor"],
-            financial_queries=[f"'{company_name}' funding revenue"],
-            customer_voice_queries=[f"'{company_name}' testimonial case study"],
+            reputation_queries=[f"'{company_name}' review klien testimonial portofolio"],
+            regulatory_queries=[f"'{company_name}' regulasi compliance standar"],
+            competitive_queries=[f"'{company_name}' vs kompetitor"],
+            financial_queries=[f"'{company_name}' ekspansi pendanaan klien baru"],
+            customer_voice_queries=[f"'{company_name}' studi kasus success story"],
         )
 
 
@@ -443,30 +441,33 @@ async def _step5_deep_targeted_search(
     query_set: QuerySet,
     distilled_insights: dict[str, DistilledInsights],
     company_name: str,
+    domain: str = "",
 ) -> list[dict]:
     """
     Jalankan R3 Deep Targeted Search menggunakan entitas dari Step 4.
-    Search dibatasi ke domain lokal Indonesia (idx.co.id, bisnis.com, dll.)
+    Adaptif: untuk perusahaan Tbk menggunakan media finansial, untuk non-Tbk mencari footprint bisnis secara terbuka.
     """
-    logger.info("[lane_a] Step5 deep_targeted_search R3")
+    logger.info("[lane_a] Step5 deep_targeted_search R3 | company=%r domain=%r", company_name, domain)
 
     # Gabungkan entitas dari semua hasil untuk enrichment query
     all_entities = []
     for insight in distilled_insights.values():
         all_entities.extend(insight.named_entities[:2])
     all_entities = list(set(all_entities))
-    entity_hint = " ".join(all_entities[:4]) if all_entities else ""
+    entity_hint = " ".join(all_entities[:3]) if all_entities else ""
 
     # Gunakan financial + competitive queries sebagai base untuk deep search
     base_candidates = query_set.financial_queries + query_set.competitive_queries
-    if base_candidates:
-        base_query = base_candidates[0]
-    else:
-        base_query = f"{company_name} analisis bisnis keuangan"
+    base_query = base_candidates[0] if base_candidates else f"{company_name} analisis bisnis"
 
-    # Tambahkan domain restriction
-    domain_filter = " OR ".join(f"site:{d}" for d in DEEP_SEARCH_DOMAINS[:2])
-    enriched_query = f"({base_query} {entity_hint}) ({domain_filter})".strip()
+    is_public_tbk = bool(re.search(r"(?i)\b(tbk|persero)\b", company_name))
+    if is_public_tbk:
+        domain_filter = " OR ".join(f"site:{d}" for d in DEEP_SEARCH_DOMAINS[:2])
+        enriched_query = f"({base_query} {entity_hint}) ({domain_filter})".strip()
+    else:
+        # Untuk perusahaan privat / SME, cari footprint operasional & klien nyata
+        domain_hint = f'"{domain}"' if domain else ""
+        enriched_query = f'"{company_name}" {domain_hint} {entity_hint} (klien OR portofolio OR kemitraan OR ekspansi OR solusi)'.strip()
 
     try:
         resp = await tavily_service.search(
@@ -613,7 +614,7 @@ async def run_lane_a_advanced(
 
     # Step 5: Deep Targeted Search R3 (pakai entitas dari Step 4)
     r3_results = await _step5_deep_targeted_search(
-        query_set, final_insights, company_name
+        query_set, final_insights, company_name, domain=domain
     )
 
     # Step 6: Combine semua → output tuple

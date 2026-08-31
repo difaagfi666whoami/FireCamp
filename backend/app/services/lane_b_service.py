@@ -15,14 +15,9 @@ PENTING: JANGAN panggil fetch_jina_reader() untuk URL LinkedIn.
 LinkedIn akan mengembalikan login wall / bot-block.
 """
 
-from __future__ import annotations
-
 import logging
 import re
 from typing import Any
-
-from app.services.external_apis import search_serper
-from app.services import openai_service
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +98,7 @@ def _build_raw_contact(
     Return None jika URL bukan profil LinkedIn individual.
     """
     link = item.get("link", "")
-    if "linkedin.com/in/" not in link:
+    if "linkedin.com/in/" not in link or "/dir/" in link or "/pulse/" in link or "/posts/" in link:
         return None
 
     title_text = item.get("title", "")
@@ -112,7 +107,7 @@ def _build_raw_contact(
     name, job_title = _parse_linkedin_title(title_text)
 
     # Filter nama tidak valid
-    if not name or name.lower() in ("linkedin", "unknown", "linkedin member"):
+    if not name or name.lower() in ("linkedin", "unknown", "linkedin member", "top profiles", "direktori"):
         return None
 
     # Filter nama yang terlalu pendek (kemungkinan parsing error)
@@ -139,16 +134,15 @@ def _has_past_employment_signals(item: dict[str, Any]) -> bool:
     combined = (item.get("title", "") + " " + item.get("snippet", "")).lower()
     
     # Pattern tahun range yang sudah berakhir: "2018–2022", "2019 - 2021"
-    # Cek apakah ada range tahun yang end year-nya bukan "present"
     year_range = re.findall(r'(20\d{2})\s*[-–]\s*(20\d{2})', combined)
     for start, end in year_range:
         if int(end) < 2024:  # Range yang sudah berakhir sebelum 2024
             return True
     
-    # Kata kunci past tense
+    # Kata kunci past tense / mantan karyawan
     past_keywords = [
-        "formerly", "ex-", " alumni", "previously at", "used to work",
-        "mantan", "sebelumnya di", "dulu di", "pernah di"
+        "formerly", "former ", "ex-", " alumni", "alumnus", "previously at", "used to work",
+        "mantan", "sebelumnya di", "dulu di", "pernah di", "past:", "sebelumnya:"
     ]
     return any(kw in combined for kw in past_keywords)
 
@@ -226,6 +220,8 @@ async def search_contacts_serper(
     rejected_count = 0
     seen_urls = set()
     
+    from app.services.external_apis import search_serper
+
     async def process_tier(query: str, needed: int):
         nonlocal rejected_count
         serper_data = await search_serper(query, endpoint="search", num=10)
@@ -327,6 +323,7 @@ async def search_contacts_serper(
 
     # ── Step 3: AI Scoring + Hunter REST Email Enrichment (hybrid) ─────────────
     try:
+        from app.services import openai_service
         scored = await openai_service.score_and_enrich_contacts(
             raw_contacts, company_context, domain, company_name=company_name
         )

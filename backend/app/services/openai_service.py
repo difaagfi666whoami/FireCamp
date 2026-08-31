@@ -354,6 +354,25 @@ async def synthesize_profile(
         "\n\n"
 
         # ════════════════════════════════════════════════════════════════
+        # ATURAN 0: THE 3 SALES TRIGGERS & VERIFIED CAPABILITIES (KRITIS)
+        # ════════════════════════════════════════════════════════════════
+        "=== ATURAN 0: THE 3 SALES TRIGGERS (field 'salesTriggers') ===\n"
+        "Ini adalah instrumen intelijen utama untuk Direktur dan Tim Penjualan. Buat dengan sangat tajam:\n"
+        "1. reality: Tuliskan model bisnis sebenarnya, produk unggulan, dan target pelanggan yang terbukti nyata dari subpage resmi target (2-3 kalimat fakta padat).\n"
+        "2. bottleneck: Tuliskan hambatan operasional, inefisiensi, atau gap teknologi konkret yang tampak dari data target (misal: sistem manual, keterbatasan tim, atau kurangnya otomatisasi).\n"
+        "3. entryHook: Tuliskan sudut penawaran terbaik (Challenger Sale Hook) — kenapa mereka butuh solusi kita sekarang (Why Now) dan nilai tambah unik apa yang relevan.\n\n"
+
+        "=== ATURAN 0B: VERIFIED CAPABILITIES (field 'verifiedCapabilities') ===\n"
+        "- coreOfferings: Array 3-6 string penawaran layanan/produk nyata dari subpage /services.\n"
+        "- verifiedClients: Array 2-6 string nama klien atau studi kasus nyata dari subpage /clients atau portofolio.\n"
+        "- hiringSignals: Array string lowongan pekerjaan aktif dari subpage /careers atau sinyal rekrutmen.\n\n"
+
+        "=== ATURAN 0C: CONFIDENCE SCORE (field 'confidenceScore') ===\n"
+        "- 'HIGH': Jika informasi didukung bukti kuat dari subpage resmi website target (/services, /about, /portfolio).\n"
+        "- 'MEDIUM': Jika subpage terbatas namun didukung profil LinkedIn dan liputan media publik.\n"
+        "- 'INFERENCE': Jika jejak digital minim dan analisis merupakan ekstrapolasi industri.\n\n"
+
+        # ════════════════════════════════════════════════════════════════
         # ATURAN 1: STRATEGIC REPORT
         # ════════════════════════════════════════════════════════════════
         "=== ATURAN 1: STRATEGIC REPORT ===\n\n"
@@ -517,11 +536,10 @@ async def synthesize_profile(
 
         "=== ATURAN 10: DEEP SITE PAGES (Lane F) ===\n"
         "about → description dan [IDENTITAS]. "
-        "products → [PRODUK] dan internalCapabilities. "
-        "clients → [POSISI PASAR] (social proof). "
-        "careers → [DIGITAL] (hiring signals). "
-        "team → [IDENTITAS] (struktur organisasi). "
-        "Jika field kosong ('') → abaikan.\n\n"
+        "services/products → [PRODUK], coreOfferings, dan internalCapabilities. "
+        "clients → [POSISI PASAR], verifiedClients (social proof). "
+        "careers → [DIGITAL], hiringSignals (sinyal ekspansi). "
+        "team → [IDENTITAS] (struktur organisasi).\n\n"
 
         "=== ATURAN 11 ===\n"
         "Jika data tidak tersedia, gunakan string kosong ''. JANGAN null."
@@ -549,11 +567,9 @@ async def synthesize_profile(
         "=== BERITA GABUNGAN (Lane C+D+E — context only) ===\n"
         f"{news_json}\n\n"
 
-        "=== DEEP SITE PAGES (Lane F) ===\n"
-        "Konten halaman website: about / products / clients / careers / team.\n"
-        "PERHATIKAN: jika halaman ini kosong atau sangat pendek → ini adalah ANOMALI "
-        "(Trigger 3: Broken Digital Presence). Catat dan masukkan ke anomalies.\n"
-        f"{site_pages_json}\n\n"
+        "=== DEEP SITE PAGES & DOKUMEN RESMI SUBPAGE (Lane F) ===\n"
+        f"{deep_site_pages.get('ground_truth_text', '') if isinstance(deep_site_pages, dict) else ''}\n\n"
+        f"Subpage Structure JSON:\n{site_pages_json}\n\n"
 
         "=== COMPANY ENRICHMENT (Lane G — Hunter) ===\n"
         "Ground truth metadata. Prioritaskan untuk name/industry/size/founded/hq/linkedin.\n"
@@ -575,13 +591,22 @@ async def synthesize_profile(
         "seluruh data di atas.\n\n"
 
         "PANDUAN PENGISIAN FIELD UTAMA:\n"
-        "deepInsights:\n"
+        "1. salesTriggers:\n"
+        "   - reality: model bisnis & target segmen terbukti dari data resmi (2-3 kalimat)\n"
+        "   - bottleneck: hambatan operasional/teknologi nyata dari data (2-3 kalimat)\n"
+        "   - entryHook: sudut penawaran terbaik & Why Now untuk outreach\n\n"
+        "2. verifiedCapabilities:\n"
+        "   - coreOfferings: 3-6 layanan konkret dari subpage /services\n"
+        "   - verifiedClients: 2-6 klien nyata dari subpage /clients\n"
+        "   - hiringSignals: lowongan aktif dari subpage /careers\n\n"
+        "3. confidenceScore: 'HIGH' | 'MEDIUM' | 'INFERENCE'\n\n"
+        "4. deepInsights:\n"
         "- Item 1: '[IDENTITAS] ...'\n"
         "- Item 2: '[PRODUK] ...'\n"
         "- Item 3: '[DIGITAL] ...'\n"
         "- Item 4: '[POSISI PASAR] ...'\n"
         "- Item 5: '[VULNERABILITIES] ...'\n\n"
-        "strategicReport — ISI SEMUA SUB-FIELD:\n"
+        "5. strategicReport — ISI SEMUA SUB-FIELD:\n"
         "- strategicTitle: kondisi spesifik perusahaan ini (bukan generic)\n"
         "- executiveInsight: verdict 2-3 kalimat dengan minimal 1 fakta spesifik\n"
         "- internalCapabilities: Markdown heading + bullets + citations inline\n"
@@ -589,7 +614,7 @@ async def synthesize_profile(
         "- strategicRoadmap: array 3-5 item dimulai 'Prioritaskan'\n"
         "- situationalSummary: [STATUS] + [BUKTI] + [ENTRY POINT] + [WINDOW]\n"
         "- citations: array URL dari evidence_list yang benar-benar dipakai\n\n"
-        "contacts: salin SEMUA field dari Lane B verbatim."
+        "6. contacts: salin SEMUA field dari Lane B verbatim."
     )
 
     client = _get_client()
@@ -669,12 +694,21 @@ async def synthesize_profile(
                 object.__setattr__(profile, "intentSignals", injected_intent)
                 logger.info("[openai] synthesize_profile | injected %d intentSignals", len(injected_intent))
 
+        if profile.strategicReport:
+            if profile.salesTriggers and not profile.strategicReport.salesTriggers:
+                object.__setattr__(profile.strategicReport, "salesTriggers", profile.salesTriggers)
+            if profile.verifiedCapabilities and not profile.strategicReport.verifiedCapabilities:
+                object.__setattr__(profile.strategicReport, "verifiedCapabilities", profile.verifiedCapabilities)
+            if profile.confidenceScore and not profile.strategicReport.confidenceScore:
+                object.__setattr__(profile.strategicReport, "confidenceScore", profile.confidenceScore)
+
         tokens_used = response.usage.total_tokens if response.usage else 0
         logger.info(
-            "[openai] synthesize_profile OK | company=%r tokens=%d news=%d",
+            "[openai] synthesize_profile OK | company=%r tokens=%d news=%d triggers=%s",
             profile.name,
             tokens_used,
             len(profile.news),
+            bool(profile.salesTriggers),
         )
         return profile, tokens_used
 
