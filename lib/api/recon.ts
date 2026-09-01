@@ -5,7 +5,10 @@ import { isMockMode } from "@/lib/demoMode"
 import { notifyCreditsChanged } from "@/lib/api/credits"
 
 function stripQuotes(v: string) { return v.replace(/^(['"])(.*)\1$/, "$2").trim() }
-const API_URL = stripQuotes(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
+const API_URL = stripQuotes(
+  process.env.NEXT_PUBLIC_API_URL ??
+    "https://firecamp-production.up.railway.app"
+)
 
 // -----------------------------------------------------------------------------
 // Shared type — shape yang dibutuhkan ProfileCard & research-library page
