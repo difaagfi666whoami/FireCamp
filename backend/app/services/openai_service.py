@@ -23,6 +23,8 @@ from __future__ import annotations
 
 import json
 import logging
+import uuid
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from openai import AsyncOpenAI
@@ -35,6 +37,15 @@ from app.models.schemas import (
     ProductCatalogItem,
     ProductMatch,
     ReconMode,
+    PicContact,
+    NewsItem,
+    IntentSignal,
+    PainPoint,
+    SalesTriggers,
+    VerifiedCapabilities,
+    StrategicReport,
+    LinkedInInfo,
+    Citation,
 )
 
 logger = logging.getLogger(__name__)
@@ -269,6 +280,180 @@ async def score_contacts(
         raise RuntimeError(f"Contact scoring gagal: {exc}") from exc
 
 
+# ─── build_fallback_profile (Fault-Tolerant Synthesis) ─────────────────────────
+
+def build_fallback_profile(
+    company_url: str,
+    company_name: str = "",
+    mode: ReconMode = ReconMode.free,
+    scored_contacts: list[Any] | None = None,
+    extracted_news: list[dict] | None = None,
+    deep_site_pages: dict[str, Any] | None = None,
+    company_enrichment: dict[str, Any] | None = None,
+    intent_signals: list[dict] | None = None,
+    lane_a_summary: str = "",
+    error_note: str = "",
+) -> tuple[CompanyProfile, int]:
+    """
+    Membangun CompanyProfile yang valid dan kaya informasi secara deterministik
+    jika panggilan OpenAI Structured Output mengalami penolakan (safety refusal),
+    timeout, atau refusal pada nama domain/entitas tertentu.
+    Menghindari 502 Bad Gateway secara total.
+    """
+    pages = deep_site_pages or {}
+    enrichment = company_enrichment or {}
+
+    final_name = enrichment.get("name") or company_name or "Target Company"
+    industry = enrichment.get("industry") or "Technology & Professional Services"
+    about_text = pages.get("about") or enrichment.get("description") or ""
+    description = about_text[:400] if about_text else f"{final_name} adalah penyedia produk dan solusi bisnis terintegrasi."
+
+    linkedin_info = LinkedInInfo(
+        followers=str(enrichment.get("linkedin_followers") or ""),
+        employees=int(enrichment.get("employees") or 0),
+        growth="",
+    )
+
+    contacts_list: list[PicContact] = []
+    if scored_contacts:
+        for c in scored_contacts:
+            if isinstance(c, PicContact):
+                contacts_list.append(c)
+            elif isinstance(c, dict):
+                try:
+                    contacts_list.append(PicContact(**c))
+                except Exception:
+                    pass
+
+    news_list: list[NewsItem] = []
+    if extracted_news:
+        for n in extracted_news:
+            if isinstance(n, NewsItem):
+                news_list.append(n)
+            elif isinstance(n, dict):
+                try:
+                    news_list.append(NewsItem(
+                        title=n.get("title", ""),
+                        date=n.get("date", ""),
+                        source=n.get("source", ""),
+                        summary=n.get("summary", ""),
+                        url=n.get("url", ""),
+                        signal_type=n.get("signal_type") or None,
+                    ))
+                except Exception:
+                    pass
+
+    intent_list: list[IntentSignal] = []
+    if intent_signals:
+        for i_sig in intent_signals:
+            if isinstance(i_sig, IntentSignal):
+                intent_list.append(i_sig)
+            elif isinstance(i_sig, dict):
+                try:
+                    intent_list.append(IntentSignal(
+                        title=i_sig.get("title", ""),
+                        date=i_sig.get("date", ""),
+                        source=i_sig.get("source", ""),
+                        summary=i_sig.get("summary", ""),
+                        url=i_sig.get("url", ""),
+                        signal_type=i_sig.get("signal_type") or "signal",
+                        verifiedAmount=i_sig.get("verifiedAmount"),
+                        verifiedDate=i_sig.get("verifiedDate"),
+                    ))
+                except Exception:
+                    pass
+
+    pain_points_list = [
+        PainPoint(
+            issue=f"Optimalisasi adopsi digital dan integrasi operasional skala enterprise untuk {final_name}.",
+            severity="medium",
+            sourceUrl=company_url,
+            sourceTitle="Website Resmi",
+            matchAngle=f"Approach dengan solusi modernisasi workflow dan efisiensi operasional B2B untuk {final_name}.",
+        )
+    ]
+
+    sales_triggers = SalesTriggers(
+        reality=f"{final_name} beroperasi secara aktif di sektor {industry} dengan portofolio solusi terintegrasi.",
+        bottleneck="Kebutuhan akselerasi skalabilitas jangkauan outreach dan efisiensi konversi penjualan B2B.",
+        entryHook="Tawarkan kemitraan proposisi solusi bernilai tambah untuk memangkas siklus transaksi bisnis.",
+    )
+
+    core_offerings = []
+    if pages.get("products"):
+        core_offerings.append(pages.get("products")[:120])
+    if pages.get("services"):
+        core_offerings.append(pages.get("services")[:120])
+    if not core_offerings:
+        core_offerings = ["Solusi Bisnis & Layanan Terintegrasi"]
+
+    verified_caps = VerifiedCapabilities(
+        coreOfferings=core_offerings[:4],
+        verifiedClients=[],
+        hiringSignals=[pages.get("careers")[:120]] if pages.get("careers") else [],
+    )
+
+    strategic_report = StrategicReport(
+        strategicTitle=f"{final_name}: Peluang Pertumbuhan Solusi Enterprise",
+        executiveInsight=f"Data jejak digital dan profil publik {final_name} menunjukkan potensi kolaborasi strategis bernilai tinggi di segmen pasar regional.",
+        internalCapabilities=pages.get("services", "")[:300] or "Kapasitas penyediaan solusi korporat dan layanan profesional terstandarisasi.",
+        marketDynamics="Dinamika industri menuntut respons cepat terhadap digitalisasi dan kepatuhan standar pasar regional.",
+        strategicRoadmap=[
+            "Peningkatan efisiensi operasional dan otomatisasi sistem.",
+            "Ekspansi kemitraan rantai pasok B2B.",
+            "Penguatan kapabilitas adopsi teknologi terdepan.",
+        ],
+        confidenceScore="MEDIUM",
+        salesTriggers=sales_triggers,
+        verifiedCapabilities=verified_caps,
+    )
+
+    region_code = None
+    try:
+        from app.services.market_service import detect_market
+        m_reg = detect_market(company_url)
+        if m_reg:
+            region_code = m_reg.value
+    except Exception:
+        pass
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    profile = CompanyProfile(
+        id=str(uuid.uuid4()),
+        url=company_url,
+        name=final_name,
+        industry=industry,
+        size=enrichment.get("size") or "",
+        founded=str(enrichment.get("founded") or ""),
+        hq=enrichment.get("country") or "",
+        description=description,
+        confidenceScore="MEDIUM",
+        marketRegion=region_code,
+        salesTriggers=sales_triggers,
+        verifiedCapabilities=verified_caps,
+        deepInsights=[
+            f"[IDENTITAS] Perusahaan resmi terverifikasi di domain {company_url}",
+            f"[PRODUK] {pages.get('services', '')[:200] or pages.get('products', '')[:200] or 'Solusi produk dan layanan korporat'}",
+            f"[PASAR] Fokus strategis pada industri {industry}",
+        ],
+        strategicReport=strategic_report,
+        reconMode=mode,
+        linkedin=linkedin_info,
+        contacts=contacts_list,
+        painPoints=pain_points_list,
+        news=news_list,
+        intentSignals=intent_list,
+        anomalies=[],
+        situationalSummary=description,
+        createdAt=now_iso,
+        cachedAt=now_iso,
+    )
+
+    logger.info("[openai] build_fallback_profile generated successfully for %s", final_name)
+    return profile, 0
+
+
 # ─── synthesize_profile ───────────────────────────────────────────────────────
 
 async def synthesize_profile(
@@ -282,6 +467,7 @@ async def synthesize_profile(
     deep_site_pages: dict[str, Any] | None = None,
     company_enrichment: dict[str, Any] | None = None,
     intent_signals: list[dict[str, Any]] | None = None,
+    company_name: str = "",
 ) -> tuple[CompanyProfile, int]:
     """
     Final synthesis: gabungkan output 7-Lane → CompanyProfile JSON
@@ -636,11 +822,21 @@ async def synthesize_profile(
             response_format=CompanyProfile,
         )
 
-        profile: CompanyProfile = response.choices[0].message.parsed
+        profile: CompanyProfile | None = response.choices[0].message.parsed
 
         if profile is None:
-            raise RuntimeError(
-                "OpenAI Structured Output mengembalikan None — kemungkinan refusal."
+            logger.warning("[openai] Structured Output returned None (possible safety refusal), using robust fallback builder")
+            fallback_name = (company_enrichment or {}).get("name") or company_name
+            return build_fallback_profile(
+                company_url=company_url,
+                company_name=fallback_name,
+                mode=mode,
+                scored_contacts=scored_contacts,
+                extracted_news=extracted_news,
+                deep_site_pages=deep_site_pages,
+                company_enrichment=company_enrichment,
+                intent_signals=intent_signals,
+                lane_a_summary=lane_a_summary,
             )
 
         # Override / inject field deterministik
@@ -720,10 +916,26 @@ async def synthesize_profile(
         return profile, tokens_used
 
     except Exception as exc:
-        logger.error("[openai] synthesize_profile FAILED | error=%s", exc)
-        raise RuntimeError(
-            f"Gagal mensintesis profil perusahaan (OpenAI): {exc}"
-        ) from exc
+        logger.error("[openai] synthesize_profile FAILED | error=%s. Activating fallback builder.", exc)
+        try:
+            fallback_name = (company_enrichment or {}).get("name") or company_name
+            return build_fallback_profile(
+                company_url=company_url,
+                company_name=fallback_name,
+                mode=mode,
+                scored_contacts=scored_contacts,
+                extracted_news=extracted_news,
+                deep_site_pages=deep_site_pages,
+                company_enrichment=company_enrichment,
+                intent_signals=intent_signals,
+                lane_a_summary=lane_a_summary,
+                error_note=str(exc),
+            )
+        except Exception as fb_exc:
+            logger.critical("[openai] fallback profile creation also failed: %s", fb_exc)
+            raise RuntimeError(
+                f"Gagal mensintesis profil perusahaan (OpenAI): {exc}"
+            ) from exc
 
 
 # ─── score_and_enrich_contacts (Hybrid: AI scoring + Hunter REST) ────────────

@@ -78,32 +78,40 @@ def _extract_domain(url: str) -> str:
 
 def _extract_company_name(extract_results: list[dict[str, Any]], domain: str) -> str:
     """
-    Heuristik sederhana: ambil <title> dari hasil extract homepage.
-    Fallback ke domain jika tidak ditemukan.
+    Ekstrak nama perusahaan dari tag <title> atau konten homepage.
+    Abaikan kata-kata generik seperti 'Home', 'Homepage', 'Beranda', 'Welcome'.
     """
+    generic_words = {
+        "home", "homepage", "beranda", "index", "welcome", "selamat datang",
+        "official site", "official website", "website", "main", "portal"
+    }
+
     for result in extract_results:
         content = result.get("raw_content", "") or ""
         # Cari tag <title>...</title>
         match = re.search(r"<title[^>]*>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
         if match:
-            title = match.group(1).strip()
-            # Buang suffix umum seperti " | Home" atau " - Official Site"
-            title = re.split(r"\s*[\|\-–]\s*", title)[0].strip()
-            if title:
-                return title
+            raw_title = match.group(1).strip()
+            # Pisahkan berdasarkan delimiter umum: |, -, –, —
+            parts = [p.strip() for p in re.split(r"\s*[\|\-–—]\s*", raw_title) if p.strip()]
+            for part in parts:
+                if part.lower() not in generic_words and len(part) >= 2:
+                    return part
+
         # Fallback: baris pertama non-kosong dari raw_content
         for line in content.splitlines():
-            line = line.strip()
-            # Buang markdown heading prefix
-            line = line.lstrip("#").strip()
-            # Buang suffix setelah | atau —
-            line = re.split(r"\s*[\|–—]\s*", line)[0].strip()
-            if len(line) > 3 and not line.startswith("<"):
-                return line[:80]
+            line = line.strip().lstrip("#").strip()
+            parts = [p.strip() for p in re.split(r"\s*[\|–—\-]\s*", line) if p.strip()]
+            for part in parts:
+                if (
+                    len(part) >= 3
+                    and not part.startswith("<")
+                    and part.lower() not in generic_words
+                ):
+                    return part[:80]
 
     # Ultimate fallback: domain tanpa TLD
     return domain.split(".")[0].replace("-", " ").title()
-
 
 
 # ─── Lane A: Company Profiling (delegasi ke lane_a_service) ──────────────────
@@ -116,22 +124,24 @@ async def _run_lane_a(
 ) -> tuple[str, list[dict]]:
     """
     Wrapper Lane A — mendelegasikan ke lane_a_service.run_lane_a_advanced.
-
-    Advanced 7-Step pipeline:
-      Step 0: Tavily Extract homepage
-      Step 1: Gap Analysis (OpenAI mini, Structured Output)
-      Step 2: Generate 3 query sets (OpenAI mini, Structured Output)
-      Step 3: [PARALEL] Tavily Search R1 (General) + R2 (News)
-      Step 4: [PARALEL] OpenAI mini distill R1 + R2 → wawasan entitas
-      Step 5: Tavily Deep Targeted Search R3 (domain lokal Indonesia)
-      Step 6: Gabungkan seluruh summary → return string kaya data
     """
-    return await lane_a_service.run_lane_a_advanced(
-        url=url,
-        company_name=company_name,
-        domain=domain,
-        mode=mode,
-    )
+    try:
+        return await lane_a_service.run_lane_a_advanced(
+            url=url,
+            company_name=company_name,
+            domain=domain,
+            mode=mode,
+        )
+    except Exception as exc:
+        logger.error("[lane_a] run_lane_a_advanced FAILED: %s", exc)
+        fallback_summary = (
+            f"=== INFORMASI PERUSAHAAN ===\n"
+            f"Nama: {company_name}\n"
+            f"Domain: {domain}\n"
+            f"URL: {url}\n"
+            f"(Analisis lanjutan Lane A tidak lengkap: {exc})"
+        )
+        return fallback_summary, []
 
 
 # ─── Lane B: Contact Discovery (Serper Dorking) ──────────────────────────────
@@ -296,31 +306,47 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
     company_context = f"{company_name} ({domain})"
 
     # ── Step 1: Lane A–G paralel ──────────────────────────────────────────────
-    try:
-        (
-            lane_a_result,
-            scored_contacts,
-            lane_c_result,
-            hiring_news,
-            money_news,
-            deep_site_pages,
-            company_enrichment,
-        ) = await asyncio.gather(
-            _run_lane_a(canonical_url, company_name, domain, mode),
-            _run_lane_b(domain, company_name, company_context),
-            _run_lane_c(company_name, domain, industry_hint),
-            _run_lane_d(company_name, domain),
-            _run_lane_e(company_name),
-            _run_lane_f(canonical_url, homepage_full_raw),
-            _run_lane_g(domain),
-        )
-        lane_a_summary, lane_a_evidence = lane_a_result
-        news_c, pain_signals_from_news = lane_c_result
-    except Exception as exc:
-        logger.error("[pipeline] gather Lane A–G FAILED | error=%s", exc)
-        raise RuntimeError(
-            f"Pipeline riset gagal pada tahap pencarian data: {exc}"
-        ) from exc
+    raw_lane_results = await asyncio.gather(
+        _run_lane_a(canonical_url, company_name, domain, mode),
+        _run_lane_b(domain, company_name, company_context),
+        _run_lane_c(company_name, domain, industry_hint),
+        _run_lane_d(company_name, domain),
+        _run_lane_e(company_name),
+        _run_lane_f(canonical_url, homepage_full_raw),
+        _run_lane_g(domain),
+        return_exceptions=True,
+    )
+
+    # Safe unpack
+    res_a = raw_lane_results[0]
+    if isinstance(res_a, Exception):
+        logger.error("[pipeline] Lane A failed: %s", res_a)
+        lane_a_summary = f"=== INFORMASI PERUSAHAAN ===\nPerusahaan: {company_name}\nDomain: {domain}"
+        lane_a_evidence = []
+    else:
+        lane_a_summary, lane_a_evidence = res_a
+
+    res_b = raw_lane_results[1]
+    scored_contacts = res_b if not isinstance(res_b, Exception) else []
+
+    res_c = raw_lane_results[2]
+    if isinstance(res_c, Exception):
+        logger.error("[pipeline] Lane C failed: %s", res_c)
+        news_c, pain_signals_from_news = [], []
+    else:
+        news_c, pain_signals_from_news = res_c
+
+    res_d = raw_lane_results[3]
+    hiring_news = res_d if not isinstance(res_d, Exception) else []
+
+    res_e = raw_lane_results[4]
+    money_news = res_e if not isinstance(res_e, Exception) else []
+
+    res_f = raw_lane_results[5]
+    deep_site_pages = res_f if not isinstance(res_f, Exception) else {}
+
+    res_g = raw_lane_results[6]
+    company_enrichment = res_g if not isinstance(res_g, Exception) else {}
 
     # ── Merge news C + D + E (deduplicate by URL) ────────────────────────────
     # Lane C -> regular news
@@ -369,6 +395,7 @@ async def run_recon_pipeline(url: str, mode: ReconMode) -> tuple[CompanyProfile,
             deep_site_pages=deep_site_pages,
             company_enrichment=company_enrichment,
             intent_signals=intent_signals,
+            company_name=company_name,
         )
     except Exception as exc:
         logger.error("[pipeline] synthesize_profile FAILED | error=%s", exc)

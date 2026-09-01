@@ -448,13 +448,17 @@ async def _step4_parallel_distill(
                 ],
                 response_format=DistilledInsights,
             )
-            return response.choices[0].message.parsed
+            parsed = response.choices[0].message.parsed
+            if parsed is not None:
+                return parsed
+            logger.warning("[lane_a] Step4 distill %s returned None, using safe fallback", angle_name)
         except Exception as exc:
             logger.warning("[lane_a] Step4 distill %s FAILED: %s", angle_name, exc)
-            return DistilledInsights(
-                evidence_facts=[], named_entities=[], pain_signals=[],
-                summary_paragraph=f"Distilasi {angle_name} gagal."
-            )
+
+        return DistilledInsights(
+            evidence_facts=[], named_entities=[], pain_signals=[],
+            summary_paragraph=f"Distilasi {angle_name} tidak menghasilkan data."
+        )
 
     tasks = [
         _distill_one(results, angle)
@@ -464,8 +468,8 @@ async def _step4_parallel_distill(
     
     final_insights = dict(zip(angle_results.keys(), distilled_list))
     
-    total_facts = sum(len(d.evidence_facts) for d in final_insights.values())
-    total_entities = sum(len(d.named_entities) for d in final_insights.values())
+    total_facts = sum(len(d.evidence_facts) for d in final_insights.values() if d and hasattr(d, "evidence_facts"))
+    total_entities = sum(len(d.named_entities) for d in final_insights.values() if d and hasattr(d, "named_entities"))
     
     logger.info("[lane_a] Step4 OK | total_facts=%d entities=%d", total_facts, total_entities)
     return final_insights
@@ -488,7 +492,8 @@ async def _step5_deep_targeted_search(
     # Gabungkan entitas dari semua hasil untuk enrichment query
     all_entities = []
     for insight in distilled_insights.values():
-        all_entities.extend(insight.named_entities[:2])
+        if insight and hasattr(insight, "named_entities"):
+            all_entities.extend(insight.named_entities[:2])
     all_entities = list(set(all_entities))
     entity_hint = " ".join(all_entities[:3]) if all_entities else ""
 
@@ -547,10 +552,15 @@ def _step6_combine(
     summary_paragraphs = []
     
     for angle, insight in distilled_insights.items():
-        all_evidence_facts.extend(insight.evidence_facts)
-        pain_signals.extend(insight.pain_signals)
-        entities.extend(insight.named_entities)
-        if insight.summary_paragraph and "gagal" not in insight.summary_paragraph:
+        if not insight:
+            continue
+        if hasattr(insight, "evidence_facts") and insight.evidence_facts:
+            all_evidence_facts.extend(insight.evidence_facts)
+        if hasattr(insight, "pain_signals") and insight.pain_signals:
+            pain_signals.extend(insight.pain_signals)
+        if hasattr(insight, "named_entities") and insight.named_entities:
+            entities.extend(insight.named_entities)
+        if hasattr(insight, "summary_paragraph") and insight.summary_paragraph and "gagal" not in insight.summary_paragraph:
             summary_paragraphs.append(f"[{angle.upper()}] {insight.summary_paragraph}")
             
     # Serialize evidence facts ke dict untuk synthesis (dan deduplikasi berdasar URL/fact jika perlu, tapi biarkan saja)

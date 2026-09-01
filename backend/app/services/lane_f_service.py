@@ -244,6 +244,7 @@ async def deep_site_crawl(
 
     output: dict[str, Any] = {
         "about":              "",
+        "products":           "",
         "services":           "",
         "clients":            "",
         "careers":            "",
