@@ -67,8 +67,22 @@ export interface CompanyProfile {
   situationalSummary?: string
   campaignProgress: CampaignProgress
   reconMode?: ReconMode
+  marketRegion?: 'id' | 'sg' | 'my' | 'th' | 'vn'
   createdAt: string
   cachedAt: string
+}
+
+export interface MarketConfig {
+  tlds: string[]
+  language: string
+  currency: string
+  currencySymbol: string
+  socialPlatforms: string[]
+  confidenceThresholds: {
+    high: number
+    medium: number
+    low: number
+  }
 }
 
 export interface PicContact {

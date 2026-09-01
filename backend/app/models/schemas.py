@@ -196,6 +196,7 @@ class CompanyProfile(BaseModel):
     hq:           str  = ""
     description:    str  = ""
     confidenceScore: str = "HIGH"
+    marketRegion: Optional[str] = Field(None, description="Detected market region (id, sg, my)")
     salesTriggers: Optional[SalesTriggers] = None
     verifiedCapabilities: Optional[VerifiedCapabilities] = None
     deepInsights:   list[str]               = []

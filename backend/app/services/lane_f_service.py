@@ -23,6 +23,28 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+
+class AwaitableList(list):
+    """
+    Subclass list yang dapat digunakan baik secara synchronous (seperti list biasa)
+    maupun di-await: `urls = await select_target_subpage_urls(...)`.
+    Memastikan 100% backward compatibility.
+    """
+    def __await__(self):
+        async def _coro():
+            return self
+        return _coro().__await__()
+
+
+try:
+    from app.services.market_service import get_market_config
+except ImportError:
+    try:
+        from backend.app.services.market_service import get_market_config
+    except ImportError:
+        get_market_config = None
+
+
 # Kategori & kata kunci URL untuk klasifikasi sub-halaman
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "about": [
@@ -121,12 +143,23 @@ def _extract_links_from_content(raw_content: str, base_url: str) -> list[str]:
     return list(discovered)
 
 
-def _classify_url(url: str) -> str | None:
+def _classify_url(url: str, custom_patterns: dict[str, list[str]] | None = None) -> str | None:
     """Klasifikasikan URL ke salah satu kategori intelijen."""
     path_lower = urlparse(url).path.lower()
-    for category, keywords in CATEGORY_KEYWORDS.items():
+    patterns = custom_patterns or CATEGORY_KEYWORDS
+    for category, keywords in patterns.items():
         for kw in keywords:
-            if f"/{kw}" in path_lower or f"-{kw}" in path_lower or f"_{kw}" in path_lower or path_lower.endswith(f"/{kw}"):
+            clean_kw = kw.strip("/").lower()
+            if not clean_kw:
+                continue
+            if (
+                f"/{clean_kw}" in path_lower
+                or f"-{clean_kw}" in path_lower
+                or f"_{clean_kw}" in path_lower
+                or path_lower.endswith(f"/{clean_kw}")
+                or path_lower.endswith(f"/{clean_kw}/")
+                or path_lower == f"/{clean_kw}"
+            ):
                 return category
     return None
 
@@ -135,15 +168,23 @@ def select_target_subpage_urls(
     base_url: str,
     homepage_raw_content: str = "",
     max_urls: int = 6,
-) -> list[str]:
+) -> AwaitableList:
     """
-    Pilih 4-6 URL sub-halaman paling bernilai tinggi:
-    1. Mencari link internal nyata dari homepage.
-    2. Jika ada kategori kosong, probe path kandidat terpopuler.
+    Pilih 4-6 URL sub-halaman paling bernilai tinggi dengan pemahaman konteks pasar regional:
+    1. Deteksi konfigurasi pasar (Indonesia, Singapura, Malaysia, Global).
+    2. Mencari link internal nyata dari homepage.
+    3. Jika ada kategori kosong, probe path kandidat terpopuler sesuai pasar.
+    
+    Returns:
+        AwaitableList yang dapat dipanggil sinkron atau di-await (100% backward compatible).
     """
     base = base_url.rstrip("/")
     if not base.startswith("http"):
         base = f"https://{base}"
+
+    # Deteksi pola pasar regional
+    market_cfg = get_market_config(base_url) if get_market_config else None
+    effective_candidates = market_cfg.subpage_patterns if (market_cfg and market_cfg.subpage_patterns) else CANDIDATE_PATHS
 
     discovered_links = _extract_links_from_content(homepage_raw_content, base) if homepage_raw_content else []
     
@@ -151,17 +192,21 @@ def select_target_subpage_urls(
 
     # 1. Klasifikasikan link internal yang ditemukan
     for link in discovered_links:
-        category = _classify_url(link)
+        category = _classify_url(link, effective_candidates)
         if category and category not in selected_by_category:
             selected_by_category[category] = link
 
-    # 2. Untuk kategori penting yang belum ada, gunakan fallback kandidat terpopuler
-    for category, candidates in CANDIDATE_PATHS.items():
-        if category not in selected_by_category:
-            selected_by_category[category] = f"{base}{candidates[0]}"
+    # 2. Untuk kategori penting yang belum ada, gunakan fallback kandidat terpopuler per pasar
+    for category, candidates in effective_candidates.items():
+        if category not in selected_by_category and candidates:
+            # Format candidate path
+            cand_path = candidates[0]
+            if not cand_path.startswith("/"):
+                cand_path = f"/{cand_path}"
+            selected_by_category[category] = f"{base}{cand_path}"
 
-    # Prioritaskan urutan intelijen: services -> about -> clients -> careers -> contact
-    priority_order = ["services", "about", "clients", "careers", "contact"]
+    # Prioritaskan urutan intelijen: products -> services -> about -> clients -> careers -> contact
+    priority_order = ["products", "services", "about", "clients", "careers", "contact"]
     final_urls: list[str] = []
 
     for cat in priority_order:
@@ -170,7 +215,7 @@ def select_target_subpage_urls(
             if len(final_urls) >= max_urls:
                 break
 
-    return final_urls
+    return AwaitableList(final_urls)
 
 
 async def deep_site_crawl(

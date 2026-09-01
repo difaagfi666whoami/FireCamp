@@ -647,6 +647,13 @@ async def synthesize_profile(
         object.__setattr__(profile, "id",        profile.id or str(uuid.uuid4()))
         object.__setattr__(profile, "url",        company_url)
         object.__setattr__(profile, "reconMode",  mode)
+        try:
+            from app.services.market_service import detect_market
+            m_reg = detect_market(company_url)
+            if m_reg:
+                object.__setattr__(profile, "marketRegion", m_reg.value)
+        except Exception:
+            pass
 
         # ── INJECT berita Lane C secara deterministik ─────────────────────────
         # GPT-4o Structured Output sering mengabaikan/memodifikasi data berita

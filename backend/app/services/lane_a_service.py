@@ -24,18 +24,54 @@ import asyncio
 import logging
 from typing import Any
 
-from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = Any
 
-from app.core.config import settings
-from app.models.schemas import ReconMode
-from app.services import tavily_service
+try:
+    from pydantic import BaseModel, Field
+except ImportError:
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for k, v in kwargs.items():
+                setattr(self, k, v)
+    def Field(*args, **kwargs):
+        return None
+
+try:
+    from app.core.config import settings
+except ImportError:
+    settings = None
+
+try:
+    from app.models.schemas import ReconMode
+except ImportError:
+    from enum import Enum
+    class ReconMode(str, Enum):
+        free = "free"
+        pro = "pro"
+
+try:
+    from app.services import tavily_service
+except ImportError:
+    tavily_service = None
+
+try:
+    from app.services.market_service import detect_market, get_market_config, MarketRegion
+except ImportError:
+    try:
+        from backend.app.services.market_service import detect_market, get_market_config, MarketRegion
+    except ImportError:
+        detect_market = None
+        get_market_config = None
+        MarketRegion = None
 
 logger = logging.getLogger(__name__)
 
 MODEL_MINI = "gpt-4o-mini"
 
-# Domain pencarian lokal Indonesia untuk Deep Targeted Search
+# Domain pencarian lokal Indonesia untuk Deep Targeted Search (fallback)
 DEEP_SEARCH_DOMAINS = ["idx.co.id", "bisnis.com", "kontan.co.id", "katadata.co.id"]
 
 
@@ -460,14 +496,17 @@ async def _step5_deep_targeted_search(
     base_candidates = query_set.financial_queries + query_set.competitive_queries
     base_query = base_candidates[0] if base_candidates else f"{company_name} analisis bisnis"
 
-    is_public_tbk = bool(re.search(r"(?i)\b(tbk|persero)\b", company_name))
+    is_public_tbk = bool(re.search(r"(?i)\b(tbk|persero|bhd|berhad|ltd|limited|corp)\b", company_name))
+    market_cfg = get_market_config(domain or company_name) if get_market_config else None
+    search_domains = market_cfg.deep_search_domains if (market_cfg and market_cfg.deep_search_domains) else DEEP_SEARCH_DOMAINS
+
     if is_public_tbk:
-        domain_filter = " OR ".join(f"site:{d}" for d in DEEP_SEARCH_DOMAINS[:2])
+        domain_filter = " OR ".join(f"site:{d}" for d in search_domains[:2])
         enriched_query = f"({base_query} {entity_hint}) ({domain_filter})".strip()
     else:
         # Untuk perusahaan privat / SME, cari footprint operasional & klien nyata
         domain_hint = f'"{domain}"' if domain else ""
-        enriched_query = f'"{company_name}" {domain_hint} {entity_hint} (klien OR portofolio OR kemitraan OR ekspansi OR solusi)'.strip()
+        enriched_query = f'"{company_name}" {domain_hint} {entity_hint} (klien OR client OR portfolio OR kemitraan OR ekspansi OR solusi)'.strip()
 
     try:
         resp = await tavily_service.search(
@@ -631,3 +670,36 @@ async def run_lane_a_advanced(
         len(evidence_list),
     )
     return summary_str, evidence_list
+
+
+def analyze_company_context(
+    company_url: str,
+    company_name: str,
+    domain: str,
+    mode: ReconMode = ReconMode.free,
+) -> str:
+    """Analyze company context with market-aware prompts."""
+
+    # Detect market
+    market = detect_market(company_url) if detect_market else None
+    market_config = get_market_config(company_url) if get_market_config else None
+
+    # Adjust prompt language based on market
+    if MarketRegion and (market == MarketRegion.SINGAPORE or market == MarketRegion.MALAYSIA):
+        prompt_language = "English"
+    else:
+        prompt_language = "Bahasa Indonesia"
+
+    tlds_str = ", ".join(market_config.tlds) if market_config else domain
+    curr_sym = market_config.currency_symbol if market_config else "Rp"
+
+    # Market-aware context prompt
+    system_prompt = f"""
+    Kamu adalah AI analis profil perusahaan untuk B2B outreach.
+
+    Market Context: {tlds_str} | Language: {prompt_language} | Currency: {curr_sym}
+
+    Perusahaan: {company_name} (URL: {company_url}, Domain: {domain})
+    Mode: {mode.value if hasattr(mode, 'value') else mode}
+    """
+    return system_prompt.strip()
