@@ -91,6 +91,43 @@ class VerifiedCapabilities(BaseModel):
     hiringSignals: list[str] = Field(default_factory=list, description="Posisi tim yang sedang direkrut dari subpage /careers")
 
 
+class BattlePlan(BaseModel):
+    """
+    Rencana Serangan Outreach — aset PALING berharga untuk tim sales.
+    5 jawaban langsung yang bisa dipakai sales untuk bertindak, bukan laporan pasif.
+    Setiap field HARUS berbasis fakta dari data riset; kosong jika tidak ada data.
+    """
+    whoToContact: str = Field(
+        default="",
+        description="Siapa yang dihubungi: nama + jabatan terbaik dari data kontak, dan kenapa dia (mandat/jabatan)."
+    )
+    whatToSay: str = Field(
+        default="",
+        description="Apa yang disampaikan: inti pesan 1 kalimat yang menjawab pain point spesifik perusahaan ini."
+    )
+    openingLine: str = Field(
+        default="",
+        description="Kalimat pembuka: 1 kalimat konkret siap kirim, menyebut fakta spesifik perusahaan. Bukan sapaan generik."
+    )
+    whyNow: str = Field(
+        default="",
+        description="Kenapa sekarang: trigger event dari data (hiring/ekspansi/berita/regulasi) yang membuat timing tepat."
+    )
+    fit: str = Field(
+        default="",
+        description="Kecocokan: apa yang mereka pakai sekarang (tech stack/tools) dan gap yang relevan dengan penawaran produk B2B."
+    )
+    evidenceUrls: list[str] = Field(default_factory=list, description="URL dari evidence_list yang mendukung klaim di atas.")
+
+
+class FitSignals(BaseModel):
+    """Sinyal kecocokan produk — tech stack & tools terdeteksi eksplisit dari website/job posting."""
+    techStack: list[str] = Field(default_factory=list, description="Teknologi yang disebut eksplisit di website/job posting (contoh: Nuxt.js, AWS).")
+    toolsDetected: list[str] = Field(default_factory=list, description="Tools/marketing stack yang disebut di data (contoh: Salesforce, HubSpot).")
+    missingTools: list[str] = Field(default_factory=list, description="Kategori tools yang TIDAK terdeteksi padahal umum untuk industri/ukuran mereka — celah pitch.")
+    assessment: str = Field(default="", description="Satu kalimat penilaian kesiapan teknologi mereka.")
+
+
 class StrategicReport(BaseModel):
     """Laporan intelijen strategis bergaya konsultan BCG/McKinsey."""
     strategicTitle:        str            = ""
@@ -103,6 +140,8 @@ class StrategicReport(BaseModel):
     confidenceScore:       str            = "HIGH"
     salesTriggers:         Optional[SalesTriggers] = None
     verifiedCapabilities:  Optional[VerifiedCapabilities] = None
+    battlePlan:            Optional[BattlePlan] = None
+    fitSignals:            Optional[FitSignals] = None
 
 
 class LinkedInInfo(BaseModel):

@@ -558,6 +558,34 @@ async def synthesize_profile(
         "- 'MEDIUM': Jika subpage terbatas namun didukung profil LinkedIn dan liputan media publik.\n"
         "- 'INFERENCE': Jika jejak digital minim dan analisis merupakan ekstrapolasi industri.\n\n"
 
+        "=== ATURAN 0D: BATTLE PLAN (field 'battlePlan' di dalam strategicReport) ===\n"
+        "Ini adalah ASET PALING BERHARGA untuk sales. Jangan tulis laporan pasif — jawab 5 pertanyaan "
+        "yang membuat sales bisa langsung BERTINDAK:\n"
+        "1. whoToContact: Satu kalimat spesifik — siapa (nama + jabatan dari data kontak) yang paling tepat "
+        "dihubungi dan KENAPA dia (mandat/jabatan struktural). Jika kontak tidak ditemukan, sebutkan "
+        "jabatan yang paling logis beserta alasannya.\n"
+        "2. whatToSay: SATU kalimat inti pesan yang menjawab pain point spesifik perusahaan ini — insight "
+        "tentang bisnis MEREKA, bukan deskripsi produk.\n"
+        "3. openingLine: SATU kalimat pembuka email konkret siap kirim. WAJIB menyebut fakta/insight spesifik "
+        "tentang perusahaan ini. DILARANG sapaan generik seperti 'Saya harap Anda baik-baik saja'.\n"
+        "4. whyNow: SATU kalimat — trigger event dari data (hiring, ekspansi, berita, regulasi, produk baru) "
+        "yang membuat timing outreach ini tepat. Jika TIDAK ada trigger, jujur tulis "
+        "'Timing netral — tidak ada trigger terdeteksi'.\n"
+        "5. fit: SATU kalimat — apa yang mereka pakai sekarang (tech stack/tools dari website & job posting) "
+        "dan gap apa yang relevan dengan penawaran produk B2B.\n"
+        "- evidenceUrls: Array URL dari evidence_list yang BENAR-BENAR mendukung klaim di atas (boleh kosong).\n"
+        "- ATURAN KERAS: setiap field harus berbasis fakta dari data yang diberikan. "
+        "Jika tidak ada data → string kosong. JANGAN mengarang angka, nama, atau klaim.\n\n"
+
+        "=== ATURAN 0E: FIT SIGNALS (field 'fitSignals' di dalam strategicReport) ===\n"
+        "- techStack: Array teknologi yang disebut EKSPLISIT di website/job posting/subpage resmi "
+        "(contoh: 'Nuxt.js', 'AWS', 'PostgreSQL'). HANYA yang benar-benar tertulis di data.\n"
+        "- toolsDetected: Array tools/marketing stack yang tertulis di data (contoh: 'Salesforce', 'HubSpot').\n"
+        "- missingTools: Array kategori tools yang TIDAK terdeteksi padahal umum untuk industri/ukuran mereka "
+        "(contoh: 'Tidak ada marketing automation terdeteksi'). Ini adalah celah pitch untuk sales.\n"
+        "- assessment: SATU kalimat penilaian kesiapan teknologi mereka.\n"
+        "- Jika tidak ada data teknologi sama sekali → array kosong, assessment string kosong. JANGAN dikarang.\n\n"
+
         # ════════════════════════════════════════════════════════════════
         # ATURAN 1: STRATEGIC REPORT
         # ════════════════════════════════════════════════════════════════
@@ -800,7 +828,9 @@ async def synthesize_profile(
         "- strategicRoadmap: array 3-5 item dimulai 'Prioritaskan'\n"
         "- situationalSummary: [STATUS] + [BUKTI] + [ENTRY POINT] + [WINDOW]\n"
         "- citations: array URL dari evidence_list yang benar-benar dipakai\n\n"
-        "6. contacts: salin SEMUA field dari Lane B verbatim."
+        "6. contacts: salin SEMUA field dari Lane B verbatim.\n"
+        "7. battlePlan & fitSignals (di dalam strategicReport): ikuti ATURAN 0D & 0E persis — "
+        "ini aset paling berharga untuk sales, jawab dengan fakta spesifik dari data."
     )
 
     client = _get_client()

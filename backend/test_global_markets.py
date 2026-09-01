@@ -11,6 +11,8 @@ import sys
 import os
 import asyncio
 
+import pytest
+
 # Setup sys.path agar mendukung import baik 'backend.app...' maupun 'app...'
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
@@ -63,6 +65,7 @@ def test_sg_patterns():
     print("PASS: Konfigurasi pasar Singapura sesuai spesifikasi.")
 
 
+@pytest.mark.asyncio
 async def test_sg():
     print("\n--- Test 3: Ekstraksi Subpage Cyberquote.com.sg (Async Subpage Selection) ---")
     url = "https://cyberquote.com.sg/"

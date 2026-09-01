@@ -26,6 +26,22 @@ export interface VerifiedCapabilities {
   hiringSignals: string[]
 }
 
+export interface BattlePlan {
+  whoToContact: string
+  whatToSay: string
+  openingLine: string
+  whyNow: string
+  fit: string
+  evidenceUrls?: string[]
+}
+
+export interface FitSignals {
+  techStack: string[]
+  toolsDetected: string[]
+  missingTools: string[]
+  assessment: string
+}
+
 export interface StrategicReport {
   strategicTitle: string
   executiveInsight: string
@@ -37,6 +53,8 @@ export interface StrategicReport {
   confidenceScore?: 'HIGH' | 'MEDIUM' | 'INFERENCE'
   salesTriggers?: SalesTriggers
   verifiedCapabilities?: VerifiedCapabilities
+  battlePlan?: BattlePlan
+  fitSignals?: FitSignals
 }
 
 export interface CompanyProfile {

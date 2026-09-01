@@ -1,6 +1,6 @@
 import { PicContact } from "@/types/recon.types"
-import { AlertTriangle, Mail, Phone, Users, MapPin, Clock, ExternalLink } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { AlertTriangle, Mail, Phone, Users, MapPin, Clock, ExternalLink, HelpCircle } from "lucide-react"
+import { cn, guessEmailPattern } from "@/lib/utils"
 
 // ── Score badge config ────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ const LABEL_STYLE: Record<string, string> = {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
+export function KeyContacts({ contacts, companyUrl }: { contacts: PicContact[]; companyUrl?: string }) {
   if (!contacts?.length) return null
 
   return (
@@ -178,6 +178,24 @@ export function KeyContacts({ contacts }: { contacts: PicContact[] }) {
                     {contact.email}
                   </a>
                 )}
+                {(!contact.email || contact.email === "-") && companyUrl && (() => {
+                  const guesses = guessEmailPattern(contact.name, companyUrl)
+                  if (!guesses.length) return null
+                  return (
+                    <div className="bg-amber-50/70 border border-amber-200/60 rounded-lg px-3 py-2 space-y-1">
+                      <p className="flex items-center gap-1.5 text-[10.5px] font-bold text-amber-800 uppercase tracking-wide">
+                        <HelpCircle className="w-3 h-3 shrink-0"  strokeWidth={1.5} />
+                        Tebakan Pola Email — verifikasi sebelum kirim
+                      </p>
+                      {guesses.map(g => (
+                        <p key={g} className="flex items-center gap-2 text-[12px] text-amber-900 font-medium break-all">
+                          <Mail className="w-3 h-3 shrink-0 text-amber-600"  strokeWidth={1.5} />
+                          {g}
+                        </p>
+                      ))}
+                    </div>
+                  )
+                })()}
                 {contact.phone && contact.phone !== "-" && (
                   <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                     <Phone className="w-3 h-3 shrink-0"  strokeWidth={1.5} />

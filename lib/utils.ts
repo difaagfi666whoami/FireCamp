@@ -31,3 +31,37 @@ export const getMilestoneLabel = (key: string): string => {
   }
   return labels[key] ?? key
 }
+
+/**
+ * guessEmailPattern — tebak kandidat email dari nama kontak + domain perusahaan.
+ * HANYA string manipulation client-side (bukan email terverifikasi).
+ * Dipakai sebagai tampilan bantu saat field email kosong.
+ */
+export const guessEmailPattern = (name: string, url: string): string[] => {
+  if (!name || !url) return []
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`)
+    const domain = parsed.hostname.replace(/^www\./, '').toLowerCase()
+    if (!domain || !domain.includes('.')) return []
+
+    const parts = name.trim().toLowerCase().split(/\s+/).filter(Boolean)
+    if (parts.length === 0) return []
+
+    const clean = (s: string) => s.replace(/[^a-z]/g, '')
+    const first = clean(parts[0])
+    const last = clean(parts[parts.length - 1])
+    if (!first && !last) return []
+
+    const candidates: string[] = []
+    if (first && last && last !== first) {
+      candidates.push(`${first}.${last}@${domain}`)
+      candidates.push(`${first[0]}${last}@${domain}`)
+    }
+    if (first) candidates.push(`${first}@${domain}`)
+    if (first && last && last !== first) candidates.push(`${first}${last}@${domain}`)
+
+    return Array.from(new Set(candidates)).slice(0, 3)
+  } catch {
+    return []
+  }
+}

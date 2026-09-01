@@ -50,34 +50,35 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "about": [
         "about", "about-us", "tentang", "tentang-kami", "company", "perusahaan",
         "our-story", "who-we-are", "profil", "profile", "team", "leadership",
-        "direksi", "manajemen", "management"
+        "direksi", "manajemen", "management", "founders", "our-team", "board"
     ],
     "services": [
         "services", "layanan", "products", "produk", "solutions", "solusi",
-        "offerings", "features", "fitur", "pricing", "harga", "plans"
+        "offerings", "features", "fitur", "pricing", "harga", "plans",
+        "platform", "technology", "teknologi", "integrations", "integrasi"
     ],
     "clients": [
         "clients", "klien", "portfolio", "portofolio", "case-studies", "studi-kasus",
-        "customers", "pelanggan", "projects", "proyek", "our-work", "works",
-        "testimonials", "testimoni"
+        "case-study", "customers", "pelanggan", "projects", "proyek", "our-work", "works",
+        "testimonials", "testimoni", "success-stories", "industries", "partners", "mitra"
     ],
     "careers": [
-        "careers", "karir", "jobs", "lowongan", "lowongan-kerja", "join-us",
-        "work-with-us", "we-are-hiring", "rekrutmen", "hiring"
+        "careers", "career", "karir", "jobs", "lowongan", "lowongan-kerja", "join-us",
+        "work-with-us", "we-are-hiring", "rekrutmen", "hiring", "join-our-team"
     ],
     "contact": [
         "contact", "hubungi-kami", "contact-us", "kontak", "location", "lokasi",
-        "address", "alamat"
+        "address", "alamat", "get-in-touch", "enquiry", "inquiry"
     ],
 }
 
 # Fallback path kandidat jika link tidak terdeteksi dari homepage
 CANDIDATE_PATHS: dict[str, list[str]] = {
-    "about": ["/about", "/about-us", "/tentang-kami", "/tentang", "/company"],
-    "services": ["/services", "/layanan", "/products", "/solutions", "/produk"],
-    "clients": ["/clients", "/portfolio", "/portofolio", "/case-studies", "/klien"],
-    "careers": ["/careers", "/karir", "/jobs", "/lowongan"],
-    "contact": ["/contact", "/contact-us", "/hubungi-kami"],
+    "about": ["/about", "/about-us", "/tentang-kami", "/tentang", "/company", "/our-story"],
+    "services": ["/services", "/layanan", "/products", "/solutions", "/produk", "/platform"],
+    "clients": ["/clients", "/portfolio", "/portofolio", "/case-studies", "/klien", "/partners"],
+    "careers": ["/careers", "/karir", "/jobs", "/lowongan", "/join-us"],
+    "contact": ["/contact", "/contact-us", "/hubungi-kami", "/get-in-touch"],
 }
 
 

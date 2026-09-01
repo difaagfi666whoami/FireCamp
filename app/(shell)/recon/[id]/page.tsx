@@ -11,6 +11,7 @@ import { session } from "@/lib/session"
 import { CompanyProfile } from "@/types/recon.types"
 import { useLanguage } from "@/lib/i18n/LanguageContext"
 import { CompanyHeader } from "../components/CompanyHeader"
+import { BattlePlanCard } from "../components/BattlePlanCard"
 import { SalesTriggersCard } from "../components/SalesTriggersCard"
 import { VerifiedCapabilitiesCard } from "../components/VerifiedCapabilitiesCard"
 import { StrategicMainContent } from "../components/StrategicMainContent"
@@ -146,6 +147,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
       {/* Content */}
       {profile.reconMode === 'pro' ? (
         <>
+          <BattlePlanCard plan={profile.strategicReport?.battlePlan} />
           <SalesTriggersCard triggers={profile.salesTriggers || profile.strategicReport?.salesTriggers} />
           <VerifiedCapabilitiesCard capabilities={profile.verifiedCapabilities || profile.strategicReport?.verifiedCapabilities} />
 
@@ -161,7 +163,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
           )}
 
           {profile.contacts?.length > 0 && (
-            <KeyContacts contacts={profile.contacts} />
+            <KeyContacts contacts={profile.contacts} companyUrl={profile.url} />
           )}
 
           {profile.news?.length > 0 && (
@@ -210,6 +212,9 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
         <>
           <CompanyHeader company={profile} />
 
+          {/* Battle Plan — aset paling berharga untuk sales, tampil pertama */}
+          <BattlePlanCard plan={profile.strategicReport?.battlePlan} />
+
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-8 space-y-5">
               <SalesTriggersCard triggers={profile.salesTriggers || profile.strategicReport?.salesTriggers} />
@@ -220,7 +225,7 @@ export default function SavedReconPage({ params }: { params: { id: string } }) {
             </div>
             <div className="md:col-span-4 space-y-4">
               <StrategicSidebar company={profile} />
-              <KeyContacts contacts={profile.contacts} />
+              <KeyContacts contacts={profile.contacts} companyUrl={profile.url} />
               <IntentSignalsCard signals={profile.intentSignals || []} />
               <NewsSection news={profile.news} />
             </div>
